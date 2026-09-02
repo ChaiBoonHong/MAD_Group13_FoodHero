@@ -42,6 +42,19 @@
     <color name="scrim_dark">#66000000</color>
     <color name="scrim_pill_button">#40000000</color>
 
+    <!-- Prototype Tokens -->
+    <color name="colorBrandCta">#FF8A00</color>
+    <color name="colorBrandPrice">#1E7B46</color>
+    <color name="colorEcoBannerBg">#EAF8EC</color>
+    <color name="colorEcoBannerBorder">#C6E7CD</color>
+    <color name="colorPillUrgentBg">#FEE2E2</color>
+    <color name="colorPillUrgentText">#DC2626</color>
+    <color name="colorLevelBadgeGold">#F59E0B</color>
+    <color name="colorTimerBg">#FEF3C7</color>
+    <color name="colorTimerText">#92400E</color>
+    <color name="colorTimerUrgentBg">#FEE2E2</color>
+    <color name="colorTimerUrgentText">#B91C1C</color>
+
     <!-- Standard Aliases -->
     <color name="white">#FFFFFF</color>
     <color name="black">#0F172A</color>

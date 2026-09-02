@@ -20,6 +20,43 @@
             android:paddingEnd="@dimen/spacing_16"
             android:paddingBottom="@dimen/spacing_8">
 
+            <!-- Eco Impact Diverted Banner (From Prototype) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/colorEcoBannerBg"
+                app:strokeColor="@color/colorEcoBannerBorder"
+                app:strokeWidth="1dp"
+                android:layout_marginBottom="@dimen/spacing_10">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/spacing_14"
+                    android:paddingVertical="@dimen/spacing_10">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🍃"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/spacing_8"
+                        android:text="You have diverted 4.2 kg of food waste this month!"
+                        android:textColor="@color/colorPrimaryDark"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Modern Search Bar (Pill with crisp border) -->
             <FrameLayout
                 android:layout_width="match_parent"
@@ -68,7 +105,7 @@
                 </LinearLayout>
             </FrameLayout>
 
-            <!-- Horizontal Category / Filter Chips -->
+            <!-- Horizontal Category / Filter Chips (Prototype Order) -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -91,11 +128,11 @@
                         android:text="@string/filter_all" />
 
                     <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_under_5"
+                        android:id="@+id/chip_bakery"
                         style="@style/Widget.FoodHero.Chip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/filter_under_5" />
+                        android:text="@string/filter_bakery" />
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chip_meals"
@@ -105,20 +142,48 @@
                         android:text="@string/filter_rice_noodle" />
 
                     <com.google.android.material.chip.Chip
-                        android:id="@+id/chip_bakery"
+                        android:id="@+id/chip_under_5"
                         style="@style/Widget.FoodHero.Chip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/filter_bakery" />
+                        android:text="@string/filter_under_5" />
 
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chip_veg"
                         style="@style/Widget.FoodHero.Chip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/filter_veg" />
+                        android:text="Halal" />
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
+
+            <!-- Section Title: Available Now / See all (From Prototype) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="@dimen/spacing_12"
+                android:layout_marginBottom="@dimen/spacing_4">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Available Now"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_see_all"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="See all"
+                    android:textColor="@color/colorBrandPrice"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 

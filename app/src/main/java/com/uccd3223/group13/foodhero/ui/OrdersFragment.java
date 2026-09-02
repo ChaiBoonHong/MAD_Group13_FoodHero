@@ -116,12 +116,24 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
 
     private void filterOrders() {
         List<Order> filtered = new ArrayList<>();
-        OrderStatus targetStatus = (selectedTabIndex == 0) ? OrderStatus.RESERVED :
-            (selectedTabIndex == 1) ? OrderStatus.COMPLETED : OrderStatus.CANCELLED;
 
         for (Order o : allOrders) {
-            if (o.getStatus() == targetStatus) {
-                filtered.add(o);
+            if (selectedTabIndex == 0) {
+                if (o.getStatus() == OrderStatus.RESERVED ||
+                    o.getStatus() == OrderStatus.PENDING_VERIFICATION ||
+                    o.getStatus() == OrderStatus.AWAITING_PAYMENT) {
+                    filtered.add(o);
+                }
+            } else if (selectedTabIndex == 1) {
+                if (o.getStatus() == OrderStatus.COMPLETED) {
+                    filtered.add(o);
+                }
+            } else {
+                if (o.getStatus() == OrderStatus.CANCELLED ||
+                    o.getStatus() == OrderStatus.EXPIRED ||
+                    o.getStatus() == OrderStatus.REJECTED) {
+                    filtered.add(o);
+                }
             }
         }
 
@@ -129,7 +141,7 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
 
         if (filtered.isEmpty()) {
             layoutEmpty.setVisibility(View.VISIBLE);
-            if (tvEmptyTitle != null) tvEmptyTitle.setText("No " + targetStatus.getValue() + " orders");
+            if (tvEmptyTitle != null) tvEmptyTitle.setText("No orders in this tab");
             if (tvEmptyMessage != null) tvEmptyMessage.setText("You have no orders currently in this tab.");
         } else {
             layoutEmpty.setVisibility(View.GONE);
@@ -138,9 +150,15 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
 
     @Override
     public void onViewQrClick(Order order) {
-        Intent intent = new Intent(requireContext(), QrPickupTokenActivity.class);
-        intent.putExtra("extra_order", order);
-        startActivity(intent);
+        if (order.getStatus() == OrderStatus.AWAITING_PAYMENT) {
+            Intent intent = new Intent(requireContext(), PaymentDuitNowActivity.class);
+            intent.putExtra(PaymentDuitNowActivity.EXTRA_ORDER, order);
+            startActivity(intent);
+        } else {
+            Intent intent = new Intent(requireContext(), QrPickupTokenActivity.class);
+            intent.putExtra("extra_order", order);
+            startActivity(intent);
+        }
     }
 
     @Override

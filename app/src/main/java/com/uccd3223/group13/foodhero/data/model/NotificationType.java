@@ -25,7 +25,19 @@ public enum NotificationType {
     LISTING_SOLD_OUT("listing_sold_out"),
 
     @SerializedName("low_stock")
-    LOW_STOCK("low_stock");
+    LOW_STOCK("low_stock"),
+
+    @SerializedName("payment_submitted")
+    PAYMENT_SUBMITTED("payment_submitted"),
+
+    @SerializedName("payment_verified")
+    PAYMENT_VERIFIED("payment_verified"),
+
+    @SerializedName("payment_rejected")
+    PAYMENT_REJECTED("payment_rejected"),
+
+    @SerializedName("order_expired")
+    ORDER_EXPIRED("order_expired");
 
     private final String value;
 

@@ -72,6 +72,21 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
 
         if (order.getStatus() == OrderStatus.RESERVED) {
             holder.btnViewQr.setVisibility(View.VISIBLE);
+            holder.btnViewQr.setText("View Pickup QR");
+            holder.btnViewQr.setEnabled(true);
+            holder.btnRate.setVisibility(View.GONE);
+            holder.btnViewQr.setOnClickListener(v -> {
+                if (listener != null) listener.onViewQrClick(order);
+            });
+        } else if (order.getStatus() == OrderStatus.PENDING_VERIFICATION) {
+            holder.btnViewQr.setVisibility(View.VISIBLE);
+            holder.btnViewQr.setText("⏳ Verifying Receipt");
+            holder.btnViewQr.setEnabled(false);
+            holder.btnRate.setVisibility(View.GONE);
+        } else if (order.getStatus() == OrderStatus.AWAITING_PAYMENT) {
+            holder.btnViewQr.setVisibility(View.VISIBLE);
+            holder.btnViewQr.setText("Pay DuitNow");
+            holder.btnViewQr.setEnabled(true);
             holder.btnRate.setVisibility(View.GONE);
             holder.btnViewQr.setOnClickListener(v -> {
                 if (listener != null) listener.onViewQrClick(order);

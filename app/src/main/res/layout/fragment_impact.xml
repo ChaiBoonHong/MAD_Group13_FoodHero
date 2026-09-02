@@ -15,55 +15,96 @@
         android:paddingEnd="@dimen/spacing_16"
         android:paddingBottom="@dimen/spacing_24">
 
-        <!-- Student Profile Header Card -->
+        <!-- Student Profile Lush Green Header Card (Prototype Screen 4) -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.FoodHero.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/colorSurface">
+            app:cardBackgroundColor="@color/colorPrimaryDark"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="6dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="@dimen/spacing_16">
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/spacing_20"
+                android:paddingTop="@dimen/spacing_20"
+                android:paddingBottom="@dimen/spacing_24">
 
-                <ImageView
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    android:background="@drawable/bg_circle_container"
-                    android:backgroundTint="@color/colorPrimaryContainer"
-                    android:contentDescription="@null"
-                    android:padding="@dimen/spacing_12"
-                    android:src="@drawable/ic_nav_profile"
-                    app:tint="@color/colorPrimary" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
+                <!-- Header Title -->
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/spacing_16"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:text="My Eco Impact"
+                    android:textColor="@color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <!-- Avatar with Gold Level Ring (Prototype Screen 4) -->
+                <FrameLayout
+                    android:layout_width="76dp"
+                    android:layout_height="76dp"
+                    android:layout_marginTop="@dimen/spacing_16"
+                    android:background="@drawable/bg_circle_container"
+                    android:backgroundTint="@color/colorLevelBadgeGold"
+                    android:padding="3dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_circle_container"
+                        android:backgroundTint="@color/colorPrimary">
+
+                        <ImageView
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_nav_profile"
+                            app:tint="@color/white"
+                            android:contentDescription="User Avatar" />
+                    </FrameLayout>
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tv_student_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_10"
+                    android:text="Chai Boon Hong"
+                    android:textColor="@color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <!-- Gold Level 4 Badge (Prototype Screen 4) -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="28dp"
+                    android:layout_marginTop="@dimen/spacing_8"
+                    android:background="@drawable/bg_badge_pill"
+                    android:backgroundTint="@color/colorLevelBadgeGold"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/spacing_12">
 
                     <TextView
-                        android:id="@+id/tv_student_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Chai Boon Hong"
+                        android:text="⭐ Level 4: Bakery Savior"
                         android:textColor="@color/colorTextPrimary"
-                        android:textSize="18sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_student_meta"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="22ACB01234 • FICT"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="@dimen/text_size_sub" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tv_student_meta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_6"
+                    android:text="UTAR Kampar • Joined Sep 2024"
+                    android:textColor="#E0E7FF"
+                    android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

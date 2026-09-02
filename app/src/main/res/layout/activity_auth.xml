@@ -16,23 +16,23 @@
         android:paddingEnd="@dimen/spacing_20"
         android:paddingBottom="@dimen/spacing_24">
 
-        <!-- Logo & Header -->
+        <!-- Logo & Brand Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical"
-            android:paddingTop="@dimen/spacing_12"
-            android:paddingBottom="@dimen/spacing_16">
+            android:paddingTop="@dimen/spacing_16"
+            android:paddingBottom="@dimen/spacing_20">
 
             <com.google.android.material.card.MaterialCardView
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="@color/colorPrimaryContainer"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/white"
                 app:strokeColor="@color/colorCardBorder"
-                app:strokeWidth="1dp">
+                app:strokeWidth="1.5dp">
 
                 <ImageView
                     android:layout_width="match_parent"
@@ -45,71 +45,61 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_10"
+                android:layout_marginTop="@dimen/spacing_12"
                 android:text="@string/app_name"
                 android:textColor="@color/colorPrimaryDark"
-                android:textSize="24sp"
+                android:textSize="26sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="@string/campus_name"
+                android:layout_marginTop="3dp"
+                android:text="UTAR Sustainable Surplus Food Rescuer"
                 android:textColor="@color/colorTextSecondary"
-                android:textSize="@dimen/text_size_caption" />
+                android:textSize="13sp" />
         </LinearLayout>
 
-        <!-- Role Selection Cards -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/spacing_8"
-            android:text="Choose your role"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="@dimen/text_size_sub"
-            android:textStyle="bold" />
-
+        <!-- Modern Role Segment Selector Pills -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_height="48dp"
+            android:background="@drawable/bg_pill_chip_inactive"
+            android:orientation="horizontal"
+            android:padding="4dp">
 
             <!-- Student Role Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_role_student"
-                style="@style/Widget.FoodHero.Card"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/spacing_6"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="@color/colorPrimaryContainer"
-                app:strokeColor="@color/colorPrimary"
-                app:strokeWidth="2dp">
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/colorPrimaryDark"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="@dimen/spacing_12">
-
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_nav_feed"
-                        app:tint="@color/colorPrimary" />
+                    android:orientation="horizontal">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_4"
+                        android:text="🎓 "
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_role_student_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="@string/role_student"
-                        android:textColor="@color/colorPrimary"
-                        android:textSize="@dimen/text_size_action"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -117,49 +107,51 @@
             <!-- Merchant Role Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_role_merchant"
-                style="@style/Widget.FoodHero.Card"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/spacing_6"
+                android:layout_height="match_parent"
+                android:layout_marginStart="4dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="@color/colorSurface"
-                app:strokeColor="@color/colorDivider"
-                app:strokeWidth="1dp">
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/transparent"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="@dimen/spacing_12">
-
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_nav_dashboard"
-                        app:tint="@color/colorTextSecondary" />
+                    android:orientation="horizontal">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_4"
+                        android:text="🏪 "
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_role_merchant_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="@string/role_merchant"
                         android:textColor="@color/colorTextSecondary"
-                        android:textSize="@dimen/text_size_action"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- Form Card -->
+        <!-- Modern Bento Form Card -->
         <com.google.android.material.card.MaterialCardView
             style="@style/Widget.FoodHero.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_16">
+            android:layout_marginTop="@dimen/spacing_16"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="4dp"
+            app:strokeColor="@color/colorCardBorder"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"

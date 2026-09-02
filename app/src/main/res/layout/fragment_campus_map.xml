@@ -11,58 +11,173 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Top Floating Mode Selector & Route Info Card -->
+    <!-- Top Floating Search Bar, Legend & Travel Mode Controls -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="@dimen/spacing_16">
+        android:paddingHorizontal="@dimen/spacing_16"
+        android:paddingTop="@dimen/spacing_12">
 
-        <!-- Travel Mode Selector Chips -->
+        <!-- Prototype Search Bar with Filter Icon -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.FoodHero.Card"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            app:cardBackgroundColor="@color/colorSurface"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
             app:cardCornerRadius="24dp"
-            app:cardElevation="4dp">
+            app:cardElevation="6dp"
+            app:cardBackgroundColor="@color/colorSurface"
+            app:strokeColor="@color/colorCardBorder"
+            app:strokeWidth="1dp">
 
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chip_group_travel_mode"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/spacing_16">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_search"
+                    app:tint="@color/colorTextSecondary"
+                    android:contentDescription="Search" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_10"
+                    android:layout_weight="1"
+                    android:text="Search nearby campus cafes..."
+                    android:textColor="@color/colorTextTertiary"
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_chevron_down"
+                    app:tint="@color/colorTextSecondary"
+                    android:contentDescription="Filter options" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Floating Badges Row (3 spots nearby & Map Legend) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_10"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- 3 spots nearby Chip -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_badge_pill"
+                android:backgroundTint="@color/colorPrimaryDark"
+                android:gravity="center"
+                android:paddingHorizontal="@dimen/spacing_12">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3 spots nearby"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- Floating Legend Card -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingStart="@dimen/spacing_4"
-                android:paddingEnd="@dimen/spacing_4"
-                app:singleLine="true"
-                app:singleSelection="true">
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/colorSurface">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_mode_walk"
-                    style="@style/Widget.FoodHero.Chip"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:text="@string/mode_walking"
-                    app:chipIcon="@drawable/ic_walk" />
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/spacing_10"
+                    android:paddingVertical="@dimen/spacing_6">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_mode_bike"
-                    style="@style/Widget.FoodHero.Chip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/mode_cycling"
-                    app:chipIcon="@drawable/ic_bike" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_mode_shuttle"
-                    style="@style/Widget.FoodHero.Chip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/mode_shuttle"
-                    app:chipIcon="@drawable/ic_shuttle" />
-            </com.google.android.material.chip.ChipGroup>
-        </com.google.android.material.card.MaterialCardView>
+                        <View
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_circle_container"
+                            android:backgroundTint="@color/colorStatusActive" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="Food Available"
+                            android:textColor="@color/colorTextPrimary"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_circle_container"
+                            android:backgroundTint="#2563EB" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="You are here"
+                            android:textColor="@color/colorTextSecondary"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- Hidden Travel Mode Selector (Kept for functionality) -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_travel_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_mode_walk"
+                style="@style/Widget.FoodHero.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_mode_bike"
+                style="@style/Widget.FoodHero.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_mode_shuttle"
+                style="@style/Widget.FoodHero.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </com.google.android.material.chip.ChipGroup>
 
         <!-- Route Info / Outside Campus Warning Banner -->
         <com.google.android.material.card.MaterialCardView
@@ -93,9 +208,9 @@
                         android:id="@+id/iv_route_mode_icon"
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:contentDescription="@null"
                         android:src="@drawable/ic_walk"
-                        app:tint="@color/colorPrimary" />
+                        app:tint="@color/colorPrimary"
+                        android:contentDescription="@null" />
 
                     <TextView
                         android:id="@+id/tv_route_distance_eta"
@@ -123,88 +238,129 @@
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
-    <!-- Bottom Deal Preview Card (Slides up on marker click) -->
+    <!-- Bottom Deal Preview Card (Prototype Screen 2 Floating Card) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/card_deal_preview"
         style="@style/Widget.FoodHero.Card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_margin="@dimen/spacing_16"
-        android:visibility="gone"
+        android:layout_marginHorizontal="@dimen/spacing_16"
+        android:layout_marginBottom="@dimen/spacing_16"
+        android:visibility="visible"
         app:cardBackgroundColor="@color/colorSurface"
+        app:cardCornerRadius="24dp"
         app:cardElevation="8dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="@dimen/spacing_12">
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_16">
 
-            <ImageView
-                android:id="@+id/iv_preview_image"
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_food_placeholder" />
+            <!-- Card Drag Handle -->
+            <View
+                android:layout_width="36dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="@dimen/spacing_12"
+                android:background="@drawable/bg_pill_chip_inactive" />
 
+            <!-- Cafe & Details Row -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/spacing_12"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tv_preview_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="Surplus Bento Mystery Bag"
-                    android:textColor="@color/colorTextPrimary"
-                    android:textSize="@dimen/text_size_action"
-                    android:textStyle="bold" />
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/colorCardBorder"
+                    app:strokeWidth="1dp">
 
-                <TextView
-                    android:id="@+id/tv_preview_merchant"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_2"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="Grand Green Cafe • Pavilion I"
-                    android:textColor="@color/colorTextSecondary"
-                    android:textSize="@dimen/text_size_caption" />
+                    <ImageView
+                        android:id="@+id/iv_preview_image"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_food_placeholder"
+                        android:contentDescription="Cafe thumbnail" />
+                </com.google.android.material.card.MaterialCardView>
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_4"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:layout_marginStart="@dimen/spacing_12"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/tv_preview_price"
-                        android:layout_width="0dp"
+                        android:id="@+id/tv_preview_merchant"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="monospace"
-                        android:text="RM 5.50"
-                        android:textColor="@color/colorAccent"
-                        android:textSize="@dimen/text_size_body"
+                        android:text="Block G Cafe"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textSize="17sp"
                         android:textStyle="bold" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_preview_view_deal"
-                        style="@style/Widget.FoodHero.Button.Primary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="@string/view_deal"
+                    <TextView
+                        android:id="@+id/tv_preview_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="300m walking distance • 5 min walk"
+                        android:textColor="@color/colorTextSecondary"
                         android:textSize="12sp" />
+
+                    <!-- Availability & Price Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_6"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="24dp"
+                            android:background="@drawable/bg_badge_pill"
+                            android:backgroundTint="@color/colorPrimaryContainer"
+                            android:gravity="center"
+                            android:paddingHorizontal="@dimen/spacing_8"
+                            android:text="2 Surprise Bags Available"
+                            android:textColor="@color/colorPrimary"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_preview_price"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="@dimen/spacing_8"
+                            android:text="RM 3.50 / bag"
+                            android:textColor="@color/colorTextPrimary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:gravity="end" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
+
+            <!-- Vibrant Orange Reserve Now Button (Prototype Screen 2) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_preview_view_deal"
+                style="@style/Widget.FoodHero.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="@dimen/spacing_16"
+                android:backgroundTint="@color/colorBrandCta"
+                android:text="Reserve Now"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="16dp" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

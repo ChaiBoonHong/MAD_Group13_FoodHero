@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/colorBackground"
+    android:fitsSystemWindows="true">
+
+    <!-- Top App Bar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar_payment"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/colorSurface"
+        app:title="DuitNow QR Payment"
+        app:titleTextColor="@color/colorTextPrimary"
+        app:titleCentered="true"
+        app:navigationIcon="@drawable/ic_chevron_left"
+        app:navigationIconTint="@color/colorTextPrimary"
+        app:elevation="1dp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/spacing_16"
+            android:paddingVertical="@dimen/spacing_16">
+
+            <!-- 10-Minute Real-Time Countdown Timer Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_timer_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/colorTimerBg"
+                app:strokeColor="@color/colorAccent"
+                app:strokeWidth="1dp"
+                android:layout_marginBottom="@dimen/spacing_16">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="@dimen/spacing_16"
+                    android:paddingVertical="@dimen/spacing_12">
+
+                    <TextView
+                        android:id="@+id/tv_timer_countdown"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="⏱️ Payment Window: 10:00 remaining"
+                        android:textColor="@color/colorTimerText"
+                        android:textSize="@dimen/text_size_body"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Auto-cancels in 10m"
+                        android:textColor="@color/colorTimerText"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- DuitNow Merchant QR Bento Card -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.FoodHero.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                android:layout_marginBottom="@dimen/spacing_16">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:padding="@dimen/spacing_20">
+
+                    <!-- DuitNow Header Badge -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_chip_active"
+                        android:backgroundTint="#ED1C24"
+                        android:paddingHorizontal="@dimen/spacing_12"
+                        android:paddingVertical="4dp"
+                        android:layout_marginBottom="@dimen/spacing_8">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="DuitNow QR"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_payee_merchant"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Grand Green Cafe (UTAR Kampar)"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textSize="@dimen/text_size_title"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_order_reference"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Reference: Order #FH-8821"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="@dimen/text_size_caption" />
+
+                    <!-- Total Amount -->
+                    <TextView
+                        android:id="@+id/tv_payment_amount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_12"
+                        android:text="RM 4.50"
+                        android:textColor="@color/colorBrandPrice"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
+
+                    <!-- QR Code Image -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="220dp"
+                        android:layout_height="220dp"
+                        android:layout_marginTop="@dimen/spacing_16"
+                        android:layout_marginBottom="@dimen/spacing_12"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="#ED1C24"
+                        app:strokeWidth="2dp"
+                        app:cardBackgroundColor="@color/white">
+
+                        <ImageView
+                            android:id="@+id/iv_duitnow_qr"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="@dimen/spacing_16"
+                            android:src="@drawable/ic_qr_code"
+                            android:contentDescription="DuitNow QR" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Scan with Maybank, CIMB, TNG, or any banking app"
+                        android:textColor="@color/colorTextTertiary"
+                        android:textSize="12sp"
+                        android:gravity="center" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Receipt Upload Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Upload Payment Receipt"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="@dimen/text_size_sub"
+                android:textStyle="bold"
+                android:layout_marginBottom="@dimen/spacing_8" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_receipt_upload"
+                style="@style/Widget.FoodHero.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="@color/colorPrimary"
+                app:strokeWidth="1.5dp"
+                android:layout_marginBottom="@dimen/spacing_24">
+
+                <LinearLayout
+                    android:id="@+id/layout_upload_placeholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:paddingVertical="@dimen/spacing_24"
+                    android:paddingHorizontal="@dimen/spacing_16">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@drawable/ic_add_a_photo"
+                        app:tint="@color/colorPrimary"
+                        android:contentDescription="Upload receipt" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_8"
+                        android:text="Tap to select / upload payment screenshot"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="@dimen/text_size_body"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="JPG, PNG, or banking slip screenshot"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="@dimen/text_size_caption" />
+                </LinearLayout>
+
+                <!-- Receipt Preview (Initially Hidden) -->
+                <LinearLayout
+                    android:id="@+id/layout_receipt_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:padding="@dimen/spacing_12">
+
+                    <ImageView
+                        android:id="@+id/iv_receipt_thumbnail"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="Receipt Preview" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_8"
+                        android:layout_gravity="center_horizontal"
+                        android:text="✓ Receipt Attached (Tap to change)"
+                        android:textColor="@color/colorSuccess"
+                        android:textSize="@dimen/text_size_body"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Submit Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_submit_receipt"
+                style="@style/Widget.FoodHero.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:text="Submit Receipt for Verification"
+                android:textSize="16sp"
+                app:cornerRadius="16dp"
+                android:enabled="false" />
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

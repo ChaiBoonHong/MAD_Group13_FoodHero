@@ -3,8 +3,17 @@ package com.uccd3223.group13.foodhero.data.model;
 import com.google.gson.annotations.SerializedName;
 
 public enum OrderStatus {
+    @SerializedName("awaiting_payment")
+    AWAITING_PAYMENT("awaiting_payment"),
+
+    @SerializedName("pending_verification")
+    PENDING_VERIFICATION("pending_verification"),
+
     @SerializedName("reserved")
     RESERVED("reserved"),
+
+    @SerializedName("rejected")
+    REJECTED("rejected"),
 
     @SerializedName("completed")
     COMPLETED("completed"),

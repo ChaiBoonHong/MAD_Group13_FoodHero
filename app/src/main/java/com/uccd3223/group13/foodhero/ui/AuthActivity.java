@@ -18,6 +18,7 @@ import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.Profile;
 import com.uccd3223.group13.foodhero.data.model.UserRole;
 import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
+import com.uccd3223.group13.foodhero.data.session.SessionManager;
 
 public class AuthActivity extends AppCompatActivity {
     private AuthRepository authRepo;
@@ -25,7 +26,7 @@ public class AuthActivity extends AppCompatActivity {
     private boolean isLoginMode = true;
 
     private MaterialCardView cardRoleStudent, cardRoleMerchant;
-    private TextView tvAuthModeTitle, tvSwitchMode;
+    private TextView tvAuthModeTitle, tvSwitchMode, tvRoleStudentLabel, tvRoleMerchantLabel;
     private TextInputLayout tilName, tilStudentId, tilFaculty, tilBusinessName, tilCampusLocation, tilEmail, tilPassword;
     private EditText etName, etStudentId, etFaculty, etBusinessName, etCampusLocation, etEmail, etPassword;
     private LinearLayout llStudentFields, llMerchantFields;
@@ -46,6 +47,8 @@ public class AuthActivity extends AppCompatActivity {
     private void initViews() {
         cardRoleStudent = findViewById(R.id.card_role_student);
         cardRoleMerchant = findViewById(R.id.card_role_merchant);
+        tvRoleStudentLabel = findViewById(R.id.tv_role_student_label);
+        tvRoleMerchantLabel = findViewById(R.id.tv_role_merchant_label);
         tvAuthModeTitle = findViewById(R.id.tv_auth_mode_title);
         tvSwitchMode = findViewById(R.id.tv_switch_mode);
 
@@ -121,21 +124,21 @@ public class AuthActivity extends AppCompatActivity {
 
     private void updateRoleSelectionUI() {
         if (selectedRole == UserRole.STUDENT) {
-            cardRoleStudent.setCardBackgroundColor(getResources().getColor(R.color.colorPrimaryContainer));
-            cardRoleStudent.setStrokeColor(getResources().getColor(R.color.colorPrimary));
-            cardRoleStudent.setStrokeWidth(4);
+            cardRoleStudent.setCardBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
+            cardRoleStudent.setStrokeWidth(0);
+            if (tvRoleStudentLabel != null) tvRoleStudentLabel.setTextColor(getResources().getColor(R.color.white));
 
-            cardRoleMerchant.setCardBackgroundColor(getResources().getColor(R.color.colorSurface));
-            cardRoleMerchant.setStrokeColor(getResources().getColor(R.color.colorDivider));
-            cardRoleMerchant.setStrokeWidth(2);
+            cardRoleMerchant.setCardBackgroundColor(getResources().getColor(R.color.transparent));
+            cardRoleMerchant.setStrokeWidth(0);
+            if (tvRoleMerchantLabel != null) tvRoleMerchantLabel.setTextColor(getResources().getColor(R.color.colorTextSecondary));
         } else {
-            cardRoleMerchant.setCardBackgroundColor(getResources().getColor(R.color.colorAccentContainer));
-            cardRoleMerchant.setStrokeColor(getResources().getColor(R.color.colorAccent));
-            cardRoleMerchant.setStrokeWidth(4);
+            cardRoleMerchant.setCardBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
+            cardRoleMerchant.setStrokeWidth(0);
+            if (tvRoleMerchantLabel != null) tvRoleMerchantLabel.setTextColor(getResources().getColor(R.color.white));
 
-            cardRoleStudent.setCardBackgroundColor(getResources().getColor(R.color.colorSurface));
-            cardRoleStudent.setStrokeColor(getResources().getColor(R.color.colorDivider));
-            cardRoleStudent.setStrokeWidth(2);
+            cardRoleStudent.setCardBackgroundColor(getResources().getColor(R.color.transparent));
+            cardRoleStudent.setStrokeWidth(0);
+            if (tvRoleStudentLabel != null) tvRoleStudentLabel.setTextColor(getResources().getColor(R.color.colorTextSecondary));
         }
     }
 
@@ -213,6 +216,7 @@ public class AuthActivity extends AppCompatActivity {
                         mockProfile.setMealsRescued(7);
                         mockProfile.setMoneySaved(38.50);
                         mockProfile.setCo2Prevented(8.4);
+                        SessionManager.getInstance(AuthActivity.this).saveSession("demo-token", "demo-refresh", mockProfile);
                         routeToHome(mockProfile);
                     } else {
                         Toast.makeText(AuthActivity.this, error.getMessage(), Toast.LENGTH_LONG).show();

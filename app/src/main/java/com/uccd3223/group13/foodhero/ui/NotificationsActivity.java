@@ -50,6 +50,13 @@ public class NotificationsActivity extends AppCompatActivity implements Notifica
         adapter = new NotificationAdapter(this, this);
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         rvNotifications.setAdapter(adapter);
+
+        android.widget.TextView tvEmptyTitle = layoutEmpty.findViewById(R.id.tv_empty_title);
+        android.widget.TextView tvEmptyMsg = layoutEmpty.findViewById(R.id.tv_empty_message);
+        View btnEmptyAction = layoutEmpty.findViewById(R.id.btn_empty_action);
+        if (tvEmptyTitle != null) tvEmptyTitle.setText("No Notifications Yet");
+        if (tvEmptyMsg != null) tvEmptyMsg.setText("You are all caught up on your campus alerts.");
+        if (btnEmptyAction != null) btnEmptyAction.setVisibility(View.GONE);
     }
 
     private void loadNotifications() {

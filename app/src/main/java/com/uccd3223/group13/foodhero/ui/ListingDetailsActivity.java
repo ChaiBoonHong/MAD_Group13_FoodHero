@@ -161,8 +161,8 @@ public class ListingDetailsActivity extends AppCompatActivity {
             @Override
             public void onSuccess(Order order) {
                 btnReserveSticky.setEnabled(true);
-                Intent intent = new Intent(ListingDetailsActivity.this, ReservationConfirmationActivity.class);
-                intent.putExtra("extra_order", order);
+                Intent intent = new Intent(ListingDetailsActivity.this, PaymentDuitNowActivity.class);
+                intent.putExtra(PaymentDuitNowActivity.EXTRA_ORDER, order);
                 startActivity(intent);
                 finish();
             }

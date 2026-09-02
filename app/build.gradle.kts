@@ -39,10 +39,14 @@ android {
         val mapsApiKey = secrets.getProperty("MAPS_API_KEY")
             ?: (project.findProperty("MAPS_API_KEY") as? String)
             ?: "dummy-google-maps-api-key"
+        val googleWebClientId = secrets.getProperty("GOOGLE_WEB_CLIENT_ID")
+            ?: (project.findProperty("GOOGLE_WEB_CLIENT_ID") as? String)
+            ?: "dummy-google-web-client-id"
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         buildConfigField("String", "GOOGLE_MAPS_KEY", "\"$mapsApiKey\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 

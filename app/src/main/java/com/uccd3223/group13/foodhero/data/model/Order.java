@@ -55,6 +55,18 @@ public class Order implements Serializable {
     @SerializedName("created_at")
     private String createdAt;
 
+    @SerializedName("payment_expires_at")
+    private long paymentExpiresAt;
+
+    @SerializedName("payment_receipt_url")
+    private String paymentReceiptUrl;
+
+    @SerializedName("payment_method")
+    private String paymentMethod = "DUITNOW_QR";
+
+    @SerializedName("payment_reference")
+    private String paymentReference;
+
     // Nested relations
     @SerializedName("listings")
     private Listing listing;
@@ -228,5 +240,37 @@ public class Order implements Serializable {
 
     public void setStudentProfile(Profile studentProfile) {
         this.studentProfile = studentProfile;
+    }
+
+    public long getPaymentExpiresAt() {
+        return paymentExpiresAt;
+    }
+
+    public void setPaymentExpiresAt(long paymentExpiresAt) {
+        this.paymentExpiresAt = paymentExpiresAt;
+    }
+
+    public String getPaymentReceiptUrl() {
+        return paymentReceiptUrl;
+    }
+
+    public void setPaymentReceiptUrl(String paymentReceiptUrl) {
+        this.paymentReceiptUrl = paymentReceiptUrl;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public String getPaymentReference() {
+        return paymentReference;
+    }
+
+    public void setPaymentReference(String paymentReference) {
+        this.paymentReference = paymentReference;
     }
 }

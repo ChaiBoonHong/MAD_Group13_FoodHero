@@ -64,6 +64,11 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ViewHold
         holder.tvStock.setText(String.format(Locale.US, "%d left", listing.getRemainingQuantity()));
         holder.tvCountdown.setText(DateTimeUtils.getCountdownText(listing.getPickupEnd()));
 
+        if (holder.tvUrgentLabel != null) {
+            String cd = DateTimeUtils.getCountdownText(listing.getPickupEnd()).replace(" left", "");
+            holder.tvUrgentLabel.setText(String.format(Locale.US, "Ends in %s (%d left)", cd, listing.getRemainingQuantity()));
+        }
+
         holder.tvOriginalPrice.setText(CurrencyUtils.format(listing.getOriginalPrice()));
         holder.tvOriginalPrice.setPaintFlags(holder.tvOriginalPrice.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
         holder.tvDiscountPrice.setText(CurrencyUtils.format(listing.getDiscountedPrice()));
@@ -111,7 +116,7 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ViewHold
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivImage, btnFavourite;
-        TextView tvCategory, tvCountdown, tvStock, tvTitle, tvMerchant, tvDistance, tvRating, tvOriginalPrice, tvDiscountPrice;
+        TextView tvCategory, tvCountdown, tvStock, tvTitle, tvMerchant, tvDistance, tvRating, tvOriginalPrice, tvDiscountPrice, tvUrgentLabel;
         MaterialButton btnReserve;
 
         ViewHolder(@NonNull View itemView) {
@@ -127,6 +132,7 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ViewHold
             tvRating = itemView.findViewById(R.id.tv_rating);
             tvOriginalPrice = itemView.findViewById(R.id.tv_original_price);
             tvDiscountPrice = itemView.findViewById(R.id.tv_discounted_price);
+            tvUrgentLabel = itemView.findViewById(R.id.tv_urgent_label);
             btnReserve = itemView.findViewById(R.id.btn_reserve);
         }
     }

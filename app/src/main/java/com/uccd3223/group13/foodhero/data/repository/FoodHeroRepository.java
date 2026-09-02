@@ -42,8 +42,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import com.uccd3223.group13.foodhero.util.OrderExpirationWorker;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
@@ -59,11 +65,15 @@ public class FoodHeroRepository {
     private final SupabaseStorageService storageService;
     private final SessionManager sessionManager;
     private final LocalCacheRepository localCache;
+    private final Context appContext;
+    private final List<Order> cachedOrders = new CopyOnWriteArrayList<>();
+    private final List<FoodHeroNotification> cachedNotifications = new CopyOnWriteArrayList<>();
     private final ExecutorService executor;
     private final Handler mainHandler;
     private final Gson gson;
 
     private FoodHeroRepository(Context context) {
+        this.appContext = context.getApplicationContext();
         this.sessionManager = SessionManager.getInstance(context);
         this.localCache = LocalCacheRepository.getInstance(context);
         this.executor = Executors.newFixedThreadPool(4);
@@ -85,6 +95,10 @@ public class FoodHeroRepository {
 
         this.restClient = retrofit.create(SupabaseRestClient.class);
         this.storageService = retrofit.create(SupabaseStorageService.class);
+
+        this.cachedOrders.addAll(createSeededOrders());
+        this.cachedNotifications.addAll(createSeededNotifications(UserRole.STUDENT));
+        this.cachedNotifications.addAll(createSeededNotifications(UserRole.MERCHANT));
     }
 
     public static FoodHeroRepository getInstance(Context context) {
@@ -244,10 +258,24 @@ public class FoodHeroRepository {
                 order.setPickupStart(listing.getPickupStart());
                 order.setPickupEnd(listing.getPickupEnd());
                 order.setPickupToken(pickupToken);
-                order.setStatus(OrderStatus.RESERVED);
+                order.setStatus(OrderStatus.AWAITING_PAYMENT);
+                order.setPaymentExpiresAt(System.currentTimeMillis() + (10 * 60 * 1000));
+                order.setPaymentMethod("DUITNOW_QR");
+                order.setPaymentReference(orderCode);
                 order.setListing(listing);
                 order.setMerchant(listing.getMerchant());
                 order.setCreatedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
+
+                cachedOrders.add(0, order);
+
+                // Schedule OrderExpirationWorker with 10-minute delay
+                try {
+                    OneTimeWorkRequest expireRequest = new OneTimeWorkRequest.Builder(OrderExpirationWorker.class)
+                        .setInitialDelay(10, TimeUnit.MINUTES)
+                        .setInputData(new Data.Builder().putString(OrderExpirationWorker.KEY_ORDER_ID, order.getId()).build())
+                        .build();
+                    WorkManager.getInstance(appContext).enqueue(expireRequest);
+                } catch (Exception ignored) {}
 
                 try {
                     Response<List<Order>> resp = restClient.createOrder(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), order).execute();
@@ -274,21 +302,16 @@ public class FoodHeroRepository {
     public void getStudentOrders(ResultCallback<List<Order>> callback) {
         executor.execute(() -> {
             try {
-                String studentId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "student-demo-id";
-                Response<List<Order>> resp = restClient.getStudentOrders(
-                    SupabaseConfig.SUPABASE_ANON_KEY,
-                    getBearer(),
-                    "eq." + studentId,
-                    "created_at.desc"
-                ).execute();
-
-                if (resp.isSuccessful() && resp.body() != null) {
-                    postSuccess(callback, resp.body());
-                } else {
-                    postSuccess(callback, createSeededOrders());
+                // Auto-expire any orders where 10m elapsed without receipt upload
+                long now = System.currentTimeMillis();
+                for (Order o : cachedOrders) {
+                    if (o.getStatus() == OrderStatus.AWAITING_PAYMENT && o.getPaymentExpiresAt() > 0 && now > o.getPaymentExpiresAt()) {
+                        o.setStatus(OrderStatus.EXPIRED);
+                    }
                 }
+                postSuccess(callback, new ArrayList<>(cachedOrders));
             } catch (Exception e) {
-                postSuccess(callback, createSeededOrders());
+                postSuccess(callback, new ArrayList<>(cachedOrders));
             }
         });
     }
@@ -398,23 +421,130 @@ public class FoodHeroRepository {
 
     public void getNotifications(UserRole role, ResultCallback<List<FoodHeroNotification>> callback) {
         executor.execute(() -> {
-            try {
-                String userId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "demo-user";
-                Response<List<FoodHeroNotification>> resp = restClient.getNotifications(
-                    SupabaseConfig.SUPABASE_ANON_KEY,
-                    getBearer(),
-                    "eq." + userId,
-                    "created_at.desc"
-                ).execute();
-
-                if (resp.isSuccessful() && resp.body() != null) {
-                    postSuccess(callback, resp.body());
-                } else {
-                    postSuccess(callback, createSeededNotifications(role));
+            List<FoodHeroNotification> filtered = new ArrayList<>();
+            for (FoodHeroNotification n : cachedNotifications) {
+                if (n.getRecipientRole() == role) {
+                    filtered.add(n);
                 }
-            } catch (Exception e) {
-                postSuccess(callback, createSeededNotifications(role));
             }
+            postSuccess(callback, filtered);
+        });
+    }
+
+    public void submitPaymentReceipt(String orderId, String receiptUrl, ResultCallback<Order> callback) {
+        executor.execute(() -> {
+            Order found = null;
+            for (Order o : cachedOrders) {
+                if (o.getId() != null && o.getId().equals(orderId)) {
+                    found = o;
+                    break;
+                }
+            }
+            if (found != null) {
+                found.setPaymentReceiptUrl(receiptUrl);
+                found.setStatus(OrderStatus.PENDING_VERIFICATION);
+
+                // Create notification for MERCHANT
+                FoodHeroNotification n = new FoodHeroNotification();
+                n.setId("notif-" + UUID.randomUUID().toString().substring(0, 8));
+                n.setRecipientRole(UserRole.MERCHANT);
+                n.setRecipientId(found.getMerchantId());
+                n.setRelatedOrderId(found.getId());
+                n.setEventType(NotificationType.PAYMENT_SUBMITTED);
+                n.setTitle("New Payment Slip Uploaded");
+                n.setMessage(String.format(Locale.US, "Order #%s (RM %.2f) payment receipt submitted. Tap to verify.",
+                    found.getOrderCode(), found.getFinalPaidPrice()));
+                n.setCreatedAt("Just now");
+                cachedNotifications.add(0, n);
+
+                postSuccess(callback, found);
+            } else {
+                postError(callback, new DataError(DataError.CODE_NOT_FOUND, "Order not found"));
+            }
+        });
+    }
+
+    public void verifyPaymentReceipt(String orderId, boolean approved, ResultCallback<Order> callback) {
+        executor.execute(() -> {
+            Order found = null;
+            for (Order o : cachedOrders) {
+                if (o.getId() != null && o.getId().equals(orderId)) {
+                    found = o;
+                    break;
+                }
+            }
+            if (found != null) {
+                if (approved) {
+                    found.setStatus(OrderStatus.RESERVED);
+                    FoodHeroNotification n = new FoodHeroNotification();
+                    n.setId("notif-" + UUID.randomUUID().toString().substring(0, 8));
+                    n.setRecipientRole(UserRole.STUDENT);
+                    n.setRecipientId(found.getStudentId());
+                    n.setRelatedOrderId(found.getId());
+                    n.setEventType(NotificationType.PAYMENT_VERIFIED);
+                    n.setTitle("Payment Verified! Order Confirmed");
+                    n.setMessage(String.format(Locale.US, "Order #%s payment has been verified. Your Pickup QR token is ready!",
+                        found.getOrderCode()));
+                    n.setCreatedAt("Just now");
+                    cachedNotifications.add(0, n);
+                } else {
+                    found.setStatus(OrderStatus.REJECTED);
+                    FoodHeroNotification n = new FoodHeroNotification();
+                    n.setId("notif-" + UUID.randomUUID().toString().substring(0, 8));
+                    n.setRecipientRole(UserRole.STUDENT);
+                    n.setRecipientId(found.getStudentId());
+                    n.setRelatedOrderId(found.getId());
+                    n.setEventType(NotificationType.PAYMENT_REJECTED);
+                    n.setTitle("Payment Verification Failed");
+                    n.setMessage(String.format(Locale.US, "Receipt for Order #%s could not be verified. Please re-upload.",
+                        found.getOrderCode()));
+                    n.setCreatedAt("Just now");
+                    cachedNotifications.add(0, n);
+                }
+                postSuccess(callback, found);
+            } else {
+                postError(callback, new DataError(DataError.CODE_NOT_FOUND, "Order not found"));
+            }
+        });
+    }
+
+    public void checkAndExpireOrder(String orderId) {
+        for (Order o : cachedOrders) {
+            if (o.getId() != null && o.getId().equals(orderId)) {
+                if (o.getStatus() == OrderStatus.AWAITING_PAYMENT && System.currentTimeMillis() > o.getPaymentExpiresAt()) {
+                    o.setStatus(OrderStatus.EXPIRED);
+                    FoodHeroNotification n = new FoodHeroNotification();
+                    n.setId("notif-" + UUID.randomUUID().toString().substring(0, 8));
+                    n.setRecipientRole(UserRole.STUDENT);
+                    n.setRecipientId(o.getStudentId());
+                    n.setRelatedOrderId(o.getId());
+                    n.setEventType(NotificationType.ORDER_EXPIRED);
+                    n.setTitle("Order Expired (Payment Timeout)");
+                    n.setMessage(String.format(Locale.US, "Order #%s was cancelled because receipt was not uploaded within 10 minutes.", o.getOrderCode()));
+                    n.setCreatedAt("Just now");
+                    cachedNotifications.add(0, n);
+                }
+                break;
+            }
+        }
+    }
+
+    public void cancelExpiredOrder(String orderId, ResultCallback<Void> callback) {
+        executor.execute(() -> {
+            checkAndExpireOrder(orderId);
+            postSuccess(callback, null);
+        });
+    }
+
+    public void getMerchantOrders(String merchantId, ResultCallback<List<Order>> callback) {
+        executor.execute(() -> {
+            long now = System.currentTimeMillis();
+            for (Order o : cachedOrders) {
+                if (o.getStatus() == OrderStatus.AWAITING_PAYMENT && o.getPaymentExpiresAt() > 0 && now > o.getPaymentExpiresAt()) {
+                    o.setStatus(OrderStatus.EXPIRED);
+                }
+            }
+            postSuccess(callback, new ArrayList<>(cachedOrders));
         });
     }
 
@@ -570,27 +700,6 @@ public class FoodHeroRepository {
                     postError(callback, error);
                 }
             });
-        });
-    }
-
-    public void getMerchantOrders(String merchantId, ResultCallback<List<Order>> callback) {
-        executor.execute(() -> {
-            try {
-                Response<List<Order>> resp = restClient.getMerchantOrders(
-                    SupabaseConfig.SUPABASE_ANON_KEY,
-                    getBearer(),
-                    "eq." + merchantId,
-                    "created_at.desc"
-                ).execute();
-
-                if (resp.isSuccessful() && resp.body() != null) {
-                    postSuccess(callback, resp.body());
-                } else {
-                    postSuccess(callback, createSeededOrders());
-                }
-            } catch (Exception e) {
-                postSuccess(callback, createSeededOrders());
-            }
         });
     }
 
@@ -863,6 +972,7 @@ public class FoodHeroRepository {
         if (role == UserRole.STUDENT) {
             FoodHeroNotification n1 = new FoodHeroNotification();
             n1.setId("notif-s1");
+            n1.setRecipientRole(UserRole.STUDENT);
             n1.setTitle("New Surplus Food Near You!");
             n1.setMessage("Grand Green Cafe just listed 5 Bento Mystery Bags at Pavilion I.");
             n1.setEventType(NotificationType.NEARBY_LISTING);
@@ -871,6 +981,7 @@ public class FoodHeroRepository {
 
             FoodHeroNotification n2 = new FoodHeroNotification();
             n2.setId("notif-s2");
+            n2.setRecipientRole(UserRole.STUDENT);
             n2.setTitle("Pickup Window Starting Soon");
             n2.setMessage("Order #FH-829104 is ready for pickup between 16:30 and 18:00.");
             n2.setEventType(NotificationType.PICKUP_REMINDER);
@@ -879,6 +990,7 @@ public class FoodHeroRepository {
         } else {
             FoodHeroNotification n1 = new FoodHeroNotification();
             n1.setId("notif-m1");
+            n1.setRecipientRole(UserRole.MERCHANT);
             n1.setTitle("New Reservation Received!");
             n1.setMessage("Student reserved 1 Bento Bag (Order #FH-829104).");
             n1.setEventType(NotificationType.RESERVATION_CREATED);
@@ -887,6 +999,7 @@ public class FoodHeroRepository {
 
             FoodHeroNotification n2 = new FoodHeroNotification();
             n2.setId("notif-m2");
+            n2.setRecipientRole(UserRole.MERCHANT);
             n2.setTitle("New 5-Star Review Received");
             n2.setMessage("A student left a 5-star review for Pastry Surprise Pack.");
             n2.setEventType(NotificationType.REVIEW_RECEIVED);
