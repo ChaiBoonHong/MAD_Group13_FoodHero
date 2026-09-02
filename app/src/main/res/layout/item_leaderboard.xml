@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/spacing_16"
+    android:paddingTop="@dimen/spacing_12"
+    android:paddingEnd="@dimen/spacing_16"
+    android:paddingBottom="@dimen/spacing_12">
+
+    <TextView
+        android:id="@+id/tv_rank"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@drawable/ic_check_circle"
+        android:backgroundTint="@color/colorPrimaryContainer"
+        android:gravity="center"
+        android:text="1"
+        android:textColor="@color/colorPrimary"
+        android:textSize="@dimen/text_size_action"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_faculty_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/spacing_12"
+        android:layout_weight="1"
+        android:text="FICT"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="@dimen/text_size_body"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_rescued_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:text="142 meals"
+        android:textColor="@color/colorPrimary"
+        android:textSize="@dimen/text_size_body"
+        android:textStyle="bold" />
+</LinearLayout>

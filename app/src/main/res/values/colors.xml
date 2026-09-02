@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- FoodHero Eco-Vibrant Locked Palette -->
+    <color name="colorPrimary">#216E39</color>
+    <color name="colorPrimaryDark">#123C25</color>
+    <color name="colorPrimaryContainer">#DDF3E3</color>
+    <color name="colorAccent">#FF9800</color>
+    <color name="colorAccentContainer">#FFF1D6</color>
+    <color name="colorBackground">#F7F8F3</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorTextPrimary">#17211A</color>
+    <color name="colorTextSecondary">#627067</color>
+    <color name="colorError">#B3261E</color>
+    <color name="colorDivider">#E1E7E2</color>
+
+    <!-- UI State and Functional Colors -->
+    <color name="colorSuccess">#216E39</color>
+    <color name="colorWarning">#FF9800</color>
+    <color name="colorDisabled">#BDBDBD</color>
+    <color name="colorSkeleton">#E0E5E1</color>
+    <color name="colorStatusActive">#216E39</color>
+    <color name="colorStatusReserved">#FF9800</color>
+    <color name="colorStatusCompleted">#1E88E5</color>
+    <color name="colorStatusSoldOut">#757575</color>
+    <color name="colorStatusExpired">#B3261E</color>
+
+    <!-- Badge Colors -->
+    <color name="badge_bronze">#CD7F32</color>
+    <color name="badge_silver">#9E9E9E</color>
+    <color name="badge_gold">#FFB300</color>
+    <color name="badge_emerald">#00897B</color>
+
+    <!-- Standard Aliases -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#17211A</color>
+    <color name="transparent">#00000000</color>
+</resources>

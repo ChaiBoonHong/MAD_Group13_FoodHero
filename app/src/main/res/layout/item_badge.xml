@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Widget.FoodHero.Card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/spacing_4"
+    android:layout_marginBottom="@dimen/spacing_4">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/spacing_12">
+
+        <ImageView
+            android:id="@+id/iv_badge_icon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_eco_leaf"
+            app:tint="@color/badge_bronze" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_12"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_badge_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Eco Sprout"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="@dimen/text_size_action"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_badge_description"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_2"
+                android:text="Rescued your 1st surplus meal"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="@dimen/text_size_caption" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_badge_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimaryContainer"
+            android:paddingStart="@dimen/spacing_8"
+            android:paddingTop="@dimen/spacing_4"
+            android:paddingEnd="@dimen/spacing_8"
+            android:paddingBottom="@dimen/spacing_4"
+            android:text="Unlocked"
+            android:textColor="@color/colorPrimary"
+            android:textSize="@dimen/text_size_caption"
+            android:textStyle="bold" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Tree Trunk -->
+    <path
+        android:fillColor="#795548"
+        android:pathData="M22,34 L26,34 L26,44 L22,44 Z" />
+    <!-- Foliage Tier 3 -->
+    <path
+        android:fillColor="#216E39"
+        android:pathData="M24,4 L10,22 L17,22 L8,34 L40,34 L31,22 L38,22 Z" />
+    <!-- Foliage Highlight Tier -->
+    <path
+        android:fillColor="#DDF3E3"
+        android:pathData="M24,8 L16,19 L21,19 L14,29 L34,29 L27,19 L32,19 Z" />
+</vector>

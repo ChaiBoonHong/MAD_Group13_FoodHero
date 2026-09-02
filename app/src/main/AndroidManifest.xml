@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@drawable/ic_foodhero_logo"
+        android:label="@string/app_name"
+        android:roundIcon="@drawable/ic_foodhero_logo"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MAD_Group13_FoodHero">
+
+        <!-- Google Maps API Key Meta-Data -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+
+        <!-- 1. Splash & Session Routing -->
+        <activity
+            android:name=".ui.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FoodHero.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 2. Authentication (Login / Register / Role Selection) -->
+        <activity
+            android:name=".ui.AuthActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 3. Student Home (Feed, Campus Map, Orders, Impact) -->
+        <activity
+            android:name=".ui.StudentHomeActivity"
+            android:exported="false" />
+
+        <!-- 4. Merchant Home (Dashboard, Listings, Orders, Profile) -->
+        <activity
+            android:name=".ui.MerchantHomeActivity"
+            android:exported="false" />
+
+        <!-- 5. Surplus Bag Details -->
+        <activity
+            android:name=".ui.ListingDetailsActivity"
+            android:exported="false" />
+
+        <!-- 6. Reservation Confirmation -->
+        <activity
+            android:name=".ui.ReservationConfirmationActivity"
+            android:exported="false" />
+
+        <!-- 7. Pickup QR Token -->
+        <activity
+            android:name=".ui.QrPickupTokenActivity"
+            android:exported="false" />
+
+        <!-- 8. Review Submission -->
+        <activity
+            android:name=".ui.ReviewActivity"
+            android:exported="false" />
+
+        <!-- 9. Notifications -->
+        <activity
+            android:name=".ui.NotificationsActivity"
+            android:exported="false" />
+
+    </application>
+
+</manifest>

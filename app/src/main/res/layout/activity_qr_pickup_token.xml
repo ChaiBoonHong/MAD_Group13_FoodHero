@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar_qr"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/colorPrimaryDark"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:title="Pickup QR Token"
+        app:titleTextColor="@color/white" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_24">
+
+            <!-- High-Contrast QR Code Card -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.FoodHero.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/white"
+                app:cardElevation="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/spacing_24">
+
+                    <!-- QR Code Bitmap -->
+                    <ImageView
+                        android:id="@+id/iv_qr_code"
+                        android:layout_width="220dp"
+                        android:layout_height="220dp"
+                        android:contentDescription="Pickup QR Code"
+                        android:src="@drawable/ic_qr_code" />
+
+                    <!-- Order Code Monospace Display -->
+                    <TextView
+                        android:id="@+id/tv_qr_order_code"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_16"
+                        android:fontFamily="monospace"
+                        android:letterSpacing="0.1"
+                        android:text="Order #FH-829104"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_4"
+                        android:text="Scan with merchant terminal"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="@dimen/text_size_caption" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Details Card -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.FoodHero.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_16">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/spacing_16">
+
+                    <TextView
+                        android:id="@+id/tv_qr_item_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Surplus Bento Mystery Bag (x1)"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textSize="@dimen/text_size_action"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_qr_merchant_location"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_2"
+                        android:text="Grand Green Cafe • Student Pavilion I"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="@dimen/text_size_body" />
+
+                    <TextView
+                        android:id="@+id/tv_qr_pickup_window"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_8"
+                        android:text="Pickup Window: 16:30 - 18:00 Today"
+                        android:textColor="@color/colorAccent"
+                        android:textSize="@dimen/text_size_body"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="@dimen/spacing_12"
+                        android:layout_marginBottom="@dimen/spacing_12"
+                        android:background="@color/colorDivider" />
+
+                    <TextView
+                        android:id="@+id/tv_qr_manual_code"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="Manual Pickup Code: FH-TOKEN-829104"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="@dimen/text_size_caption" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
