@@ -6,12 +6,12 @@ plugins {
 }
 
 android {
-    namespace = "com.uccd3223.group13.mad_group13_foodhero"
+    namespace = "com.uccd3223.group13.foodhero"
     compileSdk = 36
 
     defaultConfig {
         manifestPlaceholders += mapOf()
-        applicationId = "com.uccd3223.group13.mad_group13_foodhero"
+        applicationId = "com.uccd3223.group13.foodhero"
         minSdk = 28
         targetSdk = 36
         versionCode = 1
