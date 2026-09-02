@@ -37,7 +37,7 @@
                 <ImageView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:padding="@dimen/spacing_10"
+                    android:scaleType="centerCrop"
                     android:contentDescription="@string/app_name"
                     android:src="@drawable/ic_foodhero_logo" />
             </com.google.android.material.card.MaterialCardView>

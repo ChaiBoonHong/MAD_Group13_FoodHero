@@ -33,6 +33,7 @@ proguard/
 # Log Files
 *.log
 *.png
+!foodhero-logo.png
 
 # Android Studio captures & navigation temp files
 captures/

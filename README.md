@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="foodhero-logo.jpeg" alt="FoodHero Logo" width="180" style="border-radius: 36px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);" />
+<img src="foodhero-logo.png" alt="FoodHero Logo" width="180" />
 
 # 🍱 FoodHero (MAD_Group13)
 ### *Save Food. Save Money. Save the Planet.* 🌱
