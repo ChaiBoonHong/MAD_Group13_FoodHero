@@ -10,7 +10,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="@dimen/spacing_16">
+        android:paddingStart="@dimen/spacing_16"
+        android:paddingTop="@dimen/spacing_12"
+        android:paddingEnd="@dimen/spacing_16"
+        android:paddingBottom="@dimen/spacing_24">
 
         <!-- Student Profile Header Card -->
         <com.google.android.material.card.MaterialCardView
@@ -27,9 +30,9 @@
                 android:padding="@dimen/spacing_16">
 
                 <ImageView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:background="@drawable/ic_check_circle"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_circle_container"
                     android:backgroundTint="@color/colorPrimaryContainer"
                     android:contentDescription="@null"
                     android:padding="@dimen/spacing_12"
@@ -49,57 +52,62 @@
                         android:layout_height="wrap_content"
                         android:text="Chai Boon Hong"
                         android:textColor="@color/colorTextPrimary"
-                        android:textSize="@dimen/text_size_title"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tv_student_meta"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_2"
+                        android:layout_marginTop="2dp"
                         android:text="22ACB01234 • FICT"
                         android:textColor="@color/colorTextSecondary"
-                        android:textSize="@dimen/text_size_body" />
+                        android:textSize="@dimen/text_size_sub" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 3 Key Metric Tiles -->
+        <!-- 3 Key Metric Tiles (Bento Grid with Unified Height & Padding) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_12"
+            android:baselineAligned="false"
             android:orientation="horizontal">
 
             <!-- Meals Rescued Tile -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.FoodHero.Card.Metric"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="88dp"
                 android:layout_marginEnd="@dimen/spacing_4"
                 android:layout_weight="1">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="@dimen/spacing_12">
+                    android:padding="@dimen/spacing_8">
 
                     <TextView
                         android:id="@+id/tv_metric_meals"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:ellipsize="end"
                         android:fontFamily="monospace"
+                        android:maxLines="1"
                         android:text="7"
                         android:textColor="@color/colorPrimary"
-                        android:textSize="22sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_2"
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:text="@string/meals_rescued"
                         android:textAlignment="center"
                         android:textColor="@color/colorTextSecondary"
@@ -111,32 +119,36 @@
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.FoodHero.Card.Metric"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="88dp"
                 android:layout_marginStart="@dimen/spacing_4"
                 android:layout_marginEnd="@dimen/spacing_4"
                 android:layout_weight="1">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="@dimen/spacing_12">
+                    android:padding="@dimen/spacing_8">
 
                     <TextView
                         android:id="@+id/tv_metric_money"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:ellipsize="end"
                         android:fontFamily="monospace"
+                        android:maxLines="1"
                         android:text="RM 38.50"
-                        android:textColor="@color/colorAccent"
-                        android:textSize="16sp"
+                        android:textColor="@color/colorAccentDark"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_2"
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:text="@string/money_saved"
                         android:textAlignment="center"
                         android:textColor="@color/colorTextSecondary"
@@ -148,31 +160,35 @@
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.FoodHero.Card.Metric"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="88dp"
                 android:layout_marginStart="@dimen/spacing_4"
                 android:layout_weight="1">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="@dimen/spacing_12">
+                    android:padding="@dimen/spacing_8">
 
                     <TextView
                         android:id="@+id/tv_metric_co2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:ellipsize="end"
                         android:fontFamily="monospace"
+                        android:maxLines="1"
                         android:text="8.4 kg"
                         android:textColor="@color/colorPrimary"
-                        android:textSize="20sp"
+                        android:textSize="17sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_2"
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:text="@string/co2_offset"
                         android:textAlignment="center"
                         android:textColor="@color/colorTextSecondary"
@@ -196,8 +212,8 @@
                 android:padding="@dimen/spacing_16">
 
                 <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_tree" />
 
@@ -251,9 +267,20 @@
                 android:orientation="horizontal"
                 android:padding="@dimen/spacing_16">
 
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_circle_container"
+                    android:backgroundTint="@color/colorPrimaryContainer"
+                    android:contentDescription="@null"
+                    android:padding="@dimen/spacing_10"
+                    android:src="@drawable/ic_eco_leaf"
+                    app:tint="@color/colorPrimary" />
+
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_14"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -261,28 +288,27 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/eco_points"
-                        android:textColor="@color/colorTextPrimary"
-                        android:textSize="@dimen/text_size_action"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="@dimen/text_size_caption"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tv_points_balance"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_2"
-                        android:fontFamily="monospace"
+                        android:layout_marginTop="2dp"
                         android:text="120 Points"
                         android:textColor="@color/colorPrimary"
-                        android:textSize="@dimen/text_size_title"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_2"
+                        android:layout_marginTop="2dp"
                         android:text="100 pts = RM5.00 off at reservation"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="@dimen/text_size_caption" />
+                        android:textColor="@color/colorTextTertiary"
+                        android:textSize="11sp" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -332,7 +358,7 @@
             android:id="@+id/btn_logout"
             style="@style/Widget.FoodHero.Button.Secondary"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:layout_marginTop="@dimen/spacing_24"
             android:layout_marginBottom="@dimen/spacing_24"
             android:text="@string/logout"

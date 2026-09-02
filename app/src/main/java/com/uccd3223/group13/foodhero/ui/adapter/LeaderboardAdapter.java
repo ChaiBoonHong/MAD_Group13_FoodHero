@@ -45,18 +45,19 @@ public class LeaderboardAdapter extends RecyclerView.Adapter<LeaderboardAdapter.
         holder.tvFaculty.setText(entry.getFaculty());
         holder.tvCount.setText(String.format(Locale.US, "%d meals", entry.getTotalRescued()));
 
+        holder.tvRank.setBackgroundResource(R.drawable.bg_circle_container);
         if (entry.getRank() == 1) {
-            holder.tvRank.setBackgroundColor(context.getResources().getColor(R.color.badge_gold));
-            holder.tvRank.setTextColor(context.getResources().getColor(R.color.white));
+            holder.tvRank.setBackgroundTintList(androidx.core.content.ContextCompat.getColorStateList(context, R.color.badge_gold));
+            holder.tvRank.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.white));
         } else if (entry.getRank() == 2) {
-            holder.tvRank.setBackgroundColor(context.getResources().getColor(R.color.badge_silver));
-            holder.tvRank.setTextColor(context.getResources().getColor(R.color.white));
+            holder.tvRank.setBackgroundTintList(androidx.core.content.ContextCompat.getColorStateList(context, R.color.badge_silver));
+            holder.tvRank.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.white));
         } else if (entry.getRank() == 3) {
-            holder.tvRank.setBackgroundColor(context.getResources().getColor(R.color.badge_bronze));
-            holder.tvRank.setTextColor(context.getResources().getColor(R.color.white));
+            holder.tvRank.setBackgroundTintList(androidx.core.content.ContextCompat.getColorStateList(context, R.color.badge_bronze));
+            holder.tvRank.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.white));
         } else {
-            holder.tvRank.setBackgroundColor(context.getResources().getColor(R.color.colorPrimaryContainer));
-            holder.tvRank.setTextColor(context.getResources().getColor(R.color.colorPrimary));
+            holder.tvRank.setBackgroundTintList(androidx.core.content.ContextCompat.getColorStateList(context, R.color.colorPrimaryContainer));
+            holder.tvRank.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.colorPrimary));
         }
     }
 

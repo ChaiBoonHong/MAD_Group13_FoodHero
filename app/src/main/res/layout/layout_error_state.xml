@@ -10,10 +10,10 @@
     android:visibility="gone">
 
     <ImageView
-        android:layout_width="72dp"
-        android:layout_height="72dp"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         android:contentDescription="@null"
-        android:src="@drawable/ic_check_circle"
+        android:src="@drawable/ic_error"
         app:tint="@color/colorError" />
 
     <TextView

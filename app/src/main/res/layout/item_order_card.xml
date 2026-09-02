@@ -30,22 +30,21 @@
                 android:fontFamily="monospace"
                 android:text="Order #FH-829104"
                 android:textColor="@color/colorTextPrimary"
-                android:textSize="@dimen/text_size_action"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tv_order_status"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/ic_check_circle"
+                android:layout_height="24dp"
+                android:background="@drawable/bg_badge_pill"
                 android:backgroundTint="@color/colorAccent"
-                android:paddingStart="@dimen/spacing_8"
-                android:paddingTop="@dimen/spacing_4"
-                android:paddingEnd="@dimen/spacing_8"
-                android:paddingBottom="@dimen/spacing_4"
+                android:gravity="center"
+                android:paddingStart="@dimen/spacing_10"
+                android:paddingEnd="@dimen/spacing_10"
                 android:text="RESERVED"
                 android:textColor="@color/white"
-                android:textSize="@dimen/text_size_caption"
+                android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -56,24 +55,25 @@
             android:layout_marginTop="@dimen/spacing_8"
             android:text="Surplus Bento Mystery Bag (x1)"
             android:textColor="@color/colorTextPrimary"
-            android:textSize="@dimen/text_size_action" />
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_order_merchant"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_2"
+            android:layout_marginTop="2dp"
             android:text="Grand Green Cafe • Student Pavilion I"
             android:textColor="@color/colorTextSecondary"
-            android:textSize="@dimen/text_size_body" />
+            android:textSize="@dimen/text_size_sub" />
 
         <TextView
             android:id="@+id/tv_order_pickup_time"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_4"
+            android:layout_marginTop="@dimen/spacing_6"
             android:text="Pickup: 16:30 - 18:00 Today"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/colorAccentDark"
             android:textSize="@dimen/text_size_caption"
             android:textStyle="bold" />
 
@@ -111,7 +111,7 @@
                     android:fontFamily="monospace"
                     android:text="RM 5.50"
                     android:textColor="@color/colorPrimary"
-                    android:textSize="@dimen/text_size_title"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -119,15 +119,21 @@
                 android:id="@+id/btn_view_qr"
                 style="@style/Widget.FoodHero.Button.Primary"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="View QR" />
+                android:layout_height="38dp"
+                android:paddingStart="@dimen/spacing_16"
+                android:paddingEnd="@dimen/spacing_16"
+                android:text="View QR"
+                android:textSize="13sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_rate_order"
                 style="@style/Widget.FoodHero.Button.Secondary"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="38dp"
+                android:paddingStart="@dimen/spacing_16"
+                android:paddingEnd="@dimen/spacing_16"
                 android:text="Rate"
+                android:textSize="13sp"
                 android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>

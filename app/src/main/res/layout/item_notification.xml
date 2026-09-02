@@ -1,63 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/ll_notification_item"
+    style="@style/Widget.FoodHero.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/colorSurface"
-    android:orientation="horizontal"
-    android:padding="@dimen/spacing_16">
-
-    <ImageView
-        android:id="@+id/iv_notif_icon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="@color/colorPrimaryContainer"
-        android:contentDescription="@null"
-        android:padding="@dimen/spacing_8"
-        android:src="@drawable/ic_notifications"
-        app:tint="@color/colorPrimary" />
+    android:layout_marginStart="@dimen/spacing_16"
+    android:layout_marginTop="@dimen/spacing_4"
+    android:layout_marginEnd="@dimen/spacing_16"
+    android:layout_marginBottom="@dimen/spacing_4"
+    app:cardBackgroundColor="@color/colorSurface">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:id="@+id/ll_notification_item"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/spacing_12"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/spacing_14">
 
-        <TextView
-            android:id="@+id/tv_notif_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="New Surplus Food Near You!"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="@dimen/text_size_action"
-            android:textStyle="bold" />
+        <ImageView
+            android:id="@+id/iv_notif_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_circle_container"
+            android:backgroundTint="@color/colorPrimaryContainer"
+            android:contentDescription="@null"
+            android:padding="@dimen/spacing_10"
+            android:src="@drawable/ic_notifications"
+            app:tint="@color/colorPrimary" />
 
-        <TextView
-            android:id="@+id/tv_notif_message"
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_2"
-            android:text="Grand Green Cafe just listed 5 Bento Mystery Bags."
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="@dimen/text_size_body" />
+            android:layout_marginStart="@dimen/spacing_12"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tv_notif_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_4"
-            android:text="10 mins ago"
-            android:textColor="@color/colorTextSecondary"
-            android:textSize="@dimen/text_size_caption" />
+            <TextView
+                android:id="@+id/tv_notif_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="New Surplus Food Near You!"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_notif_message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Grand Green Cafe just listed 5 Bento Mystery Bags."
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="@dimen/text_size_sub" />
+
+            <TextView
+                android:id="@+id/tv_notif_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_4"
+                android:text="10 mins ago"
+                android:textColor="@color/colorTextTertiary"
+                android:textSize="@dimen/text_size_caption" />
+        </LinearLayout>
+
+        <View
+            android:id="@+id/view_unread_dot"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="@dimen/spacing_8"
+            android:background="@drawable/bg_circle_container"
+            android:backgroundTint="@color/colorAccent" />
     </LinearLayout>
-
-    <View
-        android:id="@+id/view_unread_dot"
-        android:layout_width="10dp"
-        android:layout_height="10dp"
-        android:layout_gravity="center_vertical"
-        android:layout_marginStart="@dimen/spacing_8"
-        android:background="@color/colorAccent" />
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

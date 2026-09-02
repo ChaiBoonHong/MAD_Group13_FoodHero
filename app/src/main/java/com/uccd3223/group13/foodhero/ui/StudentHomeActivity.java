@@ -95,8 +95,10 @@ public class StudentHomeActivity extends AppCompatActivity {
         realtimeClient.subscribe(userId, new SupabaseRealtimeClient.NotificationListener() {
             @Override
             public void onNotificationReceived(FoodHeroNotification notification) {
-                unreadCount++;
-                updateBadgeCount();
+                runOnUiThread(() -> {
+                    unreadCount++;
+                    updateBadgeCount();
+                });
             }
         });
     }

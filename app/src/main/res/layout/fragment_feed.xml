@@ -20,13 +20,11 @@
             android:paddingEnd="@dimen/spacing_16"
             android:paddingBottom="@dimen/spacing_8">
 
-            <!-- Search Bar -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.FoodHero.Card"
+            <!-- Modern Search Bar (Pill with crisp border) -->
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                app:cardBackgroundColor="@color/colorSurface"
-                app:cardCornerRadius="24dp">
+                android:layout_height="46dp"
+                android:background="@drawable/bg_search_bar">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -34,7 +32,7 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingStart="@dimen/spacing_16"
-                    android:paddingEnd="@dimen/spacing_16">
+                    android:paddingEnd="@dimen/spacing_12">
 
                     <ImageView
                         android:layout_width="20dp"
@@ -47,33 +45,34 @@
                         android:id="@+id/et_search_feed"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="@dimen/spacing_8"
+                        android:layout_marginStart="@dimen/spacing_10"
                         android:layout_weight="1"
                         android:background="@null"
                         android:hint="@string/search_hint"
                         android:imeOptions="actionSearch"
                         android:inputType="text"
                         android:textColor="@color/colorTextPrimary"
-                        android:textColorHint="@color/colorTextSecondary"
+                        android:textColorHint="@color/colorTextTertiary"
                         android:textSize="@dimen/text_size_body" />
 
                     <ImageView
                         android:id="@+id/btn_clear_search"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="Clear search"
-                        android:src="@drawable/ic_check_circle"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_close"
                         android:visibility="gone"
                         app:tint="@color/colorTextSecondary" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </FrameLayout>
 
             <!-- Horizontal Category / Filter Chips -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_8"
+                android:layout_marginTop="@dimen/spacing_10"
                 android:scrollbars="none">
 
                 <com.google.android.material.chip.ChipGroup

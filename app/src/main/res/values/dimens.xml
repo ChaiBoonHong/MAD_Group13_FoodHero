@@ -1,34 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Spacing (8-point grid) -->
+    <!-- Spacing Scale (4-point / 8-point Grid) -->
     <dimen name="spacing_2">2dp</dimen>
     <dimen name="spacing_4">4dp</dimen>
+    <dimen name="spacing_6">6dp</dimen>
     <dimen name="spacing_8">8dp</dimen>
+    <dimen name="spacing_10">10dp</dimen>
     <dimen name="spacing_12">12dp</dimen>
+    <dimen name="spacing_14">14dp</dimen>
     <dimen name="spacing_16">16dp</dimen>
+    <dimen name="spacing_18">18dp</dimen>
+    <dimen name="spacing_20">20dp</dimen>
     <dimen name="spacing_24">24dp</dimen>
     <dimen name="spacing_32">32dp</dimen>
     <dimen name="spacing_48">48dp</dimen>
 
-    <!-- Corner Radii -->
-    <dimen name="corner_card">16dp</dimen>
-    <dimen name="corner_button">14dp</dimen>
-    <dimen name="corner_bottom_sheet">24dp</dimen>
-    <dimen name="corner_chip">999dp</dimen>
+    <!-- Standardized 4-Tier Corner Radii (Bento Grid System) -->
     <dimen name="corner_badge">8dp</dimen>
+    <dimen name="corner_input">12dp</dimen>
+    <dimen name="corner_button">12dp</dimen>
+    <dimen name="corner_card">16dp</dimen>
+    <dimen name="corner_card_large">20dp</dimen>
+    <dimen name="corner_bottom_sheet">24dp</dimen>
+    <dimen name="corner_pill">999dp</dimen>
+    <dimen name="corner_chip">999dp</dimen>
 
-    <!-- Typography -->
-    <dimen name="text_size_display">28sp</dimen>
-    <dimen name="text_size_title">20sp</dimen>
-    <dimen name="text_size_action">16sp</dimen>
+    <!-- Typography Scale -->
+    <dimen name="text_size_hero">32sp</dimen>
+    <dimen name="text_size_display">24sp</dimen>
+    <dimen name="text_size_title">18sp</dimen>
+    <dimen name="text_size_action">15sp</dimen>
     <dimen name="text_size_body">14sp</dimen>
+    <dimen name="text_size_sub">13sp</dimen>
     <dimen name="text_size_caption">12sp</dimen>
+    <dimen name="text_size_micro">10sp</dimen>
 
-    <!-- Minimum Touch Target -->
+    <!-- Standard Component Heights & Touch Targets -->
     <dimen name="min_touch_target">48dp</dimen>
+    <dimen name="button_height_primary">48dp</dimen>
+    <dimen name="button_height_sm">36dp</dimen>
+    <dimen name="input_height">52dp</dimen>
+    <dimen name="badge_height_sm">24dp</dimen>
+    <dimen name="metric_tile_min_height">84dp</dimen>
 
-    <!-- Elevation -->
+    <!-- Elevation Scale (Subtle & Crisp) -->
+    <dimen name="elevation_flat">0dp</dimen>
     <dimen name="elevation_card">2dp</dimen>
-    <dimen name="elevation_card_elevated">6dp</dimen>
-    <dimen name="elevation_bottom_sheet">16dp</dimen>
+    <dimen name="elevation_card_elevated">4dp</dimen>
+    <dimen name="elevation_bottom_sheet">12dp</dimen>
 </resources>

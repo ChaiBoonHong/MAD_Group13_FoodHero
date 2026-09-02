@@ -17,10 +17,10 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Image Banner Frame -->
+        <!-- Image Banner Frame (180dp with subtle scrim & rounded badges) -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="180dp">
+            android:layout_height="170dp">
 
             <ImageView
                 android:id="@+id/iv_listing_image"
@@ -30,57 +30,65 @@
                 android:scaleType="centerCrop"
                 android:src="@drawable/ic_food_placeholder" />
 
+            <!-- Bottom subtle gradient scrim -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_gravity="bottom"
+                android:background="@drawable/bg_gradient_scrim_bottom" />
+
             <!-- Category Badge -->
             <TextView
                 android:id="@+id/tv_category_badge"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="24dp"
                 android:layout_gravity="top|start"
                 android:layout_margin="@dimen/spacing_12"
-                android:background="@drawable/ic_check_circle"
+                android:background="@drawable/bg_badge_pill"
                 android:backgroundTint="@color/colorPrimary"
-                android:paddingStart="@dimen/spacing_8"
-                android:paddingTop="@dimen/spacing_4"
-                android:paddingEnd="@dimen/spacing_8"
-                android:paddingBottom="@dimen/spacing_4"
+                android:gravity="center"
+                android:paddingStart="@dimen/spacing_10"
+                android:paddingEnd="@dimen/spacing_10"
                 android:text="Meals"
                 android:textColor="@color/white"
-                android:textSize="@dimen/text_size_caption"
+                android:textSize="11sp"
                 android:textStyle="bold" />
 
-            <!-- Favourite Button -->
+            <!-- Favourite Button with Circular Scrim -->
             <ImageView
                 android:id="@+id/btn_favourite"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:layout_gravity="top|end"
-                android:layout_margin="@dimen/spacing_8"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_margin="@dimen/spacing_10"
+                android:background="@drawable/bg_circle_container"
+                android:backgroundTint="@color/scrim_pill_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
                 android:contentDescription="Favourite"
-                android:padding="@dimen/spacing_8"
                 android:src="@drawable/ic_heart_outline"
                 app:tint="@color/white" />
 
             <!-- Pickup Window / Countdown Pill Overlay -->
             <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="24dp"
                 android:layout_gravity="bottom|start"
-                android:layout_margin="@dimen/spacing_12"
-                android:background="@color/colorAccentContainer"
+                android:layout_margin="@dimen/spacing_10"
+                android:background="@drawable/bg_badge_pill"
+                android:backgroundTint="@color/colorAccentContainer"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingStart="@dimen/spacing_8"
-                android:paddingTop="@dimen/spacing_4"
-                android:paddingEnd="@dimen/spacing_8"
-                android:paddingBottom="@dimen/spacing_4">
+                android:paddingEnd="@dimen/spacing_10">
 
                 <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_clock"
-                    app:tint="@color/colorAccent" />
+                    app:tint="@color/colorAccentDark" />
 
                 <TextView
                     android:id="@+id/tv_countdown"
@@ -90,7 +98,7 @@
                     android:fontFamily="monospace"
                     android:text="1h 30m left"
                     android:textColor="@color/colorTextPrimary"
-                    android:textSize="@dimen/text_size_caption"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -98,17 +106,17 @@
             <TextView
                 android:id="@+id/tv_stock_badge"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="24dp"
                 android:layout_gravity="bottom|end"
-                android:layout_margin="@dimen/spacing_12"
-                android:background="@color/colorPrimaryContainer"
-                android:paddingStart="@dimen/spacing_8"
-                android:paddingTop="@dimen/spacing_4"
-                android:paddingEnd="@dimen/spacing_8"
-                android:paddingBottom="@dimen/spacing_4"
+                android:layout_margin="@dimen/spacing_10"
+                android:background="@drawable/bg_badge_pill"
+                android:backgroundTint="@color/colorPrimaryContainer"
+                android:gravity="center"
+                android:paddingStart="@dimen/spacing_10"
+                android:paddingEnd="@dimen/spacing_10"
                 android:text="3 left"
                 android:textColor="@color/colorPrimary"
-                android:textSize="@dimen/text_size_caption"
+                android:textSize="11sp"
                 android:textStyle="bold" />
         </FrameLayout>
 
@@ -117,7 +125,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/spacing_16">
+            android:paddingStart="@dimen/spacing_16"
+            android:paddingTop="@dimen/spacing_12"
+            android:paddingEnd="@dimen/spacing_16"
+            android:paddingBottom="@dimen/spacing_16">
 
             <!-- Title & Merchant -->
             <TextView
@@ -128,19 +139,19 @@
                 android:maxLines="1"
                 android:text="Surplus Bento Mystery Bag"
                 android:textColor="@color/colorTextPrimary"
-                android:textSize="@dimen/text_size_title"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tv_merchant_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_2"
+                android:layout_marginTop="2dp"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Grand Green Cafe • Student Pavilion I"
                 android:textColor="@color/colorTextSecondary"
-                android:textSize="@dimen/text_size_body" />
+                android:textSize="@dimen/text_size_sub" />
 
             <!-- Location & Rating Row -->
             <LinearLayout
@@ -151,8 +162,8 @@
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_location"
                     app:tint="@color/colorPrimary" />
@@ -168,8 +179,8 @@
                     android:textSize="@dimen/text_size_caption" />
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_star" />
 
@@ -187,8 +198,8 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_marginTop="@dimen/spacing_12"
-                android:layout_marginBottom="@dimen/spacing_12"
+                android:layout_marginTop="@dimen/spacing_10"
+                android:layout_marginBottom="@dimen/spacing_10"
                 android:background="@color/colorDivider" />
 
             <!-- Pricing & Reserve Row -->
@@ -209,8 +220,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RM 12.50"
-                        android:textColor="@color/colorTextSecondary"
-                        android:textSize="@dimen/text_size_caption" />
+                        android:textColor="@color/colorTextTertiary"
+                        android:textSize="11sp" />
 
                     <TextView
                         android:id="@+id/tv_discounted_price"
@@ -218,8 +229,8 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
                         android:text="RM 5.50"
-                        android:textColor="@color/colorAccent"
-                        android:textSize="@dimen/text_size_title"
+                        android:textColor="@color/colorAccentDark"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -227,8 +238,11 @@
                     android:id="@+id/btn_reserve"
                     style="@style/Widget.FoodHero.Button.Accent"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Reserve" />
+                    android:layout_height="38dp"
+                    android:paddingStart="@dimen/spacing_16"
+                    android:paddingEnd="@dimen/spacing_16"
+                    android:text="Reserve"
+                    android:textSize="13sp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

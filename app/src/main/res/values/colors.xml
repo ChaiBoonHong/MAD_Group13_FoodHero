@@ -1,37 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- FoodHero Eco-Vibrant Locked Palette -->
+    <!-- FoodHero Eco-Clean Palette (Option A: Bento FoodTech) -->
     <color name="colorPrimary">#216E39</color>
     <color name="colorPrimaryDark">#123C25</color>
-    <color name="colorPrimaryContainer">#DDF3E3</color>
-    <color name="colorAccent">#FF9800</color>
-    <color name="colorAccentContainer">#FFF1D6</color>
-    <color name="colorBackground">#F7F8F3</color>
+    <color name="colorPrimaryContainer">#E6F4EA</color>
+    <color name="colorAccent">#F59E0B</color>
+    <color name="colorAccentDark">#D97706</color>
+    <color name="colorAccentContainer">#FEF3C7</color>
+    
+    <!-- Background & Clean Surface -->
+    <color name="colorBackground">#F8FAF8</color>
     <color name="colorSurface">#FFFFFF</color>
-    <color name="colorTextPrimary">#17211A</color>
-    <color name="colorTextSecondary">#627067</color>
-    <color name="colorError">#B3261E</color>
-    <color name="colorDivider">#E1E7E2</color>
+    <color name="colorSurfaceVariant">#F1F5F2</color>
+    <color name="colorTextPrimary">#0F172A</color>
+    <color name="colorTextSecondary">#64748B</color>
+    <color name="colorTextTertiary">#94A3B8</color>
+    <color name="colorError">#DC2626</color>
+    <color name="colorErrorContainer">#FEE2E2</color>
+    <color name="colorDivider">#E2E8F0</color>
+    <color name="colorCardBorder">#E5E7EB</color>
 
     <!-- UI State and Functional Colors -->
-    <color name="colorSuccess">#216E39</color>
-    <color name="colorWarning">#FF9800</color>
-    <color name="colorDisabled">#BDBDBD</color>
-    <color name="colorSkeleton">#E0E5E1</color>
-    <color name="colorStatusActive">#216E39</color>
-    <color name="colorStatusReserved">#FF9800</color>
-    <color name="colorStatusCompleted">#1E88E5</color>
-    <color name="colorStatusSoldOut">#757575</color>
-    <color name="colorStatusExpired">#B3261E</color>
+    <color name="colorSuccess">#16A34A</color>
+    <color name="colorSuccessContainer">#DCFCE7</color>
+    <color name="colorWarning">#F59E0B</color>
+    <color name="colorDisabled">#CBD5E1</color>
+    <color name="colorSkeleton">#E2E8F0</color>
+    <color name="colorStatusActive">#16A34A</color>
+    <color name="colorStatusReserved">#D97706</color>
+    <color name="colorStatusCompleted">#2563EB</color>
+    <color name="colorStatusSoldOut">#64748B</color>
+    <color name="colorStatusExpired">#DC2626</color>
 
     <!-- Badge Colors -->
     <color name="badge_bronze">#CD7F32</color>
-    <color name="badge_silver">#9E9E9E</color>
-    <color name="badge_gold">#FFB300</color>
-    <color name="badge_emerald">#00897B</color>
+    <color name="badge_silver">#94A3B8</color>
+    <color name="badge_gold">#EAB308</color>
+    <color name="badge_emerald">#059669</color>
+
+    <!-- Scrim / Overlays -->
+    <color name="scrim_dark">#66000000</color>
+    <color name="scrim_pill_button">#40000000</color>
 
     <!-- Standard Aliases -->
     <color name="white">#FFFFFF</color>
-    <color name="black">#17211A</color>
+    <color name="black">#0F172A</color>
     <color name="transparent">#00000000</color>
 </resources>

@@ -7,7 +7,7 @@
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="240dp"
+        android:layout_height="220dp"
         android:background="@color/colorPrimaryDark"
         android:fitsSystemWindows="true">
 
@@ -15,16 +15,37 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:contentScrim="@color/colorPrimaryDark"
+            app:expandedTitleMarginBottom="16dp"
+            app:expandedTitleMarginStart="16dp"
             app:layout_scrollFlags="scroll|exitUntilCollapsed">
 
-            <ImageView
-                android:id="@+id/iv_details_hero"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_food_placeholder"
-                app:layout_collapseMode="parallax" />
+                app:layout_collapseMode="parallax">
+
+                <ImageView
+                    android:id="@+id/iv_details_hero"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_food_placeholder" />
+
+                <!-- Top Scrim for back button -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:layout_gravity="top"
+                    android:background="@drawable/bg_gradient_scrim_top" />
+
+                <!-- Bottom Scrim for title text -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:layout_gravity="bottom"
+                    android:background="@drawable/bg_gradient_scrim_bottom" />
+            </FrameLayout>
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar_details"
@@ -32,6 +53,7 @@
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin"
                 app:navigationIcon="@drawable/ic_arrow_back"
+                app:navigationIconTint="@color/white"
                 app:title="Surplus Bag Details"
                 app:titleTextColor="@color/white" />
         </com.google.android.material.appbar.CollapsingToolbarLayout>
@@ -56,31 +78,32 @@
                 android:layout_height="wrap_content"
                 android:text="Surplus Bento Mystery Bag"
                 android:textColor="@color/colorTextPrimary"
-                android:textSize="22sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tv_details_merchant"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_4"
+                android:layout_marginTop="2dp"
                 android:text="Grand Green Cafe • Student Pavilion I"
                 android:textColor="@color/colorTextSecondary"
-                android:textSize="@dimen/text_size_body" />
+                android:textSize="@dimen/text_size_sub" />
 
-            <!-- Price & Savings Card -->
+            <!-- Price & Savings Bento Card -->
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.FoodHero.Card.Impact"
+                style="@style/Widget.FoodHero.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_12">
+                android:layout_marginTop="@dimen/spacing_12"
+                app:cardBackgroundColor="@color/colorSurface">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:padding="@dimen/spacing_12">
+                    android:padding="@dimen/spacing_14">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -93,8 +116,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Original: RM 12.50"
-                            android:textColor="@color/colorTextSecondary"
-                            android:textSize="@dimen/text_size_caption" />
+                            android:textColor="@color/colorTextTertiary"
+                            android:textSize="11sp" />
 
                         <TextView
                             android:id="@+id/tv_details_discount_price"
@@ -102,23 +125,23 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="monospace"
                             android:text="RM 5.50"
-                            android:textColor="@color/colorAccent"
-                            android:textSize="24sp"
+                            android:textColor="@color/colorAccentDark"
+                            android:textSize="22sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
                     <TextView
                         android:id="@+id/tv_details_savings"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@color/colorPrimary"
-                        android:paddingStart="@dimen/spacing_8"
-                        android:paddingTop="@dimen/spacing_4"
-                        android:paddingEnd="@dimen/spacing_8"
-                        android:paddingBottom="@dimen/spacing_4"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_badge_pill"
+                        android:backgroundTint="@color/colorPrimary"
+                        android:gravity="center"
+                        android:paddingStart="@dimen/spacing_12"
+                        android:paddingEnd="@dimen/spacing_12"
                         android:text="Save RM 7.00 (56% OFF)"
                         android:textColor="@color/white"
-                        android:textSize="@dimen/text_size_caption"
+                        android:textSize="11sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -128,13 +151,13 @@
                 style="@style/Widget.FoodHero.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_12">
+                android:layout_marginTop="@dimen/spacing_10">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="@dimen/spacing_12">
+                    android:padding="@dimen/spacing_14">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -143,11 +166,11 @@
                         android:orientation="horizontal">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_clock"
-                            app:tint="@color/colorAccent" />
+                            app:tint="@color/colorAccentDark" />
 
                         <TextView
                             android:id="@+id/tv_details_pickup_window"
@@ -156,7 +179,7 @@
                             android:layout_marginStart="@dimen/spacing_8"
                             android:text="Pickup Window: 16:30 - 18:00 Today"
                             android:textColor="@color/colorTextPrimary"
-                            android:textSize="@dimen/text_size_body"
+                            android:textSize="@dimen/text_size_sub"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -168,8 +191,8 @@
                         android:orientation="horizontal">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_location"
                             app:tint="@color/colorPrimary" />
@@ -181,7 +204,7 @@
                             android:layout_marginStart="@dimen/spacing_8"
                             android:text="Student Pavilion I, Cafeteria Station 3"
                             android:textColor="@color/colorTextSecondary"
-                            android:textSize="@dimen/text_size_body" />
+                            android:textSize="@dimen/text_size_caption" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -201,38 +224,43 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_4"
-                android:lineSpacingExtra="4dp"
+                android:lineSpacingExtra="3dp"
                 android:text="Contains a full nutritious Bento meal freshly prepared today: chicken cutlet, stir-fried vegetables, and steamed rice. 100% edible surplus."
                 android:textColor="@color/colorTextSecondary"
-                android:textSize="@dimen/text_size_body" />
+                android:textSize="@dimen/text_size_sub" />
 
-            <!-- Eco Impact Estimate -->
-            <LinearLayout
+            <!-- Eco Impact Estimate Card -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.FoodHero.Card.Impact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_12"
-                android:background="@color/colorPrimaryContainer"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="@dimen/spacing_12">
+                android:layout_marginTop="@dimen/spacing_12">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_eco_leaf"
-                    app:tint="@color/colorPrimary" />
-
-                <TextView
-                    android:id="@+id/tv_details_co2"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/spacing_8"
-                    android:text="Rescuing this bag prevents ~1.8 kg CO₂ emissions."
-                    android:textColor="@color/colorPrimaryDark"
-                    android:textSize="@dimen/text_size_body"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/spacing_12">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_eco_leaf"
+                        app:tint="@color/colorPrimary" />
+
+                    <TextView
+                        android:id="@+id/tv_details_co2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/spacing_8"
+                        android:text="Rescuing this bag prevents ~1.8 kg CO₂ emissions."
+                        android:textColor="@color/colorPrimaryDark"
+                        android:textSize="@dimen/text_size_sub"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Quantity Selector & Points Switch -->
             <View
@@ -257,46 +285,56 @@
                     android:textSize="@dimen/text_size_action"
                     android:textStyle="bold" />
 
+                <!-- Capsule Quantity Selector -->
                 <LinearLayout
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_quantity_capsule"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_qty_minus"
                         style="@style/Widget.FoodHero.Button.Secondary"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:insetLeft="0dp"
                         android:insetTop="0dp"
                         android:insetRight="0dp"
                         android:insetBottom="0dp"
                         android:padding="0dp"
-                        android:text="-" />
+                        android:text="-"
+                        android:textSize="14sp"
+                        app:cornerRadius="14dp"
+                        app:strokeWidth="0dp" />
 
                     <TextView
                         android:id="@+id/tv_qty_count"
-                        android:layout_width="40dp"
+                        android:layout_width="32dp"
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
                         android:gravity="center"
                         android:text="1"
                         android:textColor="@color/colorTextPrimary"
-                        android:textSize="@dimen/text_size_action"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_qty_plus"
                         style="@style/Widget.FoodHero.Button.Secondary"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:insetLeft="0dp"
                         android:insetTop="0dp"
                         android:insetRight="0dp"
                         android:insetBottom="0dp"
                         android:padding="0dp"
-                        android:text="+" />
+                        android:text="+"
+                        android:textSize="14sp"
+                        app:cornerRadius="14dp"
+                        app:strokeWidth="0dp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -322,13 +360,13 @@
 
     <!-- Sticky Bottom Action Button -->
     <com.google.android.material.card.MaterialCardView
-        style="@style/Widget.FoodHero.Card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         app:cardBackgroundColor="@color/colorSurface"
         app:cardCornerRadius="0dp"
-        app:cardElevation="16dp">
+        app:cardElevation="12dp"
+        app:strokeWidth="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -340,7 +378,7 @@
                 android:id="@+id/btn_reserve_sticky"
                 style="@style/Widget.FoodHero.Button.Accent"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:text="Reserve for RM 5.50" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

@@ -4,13 +4,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorBackground"
+    android:fitsSystemWindows="true"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="@dimen/spacing_24">
+        android:paddingStart="@dimen/spacing_20"
+        android:paddingTop="@dimen/spacing_16"
+        android:paddingEnd="@dimen/spacing_20"
+        android:paddingBottom="@dimen/spacing_24">
 
         <!-- Logo & Header -->
         <LinearLayout
@@ -18,19 +22,30 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical"
-            android:paddingTop="@dimen/spacing_16"
+            android:paddingTop="@dimen/spacing_12"
             android:paddingBottom="@dimen/spacing_16">
 
-            <ImageView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:contentDescription="@string/app_name"
-                android:src="@drawable/ic_foodhero_logo" />
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/colorPrimaryContainer"
+                app:strokeColor="@color/colorCardBorder"
+                app:strokeWidth="1dp">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="@dimen/spacing_10"
+                    android:contentDescription="@string/app_name"
+                    android:src="@drawable/ic_foodhero_logo" />
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_8"
+                android:layout_marginTop="@dimen/spacing_10"
                 android:text="@string/app_name"
                 android:textColor="@color/colorPrimaryDark"
                 android:textSize="24sp"
@@ -39,6 +54,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:text="@string/campus_name"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="@dimen/text_size_caption" />
@@ -51,7 +67,7 @@
             android:layout_marginBottom="@dimen/spacing_8"
             android:text="Choose your role"
             android:textColor="@color/colorTextPrimary"
-            android:textSize="@dimen/text_size_body"
+            android:textSize="@dimen/text_size_sub"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -65,7 +81,7 @@
                 style="@style/Widget.FoodHero.Card"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/spacing_8"
+                android:layout_marginEnd="@dimen/spacing_6"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
@@ -81,8 +97,8 @@
                     android:padding="@dimen/spacing_12">
 
                     <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_nav_feed"
                         app:tint="@color/colorPrimary" />
@@ -104,7 +120,7 @@
                 style="@style/Widget.FoodHero.Card"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/spacing_8"
+                android:layout_marginStart="@dimen/spacing_6"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
@@ -120,8 +136,8 @@
                     android:padding="@dimen/spacing_12">
 
                     <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_nav_dashboard"
                         app:tint="@color/colorTextSecondary" />
@@ -149,7 +165,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="@dimen/spacing_16">
+                android:padding="@dimen/spacing_20">
 
                 <!-- Mode Title (Login / Register) -->
                 <TextView
@@ -158,7 +174,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/login"
                     android:textColor="@color/colorTextPrimary"
-                    android:textSize="@dimen/text_size_title"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <!-- Full Name Field (Register only) -->
@@ -262,7 +278,7 @@
                     style="@style/Widget.FoodHero.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_8"
+                    android:layout_marginTop="@dimen/spacing_10"
                     android:hint="@string/email">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -305,9 +321,10 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_marginTop="@dimen/spacing_12"
+                    android:padding="@dimen/spacing_6"
                     android:text="@string/no_account_prompt"
                     android:textColor="@color/colorPrimary"
-                    android:textSize="@dimen/text_size_body"
+                    android:textSize="@dimen/text_size_sub"
                     android:textStyle="bold" />
 
                 <!-- Fast Demo Login Shortcut -->
@@ -335,7 +352,7 @@
                         android:id="@+id/btn_fill_student"
                         style="@style/Widget.FoodHero.Button.Secondary"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="40dp"
                         android:layout_marginEnd="@dimen/spacing_4"
                         android:layout_weight="1"
                         android:text="Demo Student"
@@ -345,7 +362,7 @@
                         android:id="@+id/btn_fill_merchant"
                         style="@style/Widget.FoodHero.Button.Secondary"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="40dp"
                         android:layout_marginStart="@dimen/spacing_4"
                         android:layout_weight="1"
                         android:text="Demo Merchant"

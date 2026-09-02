@@ -50,14 +50,15 @@ public class BadgeAdapter extends RecyclerView.Adapter<BadgeAdapter.ViewHolder> 
 
         holder.ivIcon.setColorFilter(context.getResources().getColor(tierColor));
 
+        holder.tvStatus.setBackgroundResource(R.drawable.bg_badge_rounded);
         if (badge.isUnlocked()) {
             holder.tvStatus.setText("Unlocked");
-            holder.tvStatus.setBackgroundColor(context.getResources().getColor(R.color.colorPrimaryContainer));
-            holder.tvStatus.setTextColor(context.getResources().getColor(R.color.colorPrimary));
+            holder.tvStatus.setBackgroundTintList(androidx.core.content.ContextCompat.getColorStateList(context, R.color.colorPrimaryContainer));
+            holder.tvStatus.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.colorPrimary));
         } else {
             holder.tvStatus.setText("Locked");
-            holder.tvStatus.setBackgroundColor(context.getResources().getColor(R.color.colorDivider));
-            holder.tvStatus.setTextColor(context.getResources().getColor(R.color.colorTextSecondary));
+            holder.tvStatus.setBackgroundTintList(androidx.core.content.ContextCompat.getColorStateList(context, R.color.colorDivider));
+            holder.tvStatus.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.colorTextSecondary));
         }
     }
 
