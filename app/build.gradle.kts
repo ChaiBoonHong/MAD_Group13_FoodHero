@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -7,6 +10,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
+        manifestPlaceholders += mapOf()
         applicationId = "com.uccd3223.group13.mad_group13_foodhero"
         minSdk = 28
         targetSdk = 36
@@ -15,11 +19,31 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Build config fields for Supabase & Google Maps
-        buildConfigField("String", "SUPABASE_URL", "\"https://mfflnhpukfegotlqejne.supabase.co\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mZmxuaHB1a2ZlZ290bHFlam5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAzNjY3MTYsImV4cCI6MjA1NTk0MjcxNn0.Vz56F2Qz7559-0Z6mB1n5J-eR5B_X8lF1GzUj6qQZ-0\"")
-        buildConfigField("String", "GOOGLE_MAPS_KEY", "\"AIzaSyD-dummy-maps-key-for-campus-preview\"")
-        manifestPlaceholders["MAPS_API_KEY"] = "AIzaSyD-dummy-maps-key-for-campus-preview"
+        // Load secrets from gitignored secrets.properties or local.properties
+        val secretsFile = rootProject.file("secrets.properties")
+        val localPropsFile = rootProject.file("local.properties")
+        val secrets = Properties()
+
+        if (secretsFile.exists()) {
+            FileInputStream(secretsFile).use { secrets.load(it) }
+        } else if (localPropsFile.exists()) {
+            FileInputStream(localPropsFile).use { secrets.load(it) }
+        }
+
+        val supabaseUrl = secrets.getProperty("SUPABASE_URL")
+            ?: (project.findProperty("SUPABASE_URL") as? String)
+            ?: "https://your-project-id.supabase.co"
+        val supabaseAnonKey = secrets.getProperty("SUPABASE_ANON_KEY")
+            ?: (project.findProperty("SUPABASE_ANON_KEY") as? String)
+            ?: "dummy-supabase-anon-key"
+        val mapsApiKey = secrets.getProperty("MAPS_API_KEY")
+            ?: (project.findProperty("MAPS_API_KEY") as? String)
+            ?: "dummy-google-maps-api-key"
+
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "GOOGLE_MAPS_KEY", "\"$mapsApiKey\"")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {

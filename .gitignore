@@ -22,8 +22,10 @@ gradle-app.setting
 !gradle-wrapper.jar
 .gradletasknamecache
 
-# Local configuration file (SDK path, API keys)
+# Local configuration file (SDK path, API keys, secrets)
 local.properties
+secrets.properties
+*.local.properties
 
 # Proguard / R8
 proguard/
