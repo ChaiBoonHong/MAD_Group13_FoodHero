@@ -73,12 +73,21 @@ EXCEPTION WHEN OTHERS THEN NULL; END $$;
 -- 3.1 SERVICE AREAS (Authoritative UTAR Kampar Campus Polygon)
 CREATE TABLE IF NOT EXISTS public.service_areas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     center_latitude DOUBLE PRECISION NOT NULL DEFAULT 4.336214,
     center_longitude DOUBLE PRECISION NOT NULL DEFAULT 101.142111,
     polygon_coordinates JSONB NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+DO $$ BEGIN
+    DELETE FROM public.service_areas a
+    USING public.service_areas b
+    WHERE a.ctid < b.ctid AND a.name = b.name;
+
+    ALTER TABLE public.service_areas
+        ADD CONSTRAINT service_areas_name_unique UNIQUE (name);
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 -- 3.2 CAMPUS LANDMARKS (Approved Landmark Hotspots)
 CREATE TABLE IF NOT EXISTS public.campus_landmarks (
@@ -89,6 +98,15 @@ CREATE TABLE IF NOT EXISTS public.campus_landmarks (
     longitude DOUBLE PRECISION NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+DO $$ BEGIN
+    DELETE FROM public.campus_landmarks a
+    USING public.campus_landmarks b
+    WHERE a.ctid < b.ctid AND a.name = b.name;
+
+    ALTER TABLE public.campus_landmarks
+        ADD CONSTRAINT campus_landmarks_name_key UNIQUE (name);
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 -- 3.3 USER LOCATIONS (Live Student Geofence State)
 CREATE TABLE IF NOT EXISTS public.user_locations (
@@ -126,6 +144,10 @@ DO $$ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 DO $$ BEGIN
+    DELETE FROM public.merchants a
+    USING public.merchants b
+    WHERE a.ctid < b.ctid AND a.owner_id = b.owner_id;
+
     ALTER TABLE public.merchants
         ADD CONSTRAINT merchants_owner_id_unique
         UNIQUE (owner_id);
@@ -648,7 +670,11 @@ VALUES (
         {"latitude": 4.330000, "longitude": 101.135000}
     ]'::jsonb,
     TRUE
-) ON CONFLICT DO NOTHING;
+) ON CONFLICT (name) DO UPDATE
+SET center_latitude = EXCLUDED.center_latitude,
+    center_longitude = EXCLUDED.center_longitude,
+    polygon_coordinates = EXCLUDED.polygon_coordinates,
+    is_active = EXCLUDED.is_active;
 
 -- 10.2 UTAR Kampar Campus Landmarks (Exact Google Maps Coordinates)
 INSERT INTO public.campus_landmarks (name, category, latitude, longitude) VALUES
