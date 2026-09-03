@@ -36,7 +36,8 @@ public class StudentHomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_student_home);
 
-        com.uccd3223.group13.foodhero.util.SystemBarUtils.applySafeInsets(this, findViewById(R.id.root_student_home));
+        com.uccd3223.group13.foodhero.util.SystemBarUtils.applySafeInsetsWithBottomNav(
+            this, findViewById(R.id.root_student_home), findViewById(R.id.bottom_navigation));
 
         initViews();
         setupNavigation();

@@ -26,34 +26,76 @@ public class SystemBarUtils {
     public static void applySafeInsets(Activity activity, View rootView) {
         if (activity == null || rootView == null) return;
 
-        Window window = activity.getWindow();
+        adaptSystemBars(activity, androidx.core.content.ContextCompat.getColor(activity, com.uccd3223.group13.foodhero.R.color.colorSurface));
 
-        // 1. Ensure status bar and navigation bar icons are dark (black/dark grey) for clear readability
-        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
-        if (controller != null) {
-            controller.setAppearanceLightStatusBars(true);
-            controller.setAppearanceLightNavigationBars(true);
-        }
-
-        // 2. Prevent window content from extending into display cutout / camera punch hole
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.getAttributes().layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
-        }
-
-        // 3. On Android 15 & 16 (API 35+), edge-to-edge is enforced by default.
-        // We explicitly consume insets and apply them as padding to the root view
-        // with comfortable margin so content stays strictly in the normal screen range.
+        // On Android 15 & 16 (API 35+), edge-to-edge is enforced by default.
         ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(
                 WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
             );
-            int extraTop = (int) (8 * v.getResources().getDisplayMetrics().density);
-            int extraBottom = (int) (14 * v.getResources().getDisplayMetrics().density);
-            v.setPadding(insets.left, insets.top + extraTop, insets.right, insets.bottom + extraBottom);
+            v.setPadding(insets.left, insets.top, insets.right, insets.bottom);
             return windowInsets;
         });
 
         ViewCompat.requestApplyInsets(rootView);
+    }
+
+    /**
+     * Specifically for activities with a BottomNavigationView (e.g. StudentHome, MerchantHome).
+     * - Protects upper notch / status bar with top padding.
+     * - Zeroes bottom padding on root view so the bottom navigation bar sticks directly
+     *   at the bottom of the application and directly above the Android navigation bar.
+     * - Adapts the Android navigation bar color to match the application navigation bar color.
+     */
+    public static void applySafeInsetsWithBottomNav(Activity activity, View rootView, View bottomNavView) {
+        if (activity == null || rootView == null) return;
+
+        int navBarColor = androidx.core.content.ContextCompat.getColor(activity, com.uccd3223.group13.foodhero.R.color.colorSurface);
+        adaptSystemBars(activity, navBarColor);
+
+        // Root view only takes top inset (protects notch/status bar). Zero bottom padding.
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            v.setPadding(insets.left, insets.top, insets.right, 0);
+            return windowInsets;
+        });
+
+        // Bottom nav view sticks flush to the bottom with no excessive empty space
+        if (bottomNavView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(bottomNavView, (v, insets) -> {
+                v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), 0);
+                return insets;
+            });
+        }
+
+        ViewCompat.requestApplyInsets(rootView);
+    }
+
+    /**
+     * Adapts status bar and Android navigation bar colors & icons to match the app theme.
+     */
+    public static void adaptSystemBars(Activity activity, int navBarColor) {
+        if (activity == null) return;
+        Window window = activity.getWindow();
+        if (window == null) return;
+
+        // Set navigation bar color to match the application nav bar color
+        window.setNavigationBarColor(navBarColor);
+
+        // Configure dark icons on light status bar and navigation bar
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(true);
+            boolean isLightNav = androidx.core.graphics.ColorUtils.calculateLuminance(navBarColor) > 0.5;
+            controller.setAppearanceLightNavigationBars(isLightNav);
+        }
+
+        // Prevent camera cutout intrusion into content
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.getAttributes().layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
+        }
     }
 }

@@ -209,6 +209,38 @@ public class AuthRepository {
         });
     }
 
+    public void handleOAuthToken(String accessToken, String refreshToken, UserRole role, ResultCallback<Profile> callback) {
+        executor.execute(() -> {
+            try {
+                String bearer = "Bearer " + accessToken;
+                Response<AuthResponse.SupabaseUser> userResp = authService.getUser(SupabaseConfig.SUPABASE_ANON_KEY, bearer).execute();
+                if (!userResp.isSuccessful() || userResp.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Unable to load user with OAuth token"));
+                    return;
+                }
+                String userId = userResp.body().getId();
+                String email = userResp.body().getEmail();
+
+                Response<List<Profile>> profileResp = restClient.getProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, "eq." + userId).execute();
+                Profile profile;
+                if (profileResp.isSuccessful() && profileResp.body() != null && !profileResp.body().isEmpty()) {
+                    profile = profileResp.body().get(0);
+                } else {
+                    String name = (email != null && email.contains("@")) ? email.split("@")[0] : "FoodHero User";
+                    profile = new Profile(userId, email, role != null ? role : UserRole.STUDENT, name);
+                    try {
+                        restClient.upsertProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, profile).execute();
+                    } catch (Exception ignored) {}
+                }
+
+                sessionManager.saveSession(accessToken, refreshToken != null ? refreshToken : "", profile);
+                postSuccess(callback, profile);
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Error during OAuth: " + e.getMessage(), e));
+            }
+        });
+    }
+
     public void restoreSession(ResultCallback<Profile> callback) {
         executor.execute(() -> {
             if (!sessionManager.isLoggedIn()) {

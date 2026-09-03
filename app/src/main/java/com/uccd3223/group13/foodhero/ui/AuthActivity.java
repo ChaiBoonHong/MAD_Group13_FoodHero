@@ -1,6 +1,7 @@
 package com.uccd3223.group13.foodhero.ui;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
@@ -57,6 +58,15 @@ public class AuthActivity extends AppCompatActivity {
         setupListeners();
         updateRoleSelectionUI();
         updateModeUI();
+
+        handleDeepLinkCallback(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleDeepLinkCallback(intent);
     }
 
     private void setupGoogleSignIn() {
@@ -101,7 +111,7 @@ public class AuthActivity extends AppCompatActivity {
                         }
                     });
                 } else {
-                    // Seamless onboarding demo fallback when Google Web Client ID is not yet connected to Supabase
+                    // Fallback when Google Web Client ID is not yet connected
                     String email = account.getEmail() != null ? account.getEmail() : "student.google@utar.edu.my";
                     String name = account.getDisplayName() != null ? account.getDisplayName() : "Google User";
                     Profile profile = new Profile("google-" + System.currentTimeMillis(), email, selectedRole, name);
@@ -113,7 +123,69 @@ public class AuthActivity extends AppCompatActivity {
                 }
             }
         } catch (ApiException e) {
-            Toast.makeText(this, "Google Sign-In (" + e.getStatusCode() + "): " + e.getMessage(), Toast.LENGTH_LONG).show();
+            int code = e.getStatusCode();
+            if (code == 10) {
+                // DEVELOPER_ERROR: SHA-1 not registered in Google Cloud Console or Web Client ID mismatch
+                Toast.makeText(this, "Google error 10 (Keystore SHA-1 missing). Opening Web OAuth...", Toast.LENGTH_LONG).show();
+                launchSupabaseWebOAuth();
+            } else {
+                Toast.makeText(this, "Google Sign-In (" + code + "): " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void launchSupabaseWebOAuth() {
+        try {
+            String redirectUri = "foodhero://auth-callback";
+            String authUrl = com.uccd3223.group13.foodhero.data.remote.SupabaseConfig.SUPABASE_URL
+                + "/auth/v1/authorize?provider=google&redirect_to=" + Uri.encode(redirectUri);
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(authUrl));
+            startActivity(intent);
+        } catch (Exception ex) {
+            Toast.makeText(this, "Unable to launch browser: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void handleDeepLinkCallback(Intent intent) {
+        if (intent == null || intent.getData() == null) return;
+        Uri uri = intent.getData();
+        if ("foodhero".equals(uri.getScheme()) && "auth-callback".equals(uri.getHost())) {
+            String fragment = uri.getFragment();
+            String accessToken = null;
+            String refreshToken = null;
+
+            if (fragment != null && !fragment.isEmpty()) {
+                String[] params = fragment.split("&");
+                for (String param : params) {
+                    String[] kv = param.split("=");
+                    if (kv.length == 2) {
+                        if ("access_token".equals(kv[0])) accessToken = Uri.decode(kv[1]);
+                        else if ("refresh_token".equals(kv[0])) refreshToken = Uri.decode(kv[1]);
+                    }
+                }
+            } else {
+                accessToken = uri.getQueryParameter("access_token");
+                refreshToken = uri.getQueryParameter("refresh_token");
+            }
+
+            if (accessToken != null && !accessToken.isEmpty()) {
+                final String finalAccess = accessToken;
+                final String finalRefresh = refreshToken != null ? refreshToken : "";
+                Toast.makeText(this, "Authorizing Google session...", Toast.LENGTH_SHORT).show();
+
+                authRepo.handleOAuthToken(finalAccess, finalRefresh, selectedRole, new ResultCallback<Profile>() {
+                    @Override
+                    public void onSuccess(Profile profile) {
+                        Toast.makeText(AuthActivity.this, "Welcome " + (profile.getFullName() != null ? profile.getFullName() : profile.getEmail()), Toast.LENGTH_SHORT).show();
+                        routeToHome(profile);
+                    }
+
+                    @Override
+                    public void onError(DataError error) {
+                        Toast.makeText(AuthActivity.this, "OAuth Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
         }
     }
 

@@ -157,5 +157,6 @@
         <item name="itemTextAppearanceInactive">@style/TextAppearance.FoodHero.BottomNav.Inactive</item>
         <item name="elevation">0dp</item>
         <item name="labelVisibilityMode">labeled</item>
+        <item name="paddingBottomSystemWindowInsets">false</item>
     </style>
 </resources>

@@ -49,4 +49,10 @@ public interface SupabaseAuthService {
         @Header("apikey") String apiKey,
         @Header("Authorization") String bearerToken
     );
+
+    @retrofit2.http.GET("/auth/v1/user")
+    Call<AuthResponse.SupabaseUser> getUser(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearerToken
+    );
 }
