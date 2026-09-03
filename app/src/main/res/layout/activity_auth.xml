@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_auth"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorBackground"
-    android:fitsSystemWindows="true"
     android:fillViewport="true">
 
     <LinearLayout
@@ -12,9 +12,9 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="@dimen/spacing_20"
-        android:paddingTop="@dimen/spacing_16"
+        android:paddingTop="@dimen/spacing_10"
         android:paddingEnd="@dimen/spacing_20"
-        android:paddingBottom="@dimen/spacing_24">
+        android:paddingBottom="@dimen/spacing_32">
 
         <!-- Logo & Brand Header -->
         <LinearLayout
@@ -22,14 +22,15 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical"
-            android:paddingTop="@dimen/spacing_16"
-            android:paddingBottom="@dimen/spacing_20">
+            android:paddingTop="@dimen/spacing_8"
+            android:paddingBottom="@dimen/spacing_10">
 
             <com.google.android.material.card.MaterialCardView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                app:cardCornerRadius="22dp"
-                app:cardElevation="2dp"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:cardMaxElevation="0dp"
                 app:cardBackgroundColor="@color/white"
                 app:strokeColor="@color/colorCardBorder"
                 app:strokeWidth="1.5dp">
@@ -46,6 +47,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_12"
+                android:fontFamily="@font/roboto_slab"
                 android:text="@string/app_name"
                 android:textColor="@color/colorPrimaryDark"
                 android:textSize="26sp"
@@ -149,7 +151,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_16"
             app:cardCornerRadius="24dp"
-            app:cardElevation="4dp"
+            app:cardElevation="0dp"
+            app:cardMaxElevation="0dp"
             app:strokeColor="@color/colorCardBorder"
             app:strokeWidth="1dp">
 
@@ -164,9 +167,10 @@
                     android:id="@+id/tv_auth_mode_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:fontFamily="@font/roboto_slab"
                     android:text="@string/login"
                     android:textColor="@color/colorTextPrimary"
-                    android:textSize="20sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <!-- Full Name Field (Register only) -->
@@ -302,9 +306,57 @@
                     android:id="@+id/btn_auth_submit"
                     style="@style/Widget.FoodHero.Button.Primary"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:layout_marginTop="@dimen/spacing_16"
                     android:text="@string/login" />
+
+                <!-- OR Divider -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="@dimen/spacing_12"
+                    android:layout_marginBottom="@dimen/spacing_12">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="@color/colorCardBorder" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="@dimen/spacing_10"
+                        android:text="OR"
+                        android:textColor="@color/colorTextTertiary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="@color/colorCardBorder" />
+                </LinearLayout>
+
+                <!-- Continue with Google Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_google_signin"
+                    style="@style/Widget.FoodHero.Button.Secondary"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Continue with Google"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="14sp"
+                    app:cornerRadius="14dp"
+                    app:icon="@drawable/ic_google_logo"
+                    app:iconGravity="textStart"
+                    app:iconPadding="@dimen/spacing_10"
+                    app:iconTint="@null"
+                    app:strokeColor="@color/colorCardBorder"
+                    app:strokeWidth="1dp" />
 
                 <!-- Mode Switch Link -->
                 <TextView
@@ -312,14 +364,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_marginTop="@dimen/spacing_12"
+                    android:layout_marginTop="@dimen/spacing_10"
                     android:padding="@dimen/spacing_6"
                     android:text="@string/no_account_prompt"
                     android:textColor="@color/colorPrimary"
                     android:textSize="@dimen/text_size_sub"
                     android:textStyle="bold" />
 
-                <!-- Fast Demo Login Shortcut -->
+                <!-- Fast Account Fill Shortcuts -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
@@ -330,13 +382,13 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Demo Quick Fill"
+                    android:text="Quick Account Fill"
                     android:textColor="@color/colorTextSecondary"
                     android:textSize="@dimen/text_size_caption" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="44dp"
                     android:layout_marginTop="@dimen/spacing_8"
                     android:orientation="horizontal">
 
@@ -344,21 +396,33 @@
                         android:id="@+id/btn_fill_student"
                         style="@style/Widget.FoodHero.Button.Secondary"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_marginEnd="@dimen/spacing_4"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="Demo Student"
-                        android:textSize="12sp" />
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minHeight="0dp"
+                        android:padding="0dp"
+                        android:singleLine="true"
+                        android:text="🎓 Student"
+                        android:textColor="@color/colorPrimaryDark"
+                        android:textSize="13sp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_fill_merchant"
                         style="@style/Widget.FoodHero.Button.Secondary"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="@dimen/spacing_4"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="Demo Merchant"
-                        android:textSize="12sp" />
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minHeight="0dp"
+                        android:padding="0dp"
+                        android:singleLine="true"
+                        android:text="🏪 Merchant"
+                        android:textColor="@color/colorPrimaryDark"
+                        android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

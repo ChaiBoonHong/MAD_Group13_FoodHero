@@ -1,6 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Theme.MAD_Group13_FoodHero" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Typography: Karla for primary body & UI -->
+        <item name="fontFamily">@font/karla</item>
+        <item name="android:fontFamily">@font/karla</item>
+
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
@@ -14,9 +18,14 @@
         <item name="colorSurface">@color/colorSurface</item>
         <item name="colorOnSurface">@color/colorTextPrimary</item>
         <item name="colorError">@color/colorError</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">@color/colorPrimaryDark</item>
-        <item name="android:navigationBarColor">@color/colorSurface</item>
+        <!-- Status bar color: White with dark icons -->
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <!-- Navigation bar color: White with dark icons -->
+        <item name="android:navigationBarColor">@color/white</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+
+        <!-- Clean Cards: 0dp elevation, zero corner shadow, crisp border -->
+        <item name="materialCardViewStyle">@style/Widget.FoodHero.Card</item>
     </style>
 </resources>

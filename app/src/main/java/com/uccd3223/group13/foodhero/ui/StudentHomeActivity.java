@@ -36,6 +36,8 @@ public class StudentHomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_student_home);
 
+        com.uccd3223.group13.foodhero.util.SystemBarUtils.applySafeInsets(this, findViewById(R.id.root_student_home));
+
         initViews();
         setupNavigation();
         setupRealtimeNotifications();
@@ -91,7 +93,7 @@ public class StudentHomeActivity extends AppCompatActivity {
 
     private void setupRealtimeNotifications() {
         String userId = SessionManager.getInstance(this).getUserId();
-        realtimeClient = new SupabaseRealtimeClient();
+        realtimeClient = new SupabaseRealtimeClient(this);
         realtimeClient.subscribe(userId, new SupabaseRealtimeClient.NotificationListener() {
             @Override
             public void onNotificationReceived(FoodHeroNotification notification) {

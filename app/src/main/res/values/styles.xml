@@ -56,12 +56,15 @@
         <item name="android:insetBottom">0dp</item>
     </style>
 
-    <!-- Cards: Modern Bento Grid Cards (16dp Radius, Crisp 1px Stroke, Subtle Elevation) -->
+    <!-- Cards: Modern Clean Bento Grid Cards (Zero Shadow, Crisp 1px Stroke) -->
     <style name="Widget.FoodHero.Card" parent="Widget.MaterialComponents.CardView">
         <item name="cardCornerRadius">@dimen/corner_card</item>
-        <item name="cardElevation">@dimen/elevation_card</item>
+        <item name="cardElevation">0dp</item>
+        <item name="cardMaxElevation">0dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="cardPreventCornerOverlap">false</item>
+        <item name="android:stateListAnimator">@null</item>
         <item name="cardBackgroundColor">@color/colorSurface</item>
-        <item name="cardMaxElevation">@dimen/elevation_card_elevated</item>
         <item name="strokeColor">@color/colorCardBorder</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:clipToPadding">false</item>
@@ -69,6 +72,10 @@
 
     <style name="Widget.FoodHero.Card.Flat" parent="Widget.FoodHero.Card">
         <item name="cardElevation">0dp</item>
+        <item name="cardMaxElevation">0dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="cardPreventCornerOverlap">false</item>
+        <item name="android:stateListAnimator">@null</item>
         <item name="strokeColor">@color/colorDivider</item>
         <item name="strokeWidth">1dp</item>
     </style>
@@ -76,6 +83,10 @@
     <style name="Widget.FoodHero.Card.Impact" parent="Widget.FoodHero.Card">
         <item name="cardBackgroundColor">@color/colorPrimaryContainer</item>
         <item name="cardElevation">0dp</item>
+        <item name="cardMaxElevation">0dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="cardPreventCornerOverlap">false</item>
+        <item name="android:stateListAnimator">@null</item>
         <item name="strokeColor">@color/colorPrimary</item>
         <item name="strokeWidth">1dp</item>
     </style>
@@ -83,6 +94,10 @@
     <style name="Widget.FoodHero.Card.Metric" parent="Widget.FoodHero.Card">
         <item name="cardBackgroundColor">@color/colorSurface</item>
         <item name="cardElevation">0dp</item>
+        <item name="cardMaxElevation">0dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="cardPreventCornerOverlap">false</item>
+        <item name="android:stateListAnimator">@null</item>
         <item name="strokeColor">@color/colorDivider</item>
         <item name="strokeWidth">1dp</item>
     </style>
@@ -111,12 +126,36 @@
         <item name="android:minHeight">36dp</item>
     </style>
 
-    <!-- Bottom Navigation View -->
-    <style name="Widget.FoodHero.BottomNavigation" parent="Widget.MaterialComponents.BottomNavigationView">
+    <!-- Bottom Navigation Text Appearances -->
+    <style name="TextAppearance.FoodHero.BottomNav.Active" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorPrimaryDark</item>
+    </style>
+
+    <style name="TextAppearance.FoodHero.BottomNav.Inactive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@color/colorTextSecondary</item>
+    </style>
+
+    <!-- Material 3 Active Indicator Style (Pill) -->
+    <style name="Widget.FoodHero.BottomNavigation.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/colorPrimaryContainer</item>
+        <item name="android:width">64dp</item>
+        <item name="android:height">32dp</item>
+    </style>
+
+    <!-- Material 3 Bottom Navigation View with Pill Indicator -->
+    <style name="Widget.FoodHero.BottomNavigation" parent="Widget.Material3.BottomNavigationView">
+        <item name="android:background">@color/colorSurface</item>
         <item name="backgroundTint">@color/colorSurface</item>
-        <item name="itemIconTint">@color/colorPrimary</item>
-        <item name="itemTextColor">@color/colorPrimary</item>
-        <item name="elevation">8dp</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.FoodHero.BottomNavigation.ActiveIndicator</item>
+        <item name="itemIconTint">@color/color_bottom_nav_icon</item>
+        <item name="itemTextColor">@color/color_bottom_nav_text</item>
+        <item name="itemTextAppearanceActive">@style/TextAppearance.FoodHero.BottomNav.Active</item>
+        <item name="itemTextAppearanceInactive">@style/TextAppearance.FoodHero.BottomNav.Inactive</item>
+        <item name="elevation">0dp</item>
         <item name="labelVisibilityMode">labeled</item>
     </style>
 </resources>

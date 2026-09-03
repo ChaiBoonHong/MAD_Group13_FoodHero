@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_qr_pickup_token"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorBackground"
-    android:fitsSystemWindows="true"
     android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
@@ -27,9 +27,9 @@
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:paddingHorizontal="@dimen/spacing_20"
-            android:paddingTop="@dimen/spacing_12"
-            android:paddingBottom="@dimen/spacing_32">
+            android:paddingHorizontal="@dimen/spacing_16"
+            android:paddingTop="@dimen/spacing_8"
+            android:paddingBottom="@dimen/spacing_36">
 
             <!-- Success Checkmark Header (Prototype Screen 3) -->
             <FrameLayout
@@ -72,7 +72,8 @@
                 android:layout_marginTop="@dimen/spacing_16"
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="22dp"
-                app:cardElevation="4dp"
+                app:cardElevation="0dp"
+                app:cardMaxElevation="0dp"
                 app:strokeColor="@color/colorBrandPrice"
                 app:strokeWidth="2dp">
 
@@ -126,10 +127,10 @@
 
                     <!-- Center QR Code View Container -->
                     <com.google.android.material.card.MaterialCardView
-                        android:layout_width="210dp"
-                        android:layout_height="210dp"
+                        android:layout_width="175dp"
+                        android:layout_height="175dp"
                         android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="@dimen/spacing_16"
+                        android:layout_marginTop="@dimen/spacing_12"
                         app:cardCornerRadius="16dp"
                         app:cardElevation="0dp"
                         app:cardBackgroundColor="@color/white"

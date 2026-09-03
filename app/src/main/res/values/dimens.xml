@@ -13,6 +13,8 @@
     <dimen name="spacing_20">20dp</dimen>
     <dimen name="spacing_24">24dp</dimen>
     <dimen name="spacing_32">32dp</dimen>
+    <dimen name="spacing_36">36dp</dimen>
+    <dimen name="spacing_40">40dp</dimen>
     <dimen name="spacing_48">48dp</dimen>
 
     <!-- Standardized 4-Tier Corner Radii (Bento Grid System) -->
@@ -43,9 +45,9 @@
     <dimen name="badge_height_sm">24dp</dimen>
     <dimen name="metric_tile_min_height">84dp</dimen>
 
-    <!-- Elevation Scale (Subtle & Crisp) -->
+    <!-- Elevation Scale (Zero Shadow, Clean Flat Aesthetic) -->
     <dimen name="elevation_flat">0dp</dimen>
-    <dimen name="elevation_card">2dp</dimen>
-    <dimen name="elevation_card_elevated">4dp</dimen>
-    <dimen name="elevation_bottom_sheet">12dp</dimen>
+    <dimen name="elevation_card">0dp</dimen>
+    <dimen name="elevation_card_elevated">0dp</dimen>
+    <dimen name="elevation_bottom_sheet">0dp</dimen>
 </resources>

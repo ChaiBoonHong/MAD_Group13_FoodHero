@@ -30,6 +30,8 @@ public class NotificationsActivity extends AppCompatActivity implements Notifica
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notifications);
 
+        com.uccd3223.group13.foodhero.util.SystemBarUtils.applySafeInsets(this, findViewById(R.id.root_notifications));
+
         foodHeroRepo = FoodHeroRepository.getInstance(this);
 
         initViews();

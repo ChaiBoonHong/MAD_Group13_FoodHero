@@ -9,6 +9,7 @@ import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.model.Profile;
 import com.uccd3223.group13.foodhero.data.model.UserRole;
+import com.uccd3223.group13.foodhero.data.remote.AuthIdTokenRequest;
 import com.uccd3223.group13.foodhero.data.remote.AuthRequest;
 import com.uccd3223.group13.foodhero.data.remote.AuthResponse;
 import com.uccd3223.group13.foodhero.data.remote.SupabaseAuthService;
@@ -157,6 +158,53 @@ public class AuthRepository {
 
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Network error during login: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void signInWithGoogle(String idToken, UserRole role, ResultCallback<Profile> callback) {
+        executor.execute(() -> {
+            try {
+                AuthIdTokenRequest req = new AuthIdTokenRequest("google", idToken);
+                Response<AuthResponse> resp = authService.signInWithIdToken(SupabaseConfig.SUPABASE_ANON_KEY, req).execute();
+
+                if (!resp.isSuccessful() || resp.body() == null || resp.body().getUser() == null) {
+                    String errorMsg = "Google authentication failed";
+                    if (resp.errorBody() != null) {
+                        try {
+                            errorMsg = resp.errorBody().string();
+                        } catch (Exception ignored) {}
+                    }
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, errorMsg));
+                    return;
+                }
+
+                String userId = resp.body().getUser().getId();
+                String email = resp.body().getUser().getEmail();
+                String accessToken = resp.body().getAccessToken() != null ? resp.body().getAccessToken() : SupabaseConfig.SUPABASE_ANON_KEY;
+                String refreshToken = resp.body().getRefreshToken() != null ? resp.body().getRefreshToken() : "";
+                String bearer = "Bearer " + accessToken;
+
+                // Check or upsert profile in Supabase
+                Response<List<Profile>> profileResp = restClient.getProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, "eq." + userId).execute();
+                Profile profile;
+                if (profileResp.isSuccessful() && profileResp.body() != null && !profileResp.body().isEmpty()) {
+                    profile = profileResp.body().get(0);
+                } else {
+                    String name = (email != null && email.contains("@")) ? email.split("@")[0] : "Eco Hero";
+                    profile = new Profile(userId, email, role != null ? role : UserRole.STUDENT, name);
+                    try {
+                        restClient.upsertProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, profile).execute();
+                    } catch (Exception e) {
+                        android.util.Log.w("AuthRepository", "Profile upsert note: " + e.getMessage());
+                    }
+                }
+
+                sessionManager.saveSession(accessToken, refreshToken, profile);
+                postSuccess(callback, profile);
+
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Network error during Google Sign-In: " + e.getMessage(), e));
             }
         });
     }

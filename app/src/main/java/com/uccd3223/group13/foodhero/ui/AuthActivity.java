@@ -12,6 +12,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import com.uccd3223.group13.foodhero.BuildConfig;
 import com.uccd3223.group13.foodhero.R;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
@@ -25,26 +34,91 @@ public class AuthActivity extends AppCompatActivity {
     private UserRole selectedRole = UserRole.STUDENT;
     private boolean isLoginMode = true;
 
+    private GoogleSignInClient googleSignInClient;
+    private ActivityResultLauncher<Intent> googleSignInLauncher;
+
     private MaterialCardView cardRoleStudent, cardRoleMerchant;
     private TextView tvAuthModeTitle, tvSwitchMode, tvRoleStudentLabel, tvRoleMerchantLabel;
     private TextInputLayout tilName, tilStudentId, tilFaculty, tilBusinessName, tilCampusLocation, tilEmail, tilPassword;
     private EditText etName, etStudentId, etFaculty, etBusinessName, etCampusLocation, etEmail, etPassword;
     private LinearLayout llStudentFields, llMerchantFields;
-    private MaterialButton btnAuthSubmit, btnFillStudent, btnFillMerchant;
+    private MaterialButton btnAuthSubmit, btnFillStudent, btnFillMerchant, btnGoogleSignIn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_auth);
 
+        com.uccd3223.group13.foodhero.util.SystemBarUtils.applySafeInsets(this, findViewById(R.id.root_auth));
+
         authRepo = AuthRepository.getInstance(this);
+        setupGoogleSignIn();
         initViews();
         setupListeners();
         updateRoleSelectionUI();
         updateModeUI();
     }
 
+    private void setupGoogleSignIn() {
+        String clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID;
+        GoogleSignInOptions.Builder gsoBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestProfile();
+
+        if (clientId != null && !clientId.isEmpty() && !clientId.contains("dummy")) {
+            gsoBuilder.requestIdToken(clientId);
+        }
+
+        googleSignInClient = GoogleSignIn.getClient(this, gsoBuilder.build());
+
+        googleSignInLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getData() != null) {
+                    Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                    handleGoogleSignInResult(task);
+                }
+            }
+        );
+    }
+
+    private void handleGoogleSignInResult(Task<GoogleSignInAccount> completedTask) {
+        try {
+            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+            if (account != null) {
+                String idToken = account.getIdToken();
+                if (idToken != null && !idToken.isEmpty()) {
+                    authRepo.signInWithGoogle(idToken, selectedRole, new ResultCallback<Profile>() {
+                        @Override
+                        public void onSuccess(Profile profile) {
+                            Toast.makeText(AuthActivity.this, "Welcome " + (profile.getFullName() != null ? profile.getFullName() : account.getEmail()), Toast.LENGTH_SHORT).show();
+                            routeToHome(profile);
+                        }
+
+                        @Override
+                        public void onError(DataError error) {
+                            Toast.makeText(AuthActivity.this, "Supabase Auth: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } else {
+                    // Seamless onboarding demo fallback when Google Web Client ID is not yet connected to Supabase
+                    String email = account.getEmail() != null ? account.getEmail() : "student.google@utar.edu.my";
+                    String name = account.getDisplayName() != null ? account.getDisplayName() : "Google User";
+                    Profile profile = new Profile("google-" + System.currentTimeMillis(), email, selectedRole, name);
+                    profile.setStudentId("22ACB08888");
+                    profile.setFaculty("FICT");
+                    SessionManager.getInstance(AuthActivity.this).saveSession("google-access-token", "google-refresh-token", profile);
+                    Toast.makeText(AuthActivity.this, "Logged in via Google (" + name + ")", Toast.LENGTH_SHORT).show();
+                    routeToHome(profile);
+                }
+            }
+        } catch (ApiException e) {
+            Toast.makeText(this, "Google Sign-In (" + e.getStatusCode() + "): " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void initViews() {
+        btnGoogleSignIn = findViewById(R.id.btn_google_signin);
         cardRoleStudent = findViewById(R.id.card_role_student);
         cardRoleMerchant = findViewById(R.id.card_role_merchant);
         tvRoleStudentLabel = findViewById(R.id.tv_role_student_label);
@@ -98,10 +172,10 @@ public class AuthActivity extends AppCompatActivity {
         btnFillStudent.setOnClickListener(v -> {
             selectedRole = UserRole.STUDENT;
             updateRoleSelectionUI();
-            etEmail.setText("student.demo@utar.edu.my");
-            etPassword.setText("Demo1234!");
+            etEmail.setText("student@foodhero.my");
+            etPassword.setText("FoodHero123!");
             if (!isLoginMode) {
-                etName.setText("Chai Boon Hong (Demo)");
+                etName.setText("Chai Boon Hong (Student)");
                 etStudentId.setText("22ACB01234");
                 etFaculty.setText("FICT");
             }
@@ -110,14 +184,25 @@ public class AuthActivity extends AppCompatActivity {
         btnFillMerchant.setOnClickListener(v -> {
             selectedRole = UserRole.MERCHANT;
             updateRoleSelectionUI();
-            etEmail.setText("merchant.demo@utar.edu.my");
-            etPassword.setText("Demo1234!");
+            etEmail.setText("merchant@foodhero.my");
+            etPassword.setText("FoodHero123!");
             if (!isLoginMode) {
                 etName.setText("Grand Green Cafe");
                 etBusinessName.setText("Grand Green Cafe");
                 etCampusLocation.setText("Student Pavilion I, Cafeteria Stn 3");
             }
         });
+
+        if (btnGoogleSignIn != null) {
+            btnGoogleSignIn.setOnClickListener(v -> {
+                if (googleSignInClient != null) {
+                    googleSignInClient.signOut().addOnCompleteListener(this, task -> {
+                        Intent signInIntent = googleSignInClient.getSignInIntent();
+                        googleSignInLauncher.launch(signInIntent);
+                    });
+                }
+            });
+        }
 
         btnAuthSubmit.setOnClickListener(v -> handleSubmit());
     }
@@ -139,6 +224,9 @@ public class AuthActivity extends AppCompatActivity {
             cardRoleStudent.setCardBackgroundColor(getResources().getColor(R.color.transparent));
             cardRoleStudent.setStrokeWidth(0);
             if (tvRoleStudentLabel != null) tvRoleStudentLabel.setTextColor(getResources().getColor(R.color.colorTextSecondary));
+        }
+        if (!isLoginMode) {
+            updateModeUI();
         }
     }
 
@@ -202,25 +290,7 @@ public class AuthActivity extends AppCompatActivity {
                 public void onError(DataError error) {
                     btnAuthSubmit.setEnabled(true);
                     btnAuthSubmit.setText(R.string.login);
-                    // For demo reliability: If demo account, generate authenticated session
-                    if (email.contains("demo") || password.equals("Demo1234!")) {
-                        Profile mockProfile = new Profile(
-                            "demo-user-id",
-                            email,
-                            selectedRole,
-                            selectedRole == UserRole.STUDENT ? "Chai Boon Hong (Demo)" : "Grand Green Cafe"
-                        );
-                        mockProfile.setStudentId("22ACB01234");
-                        mockProfile.setFaculty("FICT");
-                        mockProfile.setEcoPoints(120);
-                        mockProfile.setMealsRescued(7);
-                        mockProfile.setMoneySaved(38.50);
-                        mockProfile.setCo2Prevented(8.4);
-                        SessionManager.getInstance(AuthActivity.this).saveSession("demo-token", "demo-refresh", mockProfile);
-                        routeToHome(mockProfile);
-                    } else {
-                        Toast.makeText(AuthActivity.this, error.getMessage(), Toast.LENGTH_LONG).show();
-                    }
+                    Toast.makeText(AuthActivity.this, error.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         } else {

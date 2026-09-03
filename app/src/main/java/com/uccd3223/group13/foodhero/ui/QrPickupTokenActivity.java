@@ -24,6 +24,8 @@ public class QrPickupTokenActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_qr_pickup_token);
 
+        com.uccd3223.group13.foodhero.util.SystemBarUtils.applySafeInsets(this, findViewById(R.id.root_qr_pickup_token));
+
         order = (Order) getIntent().getSerializableExtra("extra_order");
         if (order == null) {
             Toast.makeText(this, "Order token not found", Toast.LENGTH_SHORT).show();

@@ -53,6 +53,8 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_payment_duitnow);
 
+        com.uccd3223.group13.foodhero.util.SystemBarUtils.applySafeInsets(this, findViewById(R.id.root_payment_duitnow));
+
         order = (Order) getIntent().getSerializableExtra(EXTRA_ORDER);
         if (order == null) {
             Toast.makeText(this, "Order data missing", Toast.LENGTH_SHORT).show();

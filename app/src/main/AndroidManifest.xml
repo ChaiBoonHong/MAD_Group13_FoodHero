@@ -39,48 +39,48 @@
         <!-- 2. Authentication (Login / Register / Role Selection) -->
         <activity
             android:name=".ui.AuthActivity"
-            android:exported="false"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- 3. Student Home (Feed, Campus Map, Orders, Impact) -->
         <activity
             android:name=".ui.StudentHomeActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 4. Merchant Home (Dashboard, Listings, Orders, Profile) -->
         <activity
             android:name=".ui.MerchantHomeActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 5. Surplus Bag Details -->
         <activity
             android:name=".ui.ListingDetailsActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 6. Reservation Confirmation -->
         <activity
             android:name=".ui.ReservationConfirmationActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 6.1 DuitNow QR Payment & Receipt Upload -->
         <activity
             android:name=".ui.PaymentDuitNowActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 7. Pickup QR Token -->
         <activity
             android:name=".ui.QrPickupTokenActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 8. Review Submission -->
         <activity
             android:name=".ui.ReviewActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 9. Notifications -->
         <activity
             android:name=".ui.NotificationsActivity"
-            android:exported="false" />
+            android:exported="true" />
 
     </application>
 

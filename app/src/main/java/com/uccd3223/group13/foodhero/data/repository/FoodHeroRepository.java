@@ -95,10 +95,6 @@ public class FoodHeroRepository {
 
         this.restClient = retrofit.create(SupabaseRestClient.class);
         this.storageService = retrofit.create(SupabaseStorageService.class);
-
-        this.cachedOrders.addAll(createSeededOrders());
-        this.cachedNotifications.addAll(createSeededNotifications(UserRole.STUDENT));
-        this.cachedNotifications.addAll(createSeededNotifications(UserRole.MERCHANT));
     }
 
     public static FoodHeroRepository getInstance(Context context) {
@@ -301,18 +297,31 @@ public class FoodHeroRepository {
 
     public void getStudentOrders(ResultCallback<List<Order>> callback) {
         executor.execute(() -> {
-            try {
-                // Auto-expire any orders where 10m elapsed without receipt upload
-                long now = System.currentTimeMillis();
-                for (Order o : cachedOrders) {
-                    if (o.getStatus() == OrderStatus.AWAITING_PAYMENT && o.getPaymentExpiresAt() > 0 && now > o.getPaymentExpiresAt()) {
-                        o.setStatus(OrderStatus.EXPIRED);
+            String studentId = sessionManager.getUserId();
+            if (studentId != null) {
+                try {
+                    Response<List<Order>> resp = restClient.getStudentOrders(
+                        SupabaseConfig.SUPABASE_ANON_KEY,
+                        getBearer(),
+                        "eq." + studentId,
+                        "created_at.desc"
+                    ).execute();
+                    if (resp.isSuccessful() && resp.body() != null) {
+                        cachedOrders.clear();
+                        cachedOrders.addAll(resp.body());
+                        postSuccess(callback, resp.body());
+                        return;
                     }
-                }
-                postSuccess(callback, new ArrayList<>(cachedOrders));
-            } catch (Exception e) {
-                postSuccess(callback, new ArrayList<>(cachedOrders));
+                } catch (Exception ignored) {}
             }
+            // Auto-expire any local pending orders where 10m elapsed
+            long now = System.currentTimeMillis();
+            for (Order o : cachedOrders) {
+                if (o.getStatus() == OrderStatus.AWAITING_PAYMENT && o.getPaymentExpiresAt() > 0 && now > o.getPaymentExpiresAt()) {
+                    o.setStatus(OrderStatus.EXPIRED);
+                }
+            }
+            postSuccess(callback, new ArrayList<>(cachedOrders));
         });
     }
 
@@ -421,6 +430,21 @@ public class FoodHeroRepository {
 
     public void getNotifications(UserRole role, ResultCallback<List<FoodHeroNotification>> callback) {
         executor.execute(() -> {
+            String userId = sessionManager.getUserId();
+            if (userId != null) {
+                try {
+                    Response<List<FoodHeroNotification>> resp = restClient.getNotifications(
+                        SupabaseConfig.SUPABASE_ANON_KEY,
+                        getBearer(),
+                        "eq." + userId,
+                        "created_at.desc"
+                    ).execute();
+                    if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
+                        postSuccess(callback, resp.body());
+                        return;
+                    }
+                } catch (Exception ignored) {}
+            }
             List<FoodHeroNotification> filtered = new ArrayList<>();
             for (FoodHeroNotification n : cachedNotifications) {
                 if (n.getRecipientRole() == role) {
@@ -538,6 +562,22 @@ public class FoodHeroRepository {
 
     public void getMerchantOrders(String merchantId, ResultCallback<List<Order>> callback) {
         executor.execute(() -> {
+            if (merchantId != null) {
+                try {
+                    Response<List<Order>> resp = restClient.getMerchantOrders(
+                        SupabaseConfig.SUPABASE_ANON_KEY,
+                        getBearer(),
+                        "eq." + merchantId,
+                        "created_at.desc"
+                    ).execute();
+                    if (resp.isSuccessful() && resp.body() != null) {
+                        cachedOrders.clear();
+                        cachedOrders.addAll(resp.body());
+                        postSuccess(callback, resp.body());
+                        return;
+                    }
+                } catch (Exception ignored) {}
+            }
             long now = System.currentTimeMillis();
             for (Order o : cachedOrders) {
                 if (o.getStatus() == OrderStatus.AWAITING_PAYMENT && o.getPaymentExpiresAt() > 0 && now > o.getPaymentExpiresAt()) {

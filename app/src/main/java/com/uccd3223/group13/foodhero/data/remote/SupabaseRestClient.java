@@ -38,6 +38,14 @@ public interface SupabaseRestClient {
         @Body Profile profile
     );
 
+    @Headers({"Content-Type: application/json", "Prefer: return=representation,resolution=merge-duplicates"})
+    @POST("/rest/v1/profiles")
+    Call<List<Profile>> upsertProfile(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Body Profile profile
+    );
+
     @Headers({"Content-Type: application/json", "Prefer: return=representation"})
     @PATCH("/rest/v1/profiles")
     Call<List<Profile>> updateProfile(

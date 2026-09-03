@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_payment_duitnow"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/colorBackground"
-    android:fitsSystemWindows="true">
+    android:background="@color/colorBackground">
 
     <!-- Top App Bar -->
     <com.google.android.material.appbar.MaterialToolbar
@@ -31,7 +31,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="@dimen/spacing_16"
-            android:paddingVertical="@dimen/spacing_16">
+            android:paddingTop="@dimen/spacing_16"
+            android:paddingBottom="@dimen/spacing_40">
 
             <!-- 10-Minute Real-Time Countdown Timer Card -->
             <com.google.android.material.card.MaterialCardView
@@ -78,7 +79,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="2dp"
+                app:cardElevation="0dp"
+                app:cardMaxElevation="0dp"
                 android:layout_marginBottom="@dimen/spacing_16">
 
                 <LinearLayout
@@ -140,9 +142,9 @@
 
                     <!-- QR Code Image -->
                     <com.google.android.material.card.MaterialCardView
-                        android:layout_width="220dp"
-                        android:layout_height="220dp"
-                        android:layout_marginTop="@dimen/spacing_16"
+                        android:layout_width="180dp"
+                        android:layout_height="180dp"
+                        android:layout_marginTop="@dimen/spacing_12"
                         android:layout_marginBottom="@dimen/spacing_12"
                         app:cardCornerRadius="16dp"
                         app:cardElevation="0dp"

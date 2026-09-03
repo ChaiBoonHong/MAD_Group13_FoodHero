@@ -3,6 +3,7 @@ package com.uccd3223.group13.foodhero.ui;
 import android.content.Intent;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -55,6 +56,18 @@ public class ListingDetailsActivity extends AppCompatActivity {
         }
 
         initViews();
+
+        View cardBottom = findViewById(R.id.card_sticky_bottom);
+        if (cardBottom != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(cardBottom, (v, windowInsets) -> {
+                androidx.core.graphics.Insets insets = windowInsets.getInsets(
+                    androidx.core.view.WindowInsetsCompat.Type.systemBars()
+                );
+                v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), insets.bottom);
+                return windowInsets;
+            });
+        }
+
         bindData();
         setupListeners();
         updatePriceSummary();

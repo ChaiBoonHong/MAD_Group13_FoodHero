@@ -24,6 +24,13 @@ public interface SupabaseAuthService {
     );
 
     @Headers({"Content-Type: application/json"})
+    @POST("/auth/v1/token?grant_type=id_token")
+    Call<AuthResponse> signInWithIdToken(
+        @Header("apikey") String apiKey,
+        @Body AuthIdTokenRequest request
+    );
+
+    @Headers({"Content-Type: application/json"})
     @POST("/auth/v1/token?grant_type=refresh_token")
     Call<AuthResponse> refreshToken(
         @Header("apikey") String apiKey,

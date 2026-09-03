@@ -170,6 +170,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:fontFamily="@font/roboto_slab"
                     android:text="Available Now"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="18sp"

@@ -42,6 +42,8 @@ public class MerchantHomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_merchant_home);
 
+        com.uccd3223.group13.foodhero.util.SystemBarUtils.applySafeInsets(this, findViewById(R.id.root_merchant_home));
+
         initViews();
         setupNavigation();
         setupRealtimeNotifications();
@@ -144,7 +146,8 @@ public class MerchantHomeActivity extends AppCompatActivity {
         mainLayout.addView(tvHeader);
         mainLayout.addView(tvSub);
 
-        FoodHeroRepository.getInstance(this).getMerchantOrders("merchant-demo-id", new ResultCallback<List<Order>>() {
+        String currentMerchantId = SessionManager.getInstance(this).getUserId();
+        FoodHeroRepository.getInstance(this).getMerchantOrders(currentMerchantId, new ResultCallback<List<Order>>() {
             @Override
             public void onSuccess(List<Order> orders) {
                 if (orders == null || orders.isEmpty()) {
@@ -163,7 +166,8 @@ public class MerchantHomeActivity extends AppCompatActivity {
                 lp.setMargins(0, 0, 0, 24);
                 card.setLayoutParams(lp);
                 card.setRadius(24f);
-                card.setCardElevation(2f);
+                card.setCardElevation(0f);
+                card.setMaxCardElevation(0f);
                 card.setStrokeWidth(2);
 
                 boolean isPending = (order.getStatus() == OrderStatus.PENDING_VERIFICATION);
@@ -375,7 +379,7 @@ public class MerchantHomeActivity extends AppCompatActivity {
 
     private void setupRealtimeNotifications() {
         String userId = SessionManager.getInstance(this).getUserId();
-        realtimeClient = new SupabaseRealtimeClient();
+        realtimeClient = new SupabaseRealtimeClient(this);
         realtimeClient.subscribe(userId, new SupabaseRealtimeClient.NotificationListener() {
             @Override
             public void onNotificationReceived(FoodHeroNotification notification) {

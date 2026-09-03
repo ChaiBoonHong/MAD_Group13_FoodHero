@@ -76,6 +76,7 @@
                 android:id="@+id/tv_details_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/roboto_slab"
                 android:text="Surplus Bento Mystery Bag"
                 android:textColor="@color/colorTextPrimary"
                 android:textSize="20sp"
@@ -360,13 +361,16 @@
 
     <!-- Sticky Bottom Action Button -->
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_sticky_bottom"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         app:cardBackgroundColor="@color/colorSurface"
         app:cardCornerRadius="0dp"
-        app:cardElevation="12dp"
-        app:strokeWidth="0dp">
+        app:cardElevation="0dp"
+        app:cardMaxElevation="0dp"
+        app:strokeColor="@color/colorCardBorder"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"

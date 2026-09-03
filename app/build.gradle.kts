@@ -104,9 +104,10 @@ dependencies {
     implementation(libs.zxing.core)
     implementation(libs.zxing.embedded)
 
-    // Google Play Services Maps & Location
+    // Google Play Services Maps, Location & Auth
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
+    implementation(libs.play.services.auth)
     implementation(libs.maps.utils)
 
     // Testing
