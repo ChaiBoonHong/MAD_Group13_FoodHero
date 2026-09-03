@@ -92,11 +92,29 @@ public class AuthRepository {
     ) {
         executor.execute(() -> {
             try {
-                AuthRequest req = new AuthRequest(email, password);
+                java.util.Map<String, Object> metaData = new java.util.HashMap<>();
+                metaData.put("role", role != null ? role.name().toLowerCase() : "student");
+                metaData.put("full_name", fullName);
+                if (studentId != null && !studentId.isEmpty()) metaData.put("student_id", studentId);
+                if (faculty != null && !faculty.isEmpty()) metaData.put("faculty", faculty);
+
+                AuthRequest req = new AuthRequest(email, password, metaData);
                 Response<AuthResponse> resp = authService.signUp(SupabaseConfig.SUPABASE_ANON_KEY, req).execute();
 
                 if (!resp.isSuccessful() || resp.body() == null || resp.body().getUser() == null) {
-                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Registration failed: " + resp.message()));
+                    String errorMsg = "Registration failed";
+                    if (resp.errorBody() != null) {
+                        try {
+                            String errStr = resp.errorBody().string();
+                            com.google.gson.JsonObject errObj = new Gson().fromJson(errStr, com.google.gson.JsonObject.class);
+                            if (errObj != null) {
+                                if (errObj.has("msg")) errorMsg = errObj.get("msg").getAsString();
+                                else if (errObj.has("message")) errorMsg = errObj.get("message").getAsString();
+                                else if (errObj.has("error_description")) errorMsg = errObj.get("error_description").getAsString();
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, errorMsg));
                     return;
                 }
 
@@ -104,13 +122,13 @@ public class AuthRepository {
                 String accessToken = resp.body().getAccessToken() != null ? resp.body().getAccessToken() : SupabaseConfig.SUPABASE_ANON_KEY;
                 String refreshToken = resp.body().getRefreshToken() != null ? resp.body().getRefreshToken() : "";
 
-                // Create Profile in database
+                // Upsert Profile in database
                 Profile profile = new Profile(userId, email, role, fullName);
                 profile.setStudentId(studentId);
                 profile.setFaculty(faculty);
 
                 String bearer = "Bearer " + accessToken;
-                Response<List<Profile>> profileResp = restClient.createProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, profile).execute();
+                restClient.upsertProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, profile).execute();
 
                 if (role == UserRole.MERCHANT && businessName != null && !businessName.isEmpty()) {
                     Merchant merchant = new Merchant(null, userId, businessName, campusLocation, 4.336214, 101.142111);
@@ -133,7 +151,19 @@ public class AuthRepository {
                 Response<AuthResponse> resp = authService.signInWithPassword(SupabaseConfig.SUPABASE_ANON_KEY, req).execute();
 
                 if (!resp.isSuccessful() || resp.body() == null || resp.body().getUser() == null) {
-                    postError(callback, new DataError(DataError.CODE_INVALID_CREDENTIALS, "Invalid email or password."));
+                    String errorMsg = "Invalid email or password.";
+                    if (resp.errorBody() != null) {
+                        try {
+                            String errStr = resp.errorBody().string();
+                            com.google.gson.JsonObject errObj = new Gson().fromJson(errStr, com.google.gson.JsonObject.class);
+                            if (errObj != null) {
+                                if (errObj.has("msg")) errorMsg = errObj.get("msg").getAsString();
+                                else if (errObj.has("message")) errorMsg = errObj.get("message").getAsString();
+                                else if (errObj.has("error_description")) errorMsg = errObj.get("error_description").getAsString();
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    postError(callback, new DataError(DataError.CODE_INVALID_CREDENTIALS, errorMsg));
                     return;
                 }
 
@@ -150,7 +180,8 @@ public class AuthRepository {
                     profile = profileResp.body().get(0);
                 } else {
                     // Fallback profile if profile row is pending trigger
-                    profile = new Profile(userId, email, UserRole.STUDENT, email.split("@")[0]);
+                    UserRole fallbackRole = (email != null && email.toLowerCase().contains("merchant")) ? UserRole.MERCHANT : UserRole.STUDENT;
+                    profile = new Profile(userId, email, fallbackRole, email != null && email.contains("@") ? email.split("@")[0] : "User");
                 }
 
                 sessionManager.saveSession(accessToken, refreshToken, profile);
