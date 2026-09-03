@@ -273,4 +273,12 @@ public class Order implements Serializable {
     public void setPaymentReference(String paymentReference) {
         this.paymentReference = paymentReference;
     }
+
+    public Profile getStudent() {
+        return studentProfile;
+    }
+
+    public void setStudent(Profile studentProfile) {
+        this.studentProfile = studentProfile;
+    }
 }
