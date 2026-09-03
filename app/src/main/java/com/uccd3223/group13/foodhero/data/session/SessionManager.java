@@ -113,6 +113,11 @@ public class SessionManager {
         return null;
     }
 
+    public String getFullName() {
+        Profile p = getProfile();
+        return p != null ? p.getFullName() : null;
+    }
+
     public void clearSession() {
         prefs.edit().clear().apply();
     }
