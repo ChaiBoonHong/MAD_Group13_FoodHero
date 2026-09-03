@@ -6,8 +6,8 @@ This guide details the reorganized, domain-driven PostgreSQL database architectu
 
 ## 1. Clean Database Schema (One-Click Setup)
 
-All previous fragmented migrations (`001`, `002`, `003`) have been consolidated into a single master schema file:
-📁 **[`supabase/schema.sql`](file:///d:/UTAR/Group13-FoodHero/MAD_Group13_FoodHero/supabase/schema.sql)** (or [`supabase/migrations/001_consolidated_schema.sql`](file:///d:/UTAR/Group13-FoodHero/MAD_Group13_FoodHero/supabase/migrations/001_consolidated_schema.sql)).
+All previous fragmented migrations have been consolidated into a single master schema file:
+📁 **[`supabase/schema.sql`](file:///d:/UTAR/Group13-FoodHero/MAD_Group13_FoodHero/supabase/schema.sql)**.
 
 ### How to apply:
 1. Open your Supabase SQL Editor:
