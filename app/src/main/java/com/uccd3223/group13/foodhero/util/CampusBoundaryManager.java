@@ -22,11 +22,11 @@ public class CampusBoundaryManager {
         new GeoPoint(4.330000, 101.135000)
     );
 
-    // Approved UTAR Kampar Entrances
+    // Approved UTAR Kampar Entrances (Exact Geodetic Coordinates)
     private static final List<CampusLandmark> ENTRANCES = Arrays.asList(
-        new CampusLandmark("ent_east", "East Gate (Main Entrance)", "entrance", 4.338500, 101.146500),
-        new CampusLandmark("ent_west", "West Gate (Sports Complex)", "entrance", 4.332800, 101.137200),
-        new CampusLandmark("ent_north", "North Gate", "entrance", 4.343200, 101.141500)
+        new CampusLandmark("ent_east", "East Gate (Main Entrance)", "entrance", 4.337324, 101.145255),
+        new CampusLandmark("ent_west", "West Gate (Sports Complex)", "entrance", 4.334848, 101.135104),
+        new CampusLandmark("ent_north", "North Gate", "entrance", 4.341796, 101.137832)
     );
 
     /**
@@ -132,14 +132,11 @@ public class CampusBoundaryManager {
 
     public static List<CampusLandmark> getSeededLandmarks() {
         List<CampusLandmark> list = new ArrayList<>(ENTRANCES);
-        list.add(new CampusLandmark("l1", "Student Pavilion I (Cafeteria)", "student_pavilion", 4.335800, 101.141200));
-        list.add(new CampusLandmark("l2", "Student Pavilion II (Cafeteria)", "student_pavilion", 4.337500, 101.143800));
-        list.add(new CampusLandmark("l3", "Block A - Heritage Hall", "landmark", 4.339200, 101.144500));
-        list.add(new CampusLandmark("l4", "Dewan Tun Dr Ling Liong Sik", "landmark", 4.338800, 101.143500));
-        list.add(new CampusLandmark("l5", "Block N - FICT", "academic_block", 4.336500, 101.140200));
-        list.add(new CampusLandmark("l6", "Block K - FEGT", "academic_block", 4.335200, 101.139500));
-        list.add(new CampusLandmark("l7", "Block D - FBF", "academic_block", 4.337800, 101.142000));
-        list.add(new CampusLandmark("l8", "UTAR Kampar Library", "academic_block", 4.338200, 101.144000));
+        list.add(new CampusLandmark("l1", "Block N - FICT", "academic_block", 4.338707, 101.136712));
+        list.add(new CampusLandmark("l2", "Block C - Student Pavilion I", "student_pavilion", 4.337243, 101.142379));
+        list.add(new CampusLandmark("l3", "Block K - Student Pavilion II", "student_pavilion", 4.341959, 101.141229));
+        list.add(new CampusLandmark("l4", "Cafeteria D & E", "student_pavilion", 4.338326, 101.144057));
+        list.add(new CampusLandmark("l5", "Tin Road UTAR Cafe", "student_pavilion", 4.339827, 101.142947));
         return list;
     }
 }

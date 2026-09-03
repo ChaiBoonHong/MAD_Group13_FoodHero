@@ -647,12 +647,13 @@ VALUES (
     TRUE
 ) ON CONFLICT DO NOTHING;
 
--- 10.2 UTAR Kampar Campus Landmarks
+-- 10.2 UTAR Kampar Campus Landmarks (Exact Google Maps Coordinates)
 INSERT INTO public.campus_landmarks (name, category, latitude, longitude) VALUES
-    ('Student Pavilion I (Cafeteria)', 'student_pavilion', 4.335800, 101.141200),
-    ('Student Pavilion II (Cafeteria)', 'student_pavilion', 4.337500, 101.143800),
-    ('Block N - FICT', 'academic_block', 4.336500, 101.140200),
-    ('Block K - FEGT', 'academic_block', 4.335200, 101.139500),
-    ('Block D - FBF', 'academic_block', 4.337800, 101.142000)
+    ('Block N - FICT', 'academic_block', 4.338707, 101.136712),
+    ('Block C - Student Pavilion I', 'student_pavilion', 4.337243, 101.142379),
+    ('Block K - Student Pavilion II', 'student_pavilion', 4.341959, 101.141229),
+    ('Cafeteria D & E', 'student_pavilion', 4.338326, 101.144057),
+    ('Tin Road UTAR Cafe', 'student_pavilion', 4.339827, 101.142947)
 ON CONFLICT DO NOTHING;
+
 
