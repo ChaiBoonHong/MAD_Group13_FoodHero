@@ -90,6 +90,19 @@
             android:name=".ui.NotificationsActivity"
             android:exported="true" />
 
+        <!-- 10. Merchant Add/Edit Surplus Bag -->
+        <activity
+            android:name=".ui.AddEditListingActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 11. Merchant QR Scanner -->
+        <activity
+            android:name=".ui.MerchantQrScannerActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity" />
+
     </application>
 
 </manifest>

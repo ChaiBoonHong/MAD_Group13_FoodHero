@@ -111,4 +111,81 @@
     <string name="error_outside_campus">Location must be inside UTAR Kampar Campus.</string>
     <string name="notifications">Notifications</string>
     <string name="no_notifications">No new notifications</string>
+
+    <!-- Merchant Portal Strings -->
+    <string name="merchant_portal_title">Merchant Portal</string>
+    <string name="merchant_welcome_subtitle">Student Pavilion I • Online</string>
+    <string name="create_new_listing">+ Create Listing</string>
+    <string name="revenue_recovered">Revenue Recovered</string>
+    <string name="food_diverted">Food Diverted</string>
+    <string name="orders_rescued">Orders Rescued</string>
+    <string name="merchant_rating">Rating</string>
+    <string name="active_listings_count">%1$d Active Listings</string>
+    <string name="low_stock_alerts_count">%1$d Low Stock Alert</string>
+    <string name="recent_orders">Recent Orders</string>
+    <string name="view_all_orders">View All Orders</string>
+    <string name="no_recent_orders">No recent orders yet</string>
+
+    <!-- Merchant Listings -->
+    <string name="merchant_listings_title">Surplus Food Inventory</string>
+    <string name="filter_status_all">All</string>
+    <string name="filter_status_active">Active</string>
+    <string name="filter_status_low_stock">Low Stock (≤2)</string>
+    <string name="filter_status_expired">Expired</string>
+    <string name="btn_edit">Edit</string>
+    <string name="btn_restock">Restock</string>
+    <string name="btn_deactivate">Deactivate</string>
+    <string name="dialog_restock_title">Restock Surplus Bag</string>
+    <string name="dialog_restock_prompt">Add quantity to surplus bag inventory:</string>
+    <string name="dialog_deactivate_title">Deactivate Listing?</string>
+    <string name="dialog_deactivate_msg">This bag will be marked as expired and removed from the active student feed.</string>
+    <string name="empty_merchant_listings_title">No Listings Found</string>
+    <string name="empty_merchant_listings_msg">You have not published any surplus food bags in this category.</string>
+
+    <!-- Add/Edit Listing -->
+    <string name="add_listing_title">Add Surplus Bag</string>
+    <string name="edit_listing_title">Edit Listing</string>
+    <string name="section_photo">1. Surplus Bag Photo</string>
+    <string name="upload_photo_tab">Upload Photo</string>
+    <string name="use_url_tab">Use Photo URL</string>
+    <string name="photo_url_hint">Enter HTTPS Image URL</string>
+    <string name="btn_preview_url">Preview &amp; Validate</string>
+    <string name="btn_choose_photo">Choose Photo from Device</string>
+    <string name="remove_photo">Remove Photo</string>
+    <string name="section_food_details">2. Food Details</string>
+    <string name="listing_title_hint">Item Title (e.g. Surplus Bento Mystery Bag)</string>
+    <string name="listing_desc_hint">Description (ingredients, dietary details, packaging)</string>
+    <string name="section_price_stock">3. Price &amp; Stock</string>
+    <string name="original_price_hint">Original Price (RM)</string>
+    <string name="discount_price_hint">Discounted Price (RM ≤ 10.00)</string>
+    <string name="quantity_hint">Available Quantity</string>
+    <string name="co2_hint">Estimated CO₂ Offset (kg)</string>
+    <string name="section_pickup">4. Pickup Window</string>
+    <string name="pickup_start_hint">Pickup Start (e.g. 16:30)</string>
+    <string name="pickup_end_hint">Pickup End (e.g. 18:00)</string>
+    <string name="section_location">5. Campus Pickup Location</string>
+    <string name="select_landmark">Select Approved Campus Landmark</string>
+    <string name="btn_publish_listing">Publish Surplus Bag</string>
+    <string name="btn_save_changes">Save Changes</string>
+
+    <!-- Merchant Orders & QR Scanner -->
+    <string name="btn_scan_qr">Scan Pickup QR</string>
+    <string name="btn_enter_code">Enter Code</string>
+    <string name="dialog_manual_code_title">Manual Token Verification</string>
+    <string name="dialog_manual_code_hint">Enter Order Code (e.g. FH-829104)</string>
+    <string name="btn_verify_code">Verify &amp; Complete Pickup</string>
+    <string name="qr_scanner_title">Scan Student Pickup QR</string>
+    <string name="qr_scanner_hint">Align student QR code within the frame</string>
+    <string name="qr_torch_toggle">Toggle Torch</string>
+    <string name="pickup_verified_success">Pickup Verified Successfully!</string>
+    <string name="pickup_verified_points">+10 Eco-Points awarded to student.</string>
+
+    <!-- Merchant Profile -->
+    <string name="merchant_profile_title">Merchant Profile</string>
+    <string name="verified_merchant_badge">✓ Verified UTAR Campus Merchant</string>
+    <string name="operating_hours">Operating Hours</string>
+    <string name="operating_hours_val">08:00 - 18:30 Weekdays</string>
+    <string name="btn_edit_hours">Edit Operating Hours</string>
+    <string name="customer_reviews_title">Student Reviews &amp; Feedback</string>
+    <string name="no_reviews_yet">No student reviews received yet.</string>
 </resources>
