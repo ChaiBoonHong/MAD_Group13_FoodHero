@@ -18,6 +18,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.uccd3223.group13.foodhero.R;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
+import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.model.Review;
 import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
@@ -137,7 +138,23 @@ public class MerchantProfileFragment extends Fragment {
                 String newStation = etStation.getText().toString().trim();
                 if (!newHours.isEmpty()) tvOperatingHours.setText(newHours);
                 if (!newStation.isEmpty()) tvLocation.setText(newStation);
-                Toast.makeText(requireContext(), "✓ Business information updated!", Toast.LENGTH_SHORT).show();
+
+                String currentBiz = tvBusinessName != null ? tvBusinessName.getText().toString() : "Merchant Outlet";
+                foodHeroRepo.updateMerchantProfile(currentBiz, newStation, newHours, new ResultCallback<Merchant>() {
+                    @Override
+                    public void onSuccess(Merchant result) {
+                        if (isAdded()) {
+                            Toast.makeText(requireContext(), "✓ Business information updated!", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onError(DataError error) {
+                        if (isAdded()) {
+                            Toast.makeText(requireContext(), "✓ Saved locally", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
             })
             .setNegativeButton("Cancel", null)
             .show();

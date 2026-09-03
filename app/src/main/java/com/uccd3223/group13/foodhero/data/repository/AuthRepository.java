@@ -17,6 +17,7 @@ import com.uccd3223.group13.foodhero.data.remote.SupabaseConfig;
 import com.uccd3223.group13.foodhero.data.remote.SupabaseRestClient;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import okhttp3.OkHttpClient;
@@ -97,6 +98,8 @@ public class AuthRepository {
                 metaData.put("full_name", fullName);
                 if (studentId != null && !studentId.isEmpty()) metaData.put("student_id", studentId);
                 if (faculty != null && !faculty.isEmpty()) metaData.put("faculty", faculty);
+                if (businessName != null && !businessName.isEmpty()) metaData.put("business_name", businessName);
+                if (campusLocation != null && !campusLocation.isEmpty()) metaData.put("campus_location", campusLocation);
 
                 AuthRequest req = new AuthRequest(email, password, metaData);
                 Response<AuthResponse> resp = authService.signUp(SupabaseConfig.SUPABASE_ANON_KEY, req).execute();
@@ -130,15 +133,8 @@ public class AuthRepository {
                 String bearer = "Bearer " + accessToken;
                 restClient.upsertProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, profile).execute();
 
-                if (role == UserRole.MERCHANT && businessName != null && !businessName.isEmpty()) {
-                    Merchant merchant = new Merchant(null, userId, businessName, campusLocation, 4.336214, 101.142111);
-                    try {
-                        Response<List<Merchant>> mResp = restClient.createMerchant(SupabaseConfig.SUPABASE_ANON_KEY, bearer, merchant).execute();
-                        if (mResp.isSuccessful() && mResp.body() != null && !mResp.body().isEmpty()) {
-                            Merchant created = mResp.body().get(0);
-                            sessionManager.saveMerchantInfo(created.getId(), created.getBusinessName(), created.getCampusLocation());
-                        }
-                    } catch (Exception ignored) {}
+                if (role == UserRole.MERCHANT) {
+                    ensureMerchantLoaded(userId, bearer, businessName, campusLocation);
                 }
 
                 sessionManager.saveSession(accessToken, refreshToken, profile);
@@ -192,22 +188,7 @@ public class AuthRepository {
 
                 // If merchant, load or initialize their merchant outlet record
                 if (profile.getRole() == UserRole.MERCHANT) {
-                    try {
-                        Response<List<Merchant>> mResp = restClient.getMerchantByOwner(SupabaseConfig.SUPABASE_ANON_KEY, bearer, "eq." + userId).execute();
-                        if (mResp.isSuccessful() && mResp.body() != null && !mResp.body().isEmpty()) {
-                            Merchant m = mResp.body().get(0);
-                            sessionManager.saveMerchantInfo(m.getId(), m.getBusinessName(), m.getCampusLocation());
-                        } else {
-                            String bName = profile.getFullName() != null ? profile.getFullName() : "Merchant Outlet";
-                            String cLoc = "Student Pavilion I";
-                            Merchant m = new Merchant(null, userId, bName, cLoc, 4.336214, 101.142111);
-                            Response<List<Merchant>> createResp = restClient.createMerchant(SupabaseConfig.SUPABASE_ANON_KEY, bearer, m).execute();
-                            if (createResp.isSuccessful() && createResp.body() != null && !createResp.body().isEmpty()) {
-                                Merchant created = createResp.body().get(0);
-                                sessionManager.saveMerchantInfo(created.getId(), created.getBusinessName(), created.getCampusLocation());
-                            }
-                        }
-                    } catch (Exception ignored) {}
+                    ensureMerchantLoaded(userId, bearer, profile.getFullName(), "Student Pavilion I");
                 }
 
                 sessionManager.saveSession(accessToken, refreshToken, profile);
@@ -257,6 +238,10 @@ public class AuthRepository {
                     }
                 }
 
+                if (profile.getRole() == UserRole.MERCHANT) {
+                    ensureMerchantLoaded(userId, bearer, profile.getFullName(), "Student Pavilion I");
+                }
+
                 sessionManager.saveSession(accessToken, refreshToken, profile);
                 postSuccess(callback, profile);
 
@@ -290,12 +275,42 @@ public class AuthRepository {
                     } catch (Exception ignored) {}
                 }
 
+                if (profile.getRole() == UserRole.MERCHANT) {
+                    ensureMerchantLoaded(userId, bearer, profile.getFullName(), "Student Pavilion I");
+                }
+
                 sessionManager.saveSession(accessToken, refreshToken != null ? refreshToken : "", profile);
                 postSuccess(callback, profile);
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Error during OAuth: " + e.getMessage(), e));
             }
         });
+    }
+
+    public void ensureMerchantLoaded(String userId, String bearer, String defaultName, String defaultLoc) {
+        try {
+            Response<List<Merchant>> mResp = restClient.getMerchantByOwner(SupabaseConfig.SUPABASE_ANON_KEY, bearer, "eq." + userId).execute();
+            if (mResp.isSuccessful() && mResp.body() != null && !mResp.body().isEmpty()) {
+                Merchant m = mResp.body().get(0);
+                sessionManager.saveMerchantInfo(m.getId(), m.getBusinessName(), m.getCampusLocation());
+            } else {
+                String bName = (defaultName != null && !defaultName.trim().isEmpty()) ? defaultName.trim() : "Merchant Outlet";
+                String cLoc = (defaultLoc != null && !defaultLoc.trim().isEmpty()) ? defaultLoc.trim() : "Student Pavilion I";
+                String mId = UUID.randomUUID().toString();
+                Merchant m = new Merchant(mId, userId, bName, cLoc, 4.336214, 101.142111);
+                Response<List<Merchant>> createResp = restClient.createMerchant(SupabaseConfig.SUPABASE_ANON_KEY, bearer, m).execute();
+                if (createResp.isSuccessful() && createResp.body() != null && !createResp.body().isEmpty()) {
+                    Merchant created = createResp.body().get(0);
+                    sessionManager.saveMerchantInfo(created.getId(), created.getBusinessName(), created.getCampusLocation());
+                } else {
+                    sessionManager.saveMerchantInfo(mId, bName, cLoc);
+                }
+            }
+        } catch (Exception e) {
+            if (sessionManager.getMerchantId() == null) {
+                sessionManager.saveMerchantInfo(userId, defaultName != null ? defaultName : "Merchant Outlet", defaultLoc != null ? defaultLoc : "Student Pavilion I");
+            }
+        }
     }
 
     public void restoreSession(ResultCallback<Profile> callback) {
@@ -329,14 +344,8 @@ public class AuthRepository {
                 }
 
                 if (cached != null && cached.getRole() == UserRole.MERCHANT && sessionManager.getMerchantId() == null) {
-                    try {
-                        String bearer = "Bearer " + sessionManager.getAccessToken();
-                        Response<List<Merchant>> mResp = restClient.getMerchantByOwner(SupabaseConfig.SUPABASE_ANON_KEY, bearer, "eq." + cached.getId()).execute();
-                        if (mResp.isSuccessful() && mResp.body() != null && !mResp.body().isEmpty()) {
-                            Merchant m = mResp.body().get(0);
-                            sessionManager.saveMerchantInfo(m.getId(), m.getBusinessName(), m.getCampusLocation());
-                        }
-                    } catch (Exception ignored) {}
+                    String bearer = "Bearer " + sessionManager.getAccessToken();
+                    ensureMerchantLoaded(cached.getId(), bearer, cached.getFullName(), "Student Pavilion I");
                 }
 
                 postSuccess(callback, sessionManager.getProfile());

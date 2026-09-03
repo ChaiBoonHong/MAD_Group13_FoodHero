@@ -266,9 +266,13 @@ public class FoodHeroRepository {
                 } catch (Exception ignored) {}
 
                 try {
-                    Response<List<Order>> resp = restClient.createOrder(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), order).execute();
+                    Order orderPayload = copyOrderForUpload(order);
+                    Response<List<Order>> resp = restClient.createOrder(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), orderPayload).execute();
                     if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                        order = resp.body().get(0);
+                        Order remoteOrder = resp.body().get(0);
+                        remoteOrder.setListing(listing);
+                        remoteOrder.setMerchant(listing.getMerchant());
+                        order = remoteOrder;
                     }
                 } catch (Exception ignored) {
                     // Handled gracefully in offline/fallback mode
@@ -454,6 +458,14 @@ public class FoodHeroRepository {
 
     public void submitPaymentReceipt(String orderId, String receiptUrl, ResultCallback<Order> callback) {
         executor.execute(() -> {
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("status", "pending_verification");
+                body.addProperty("payment_receipt_url", receiptUrl);
+                RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"), body.toString());
+                restClient.updateOrderStatus(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + orderId, reqBody).execute();
+            } catch (Exception ignored) {}
+
             Order found = null;
             for (Order o : cachedOrders) {
                 if (o.getId() != null && o.getId().equals(orderId)) {
@@ -467,7 +479,7 @@ public class FoodHeroRepository {
 
                 // Create notification for MERCHANT
                 FoodHeroNotification n = new FoodHeroNotification();
-                n.setId("notif-" + UUID.randomUUID().toString().substring(0, 8));
+                n.setId(UUID.randomUUID().toString());
                 n.setRecipientRole(UserRole.MERCHANT);
                 n.setRecipientId(found.getMerchantId());
                 n.setRelatedOrderId(found.getId());
@@ -475,8 +487,12 @@ public class FoodHeroRepository {
                 n.setTitle("New Payment Slip Uploaded");
                 n.setMessage(String.format(Locale.US, "Order #%s (RM %.2f) payment receipt submitted. Tap to verify.",
                     found.getOrderCode(), found.getFinalPaidPrice()));
-                n.setCreatedAt("Just now");
+                n.setCreatedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
                 cachedNotifications.add(0, n);
+
+                try {
+                    restClient.createNotification(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), n).execute();
+                } catch (Exception ignored) {}
 
                 postSuccess(callback, found);
             } else {
@@ -487,6 +503,14 @@ public class FoodHeroRepository {
 
     public void verifyPaymentReceipt(String orderId, boolean approved, ResultCallback<Order> callback) {
         executor.execute(() -> {
+            String newStatus = approved ? "reserved" : "rejected";
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("status", newStatus);
+                RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"), body.toString());
+                restClient.updateOrderStatus(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + orderId, reqBody).execute();
+            } catch (Exception ignored) {}
+
             Order found = null;
             for (Order o : cachedOrders) {
                 if (o.getId() != null && o.getId().equals(orderId)) {
@@ -495,33 +519,32 @@ public class FoodHeroRepository {
                 }
             }
             if (found != null) {
+                FoodHeroNotification n = new FoodHeroNotification();
+                n.setId(UUID.randomUUID().toString());
+                n.setRecipientRole(UserRole.STUDENT);
+                n.setRecipientId(found.getStudentId());
+                n.setRelatedOrderId(found.getId());
+                n.setCreatedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
+
                 if (approved) {
                     found.setStatus(OrderStatus.RESERVED);
-                    FoodHeroNotification n = new FoodHeroNotification();
-                    n.setId("notif-" + UUID.randomUUID().toString().substring(0, 8));
-                    n.setRecipientRole(UserRole.STUDENT);
-                    n.setRecipientId(found.getStudentId());
-                    n.setRelatedOrderId(found.getId());
                     n.setEventType(NotificationType.PAYMENT_VERIFIED);
                     n.setTitle("Payment Verified! Order Confirmed");
                     n.setMessage(String.format(Locale.US, "Order #%s payment has been verified. Your Pickup QR token is ready!",
                         found.getOrderCode()));
-                    n.setCreatedAt("Just now");
-                    cachedNotifications.add(0, n);
                 } else {
                     found.setStatus(OrderStatus.REJECTED);
-                    FoodHeroNotification n = new FoodHeroNotification();
-                    n.setId("notif-" + UUID.randomUUID().toString().substring(0, 8));
-                    n.setRecipientRole(UserRole.STUDENT);
-                    n.setRecipientId(found.getStudentId());
-                    n.setRelatedOrderId(found.getId());
                     n.setEventType(NotificationType.PAYMENT_REJECTED);
                     n.setTitle("Payment Verification Failed");
                     n.setMessage(String.format(Locale.US, "Receipt for Order #%s could not be verified. Please re-upload.",
                         found.getOrderCode()));
-                    n.setCreatedAt("Just now");
-                    cachedNotifications.add(0, n);
                 }
+                cachedNotifications.add(0, n);
+
+                try {
+                    restClient.createNotification(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), n).execute();
+                } catch (Exception ignored) {}
+
                 postSuccess(callback, found);
             } else {
                 postError(callback, new DataError(DataError.CODE_NOT_FOUND, "Order not found"));
@@ -559,12 +582,16 @@ public class FoodHeroRepository {
 
     public void getMerchantOrders(String merchantId, ResultCallback<List<Order>> callback) {
         executor.execute(() -> {
-            if (merchantId != null) {
+            String resolvedId = merchantId;
+            if (resolvedId == null || resolvedId.isEmpty()) {
+                resolvedId = sessionManager.getMerchantId();
+            }
+            if (resolvedId != null) {
                 try {
                     Response<List<Order>> resp = restClient.getMerchantOrders(
                         SupabaseConfig.SUPABASE_ANON_KEY,
                         getBearer(),
-                        "eq." + merchantId,
+                        "eq." + resolvedId,
                         "created_at.desc"
                     ).execute();
                     if (resp.isSuccessful() && resp.body() != null) {
@@ -606,15 +633,23 @@ public class FoodHeroRepository {
     public void getMerchantDashboard(String merchantId, ResultCallback<MerchantDashboardData> callback) {
         executor.execute(() -> {
             try {
+                String resolvedId = merchantId;
+                if (resolvedId == null || resolvedId.isEmpty()) {
+                    resolvedId = sessionManager.getMerchantId();
+                }
+                if (resolvedId == null || resolvedId.isEmpty()) {
+                    resolvedId = sessionManager.getUserId();
+                }
+
                 MerchantDashboardData data = new MerchantDashboardData();
                 List<Order> merchantOrders = new ArrayList<>();
                 List<Listing> merchantListings = new ArrayList<>();
                 List<Review> merchantReviews = new ArrayList<>();
 
-                if (merchantId != null) {
+                if (resolvedId != null) {
                     try {
                         Response<List<Order>> oResp = restClient.getMerchantOrders(
-                            SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + merchantId, "created_at.desc"
+                            SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + resolvedId, "created_at.desc"
                         ).execute();
                         if (oResp.isSuccessful() && oResp.body() != null) {
                             merchantOrders.addAll(oResp.body());
@@ -623,7 +658,7 @@ public class FoodHeroRepository {
 
                     try {
                         Response<List<Listing>> lResp = restClient.getMerchantListings(
-                            SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + merchantId, "created_at.desc"
+                            SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + resolvedId, "created_at.desc"
                         ).execute();
                         if (lResp.isSuccessful() && lResp.body() != null) {
                             merchantListings.addAll(lResp.body());
@@ -632,7 +667,7 @@ public class FoodHeroRepository {
 
                     try {
                         Response<List<Review>> rResp = restClient.getMerchantReviews(
-                            SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + merchantId, "created_at.desc"
+                            SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + resolvedId, "created_at.desc"
                         ).execute();
                         if (rResp.isSuccessful() && rResp.body() != null) {
                             merchantReviews.addAll(rResp.body());
@@ -643,13 +678,13 @@ public class FoodHeroRepository {
                 // If remote returned nothing, check cached orders for this merchant
                 if (merchantOrders.isEmpty()) {
                     for (Order o : cachedOrders) {
-                        if (merchantId != null && merchantId.equals(o.getMerchantId())) {
+                        if (resolvedId != null && resolvedId.equals(o.getMerchantId())) {
                             merchantOrders.add(o);
                         }
                     }
                 }
 
-                // Compute metrics from actual data
+                // Compute metrics dynamically from actual data (zero hardcoded defaults)
                 double revenue = 0.0;
                 double foodDiverted = 0.0;
                 int completedCount = 0;
@@ -673,7 +708,7 @@ public class FoodHeroRepository {
                     }
                 }
 
-                double avgRating = 5.0;
+                double avgRating = 0.0;
                 if (!merchantReviews.isEmpty()) {
                     double sumRating = 0;
                     for (Review r : merchantReviews) {
@@ -696,10 +731,17 @@ public class FoodHeroRepository {
                 }
                 data.setRecentOrders(recent);
 
-                localCache.cacheDashboard(merchantId, data);
+                if (resolvedId != null) {
+                    localCache.cacheDashboard(resolvedId, data);
+                }
                 postSuccess(callback, data);
             } catch (Exception e) {
-                localCache.getCachedDashboard(merchantId, callback);
+                String fallbackId = merchantId != null ? merchantId : sessionManager.getMerchantId();
+                if (fallbackId != null) {
+                    localCache.getCachedDashboard(fallbackId, callback);
+                } else {
+                    postSuccess(callback, new MerchantDashboardData());
+                }
             }
         });
     }
@@ -707,11 +749,19 @@ public class FoodHeroRepository {
     public void getMerchantListings(String merchantId, ResultCallback<List<Listing>> callback) {
         executor.execute(() -> {
             try {
-                if (merchantId != null) {
+                String resolvedId = merchantId;
+                if (resolvedId == null || resolvedId.isEmpty()) {
+                    resolvedId = sessionManager.getMerchantId();
+                }
+                if (resolvedId == null || resolvedId.isEmpty()) {
+                    resolvedId = sessionManager.getUserId();
+                }
+
+                if (resolvedId != null) {
                     Response<List<Listing>> resp = restClient.getMerchantListings(
                         SupabaseConfig.SUPABASE_ANON_KEY,
                         getBearer(),
-                        "eq." + merchantId,
+                        "eq." + resolvedId,
                         "created_at.desc"
                     ).execute();
 
@@ -742,23 +792,39 @@ public class FoodHeroRepository {
                     return;
                 }
 
+                if (listing.getMerchantId() == null || listing.getMerchantId().isEmpty()) {
+                    String mId = sessionManager.getMerchantId();
+                    if (mId == null || mId.isEmpty()) {
+                        mId = sessionManager.getUserId();
+                    }
+                    listing.setMerchantId(mId);
+                }
+
                 if (isExternalUrl) {
                     listing.setImageSource(ImageSource.EXTERNAL_URL);
                     listing.setImageUrl(imageUriOrUrl);
                 }
 
-                listing.setId(UUID.randomUUID().toString());
+                if (listing.getId() == null || listing.getId().isEmpty()) {
+                    listing.setId(UUID.randomUUID().toString());
+                }
                 listing.setStatus(ListingStatus.ACTIVE);
+
+                Merchant cachedM = listing.getMerchant();
+                listing.setMerchant(null); // Strip nested join object for PostgREST
 
                 try {
                     Response<List<Listing>> resp = restClient.createListing(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), listing).execute();
                     if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                        postSuccess(callback, resp.body().get(0));
+                        Listing created = resp.body().get(0);
+                        created.setMerchant(cachedM);
+                        postSuccess(callback, created);
                         return;
                     }
                 } catch (Exception ignored) {
                 }
 
+                listing.setMerchant(cachedM);
                 postSuccess(callback, listing);
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to create listing: " + e.getMessage(), e));
@@ -774,15 +840,21 @@ public class FoodHeroRepository {
                     return;
                 }
 
+                Merchant cachedM = listing.getMerchant();
+                listing.setMerchant(null); // Strip nested join object for PostgREST
+
                 try {
                     Response<List<Listing>> resp = restClient.updateListing(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + listing.getId(), listing).execute();
                     if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                        postSuccess(callback, resp.body().get(0));
+                        Listing updated = resp.body().get(0);
+                        updated.setMerchant(cachedM);
+                        postSuccess(callback, updated);
                         return;
                     }
                 } catch (Exception ignored) {
                 }
 
+                listing.setMerchant(cachedM);
                 postSuccess(callback, listing);
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to update listing: " + e.getMessage(), e));
@@ -830,17 +902,40 @@ public class FoodHeroRepository {
                     return;
                 }
 
-                // Query order
-                String cleanedCode = tokenOrCode.trim().replace("#", "");
-                Response<List<Order>> resp = restClient.getOrderByCode(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + cleanedCode).execute();
+                String raw = tokenOrCode.trim();
+                String codePart = raw.replace("#", "");
+                String tokenPart = raw;
+                if (raw.contains(":")) {
+                    String[] parts = raw.split(":", 2);
+                    codePart = parts[0].trim().replace("#", "");
+                    tokenPart = parts[1].trim();
+                }
 
                 Order matchedOrder = null;
-                if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                    matchedOrder = resp.body().get(0);
-                } else {
+
+                // 1. Try query by order_code
+                try {
+                    Response<List<Order>> resp = restClient.getOrderByCode(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + codePart).execute();
+                    if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
+                        matchedOrder = resp.body().get(0);
+                    }
+                } catch (Exception ignored) {}
+
+                // 2. If not found, try query by pickup_token
+                if (matchedOrder == null) {
+                    try {
+                        Response<List<Order>> resp = restClient.getOrderByPickupToken(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + tokenPart).execute();
+                        if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
+                            matchedOrder = resp.body().get(0);
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                // 3. Fallback to cachedOrders
+                if (matchedOrder == null) {
                     for (Order o : cachedOrders) {
-                        if ((o.getOrderCode() != null && o.getOrderCode().equalsIgnoreCase(cleanedCode)) ||
-                            (o.getPickupToken() != null && o.getPickupToken().equalsIgnoreCase(tokenOrCode))) {
+                        if ((o.getOrderCode() != null && o.getOrderCode().equalsIgnoreCase(codePart)) ||
+                            (o.getPickupToken() != null && (o.getPickupToken().equalsIgnoreCase(tokenPart) || o.getPickupToken().equalsIgnoreCase(raw)))) {
                             matchedOrder = o;
                             break;
                         }
@@ -857,12 +952,12 @@ public class FoodHeroRepository {
                     return;
                 }
 
-                if (matchedOrder.getStatus() == OrderStatus.CANCELLED || matchedOrder.getStatus() == OrderStatus.EXPIRED) {
+                if (matchedOrder.getStatus() == OrderStatus.CANCELLED || matchedOrder.getStatus() == OrderStatus.EXPIRED || matchedOrder.getStatus() == OrderStatus.REJECTED) {
                     postSuccess(callback, new OrderVerificationResult(false, "Order status is " + matchedOrder.getStatus().getValue() + ".", matchedOrder));
                     return;
                 }
 
-                // Update to completed
+                // Update to completed in Supabase
                 matchedOrder.setStatus(OrderStatus.COMPLETED);
                 matchedOrder.setCompletedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
 
@@ -872,14 +967,72 @@ public class FoodHeroRepository {
                     body.addProperty("completed_at", matchedOrder.getCompletedAt());
                     RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"), body.toString());
                     restClient.updateOrderStatus(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + matchedOrder.getId(), reqBody).execute();
-                } catch (Exception ignored) {
-                }
+                } catch (Exception ignored) {}
 
                 postSuccess(callback, new OrderVerificationResult(true, "Pickup verified successfully! 10 Eco-Points awarded to student.", matchedOrder));
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Verification failed: " + e.getMessage(), e));
             }
         });
+    }
+
+    public void updateMerchantProfile(String businessName, String campusLocation, String closingTime, ResultCallback<Merchant> callback) {
+        executor.execute(() -> {
+            try {
+                String mId = sessionManager.getMerchantId();
+                if (mId == null || mId.isEmpty()) {
+                    mId = sessionManager.getUserId();
+                }
+                JsonObject body = new JsonObject();
+                if (businessName != null && !businessName.trim().isEmpty()) {
+                    body.addProperty("business_name", businessName.trim());
+                }
+                if (campusLocation != null && !campusLocation.trim().isEmpty()) {
+                    body.addProperty("campus_location", campusLocation.trim());
+                }
+                if (closingTime != null && !closingTime.trim().isEmpty()) {
+                    body.addProperty("closing_time", closingTime.trim());
+                }
+                RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"), body.toString());
+                Response<List<Merchant>> resp = restClient.updateMerchant(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + mId, reqBody).execute();
+                if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
+                    Merchant updated = resp.body().get(0);
+                    sessionManager.saveMerchantInfo(updated.getId(), updated.getBusinessName(), updated.getCampusLocation());
+                    postSuccess(callback, updated);
+                } else {
+                    sessionManager.saveMerchantInfo(mId, businessName != null ? businessName : "Merchant", campusLocation != null ? campusLocation : "");
+                    Merchant m = new Merchant(mId, sessionManager.getUserId(), businessName, campusLocation, 4.336214, 101.142111);
+                    postSuccess(callback, m);
+                }
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to update profile: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    private Order copyOrderForUpload(Order src) {
+        Order copy = new Order();
+        copy.setId(src.getId());
+        copy.setOrderCode(src.getOrderCode());
+        copy.setStudentId(src.getStudentId());
+        copy.setListingId(src.getListingId());
+        copy.setMerchantId(src.getMerchantId());
+        copy.setQuantity(src.getQuantity());
+        copy.setTotalOriginalPrice(src.getTotalOriginalPrice());
+        copy.setTotalDiscountedPrice(src.getTotalDiscountedPrice());
+        copy.setRewardPointsUsed(src.getRewardPointsUsed());
+        copy.setRewardDiscountAmount(src.getRewardDiscountAmount());
+        copy.setFinalPaidPrice(src.getFinalPaidPrice());
+        copy.setPickupStart(src.getPickupStart());
+        copy.setPickupEnd(src.getPickupEnd());
+        copy.setPickupToken(src.getPickupToken());
+        copy.setStatus(src.getStatus());
+        copy.setPaymentExpiresAt(src.getPaymentExpiresAt());
+        copy.setPaymentReceiptUrl(src.getPaymentReceiptUrl());
+        copy.setPaymentMethod(src.getPaymentMethod());
+        copy.setPaymentReference(src.getPaymentReference());
+        copy.setCreatedAt(src.getCreatedAt());
+        return copy;
     }
 
     public void getMerchantReviews(String merchantId, ResultCallback<List<Review>> callback) {

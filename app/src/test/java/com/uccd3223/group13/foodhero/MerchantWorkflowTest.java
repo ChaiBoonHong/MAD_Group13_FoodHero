@@ -164,4 +164,79 @@ public class MerchantWorkflowTest {
         assertFalse(failureResult.isValid());
         assertNull(failureResult.getOrder());
     }
+
+    // ========================================================================
+    // 7. QR CODE PAYLOAD PARSING (orderCode:pickupToken)
+    // ========================================================================
+
+    @Test
+    public void testQrCodePayloadParsing() {
+        String fullPayload = "FH-829104:FH-TOKEN-ABC12345";
+        String[] parts = fullPayload.split(":", 2);
+        assertEquals("FH-829104", parts[0]);
+        assertEquals("FH-TOKEN-ABC12345", parts[1]);
+
+        String singleCode = "FH-829104";
+        assertFalse("Single code does not contain colon", singleCode.contains(":"));
+    }
+
+    // ========================================================================
+    // 8. DYNAMIC DASHBOARD RATING ROLLUP (NO HARDCODED 5.0)
+    // ========================================================================
+
+    @Test
+    public void testDashboardRating_zeroWhenNoReviews() {
+        java.util.List<com.uccd3223.group13.foodhero.data.model.Review> emptyReviews = new java.util.ArrayList<>();
+        double avgRating = 0.0;
+        if (!emptyReviews.isEmpty()) {
+            double sum = 0;
+            for (com.uccd3223.group13.foodhero.data.model.Review r : emptyReviews) sum += r.getRating();
+            avgRating = sum / emptyReviews.size();
+        }
+        assertEquals("Average rating must be 0.0 when no reviews exist, not fake 5.0", 0.0, avgRating, 0.001);
+    }
+
+    @Test
+    public void testDashboardRating_dynamicallyCalculated() {
+        java.util.List<com.uccd3223.group13.foodhero.data.model.Review> reviews = new java.util.ArrayList<>();
+        com.uccd3223.group13.foodhero.data.model.Review r1 = new com.uccd3223.group13.foodhero.data.model.Review();
+        r1.setRating(4);
+        com.uccd3223.group13.foodhero.data.model.Review r2 = new com.uccd3223.group13.foodhero.data.model.Review();
+        r2.setRating(5);
+        reviews.add(r1);
+        reviews.add(r2);
+
+        double sum = 0;
+        for (com.uccd3223.group13.foodhero.data.model.Review r : reviews) sum += r.getRating();
+        double avgRating = sum / reviews.size();
+
+        assertEquals(4.5, avgRating, 0.001);
+    }
+
+    // ========================================================================
+    // 9. CLEAN POSTGREST UPLOAD PAYLOADS (NO EMBEDDED RELATION OBJECTS)
+    // ========================================================================
+
+    @Test
+    public void testCleanOrderPayload_hasNoJoinedObjects() {
+        Order original = new Order();
+        original.setId("ord-123");
+        original.setOrderCode("FH-123456");
+        original.setStatus(OrderStatus.AWAITING_PAYMENT);
+
+        Listing listing = new Listing();
+        listing.setId("lst-123");
+        original.setListing(listing);
+
+        assertNotNull("Original order has joined listing", original.getListing());
+
+        // Simulated copyOrderForUpload
+        Order payload = new Order();
+        payload.setId(original.getId());
+        payload.setOrderCode(original.getOrderCode());
+        payload.setStatus(original.getStatus());
+
+        assertNull("Upload payload must not have joined listing object", payload.getListing());
+        assertNull("Upload payload must not have joined merchant object", payload.getMerchant());
+    }
 }

@@ -129,8 +129,11 @@ public class MerchantDashboardFragment extends Fragment {
 
         tvMetricRevenue.setText(CurrencyUtils.format(data.getRevenueRecovered()));
         tvMetricFoodDiverted.setText(String.format(Locale.US, "%.1f kg", data.getFoodDivertedKg()));
-        tvMetricOrdersCompleted.setText(String.valueOf(data.getOrdersCompleted()));
-        tvMetricRating.setText(String.format(Locale.US, "%.1f", data.getAverageRating()));
+        if (data.getAverageRating() <= 0.0) {
+            tvMetricRating.setText("-");
+        } else {
+            tvMetricRating.setText(String.format(Locale.US, "%.1f", data.getAverageRating()));
+        }
 
         tvActiveListingsBadge.setText(String.format(Locale.US, "%d Active Bags", data.getActiveListingsCount()));
         tvLowStockBadge.setText(String.format(Locale.US, "%d Low Stock Alert", data.getLowStockAlertsCount()));

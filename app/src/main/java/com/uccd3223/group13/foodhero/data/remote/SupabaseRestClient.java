@@ -77,6 +77,15 @@ public interface SupabaseRestClient {
         @Body Merchant merchant
     );
 
+    @Headers({"Content-Type: application/json", "Prefer: return=representation"})
+    @PATCH("/rest/v1/merchants")
+    Call<List<Merchant>> updateMerchant(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Query("id") String idQuery,
+        @Body RequestBody body
+    );
+
     // --- LISTINGS ---
     @GET("/rest/v1/listings?select=*,merchants(*)")
     Call<List<Listing>> getActiveListings(
@@ -142,6 +151,20 @@ public interface SupabaseRestClient {
         @Query("order_code") String codeQuery
     );
 
+    @GET("/rest/v1/orders?select=*,listings(*),profiles(*)")
+    Call<List<Order>> getOrderByPickupToken(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Query("pickup_token") String tokenQuery
+    );
+
+    @GET("/rest/v1/orders?select=*,listings(*),profiles(*)")
+    Call<List<Order>> getOrderByCodeOrToken(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Query("or") String orFilter
+    );
+
     @Headers({"Content-Type: application/json", "Prefer: return=representation"})
     @POST("/rest/v1/orders")
     Call<List<Order>> createOrder(
@@ -183,6 +206,14 @@ public interface SupabaseRestClient {
         @Header("Authorization") String bearer,
         @Query("recipient_id") String recipientQuery,
         @Query("order") String orderQuery
+    );
+
+    @Headers({"Content-Type: application/json", "Prefer: return=representation"})
+    @POST("/rest/v1/notifications")
+    Call<List<FoodHeroNotification>> createNotification(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Body FoodHeroNotification notification
     );
 
     @Headers({"Content-Type: application/json", "Prefer: return=representation"})

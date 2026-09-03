@@ -28,7 +28,7 @@ public class MerchantHomeActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNav;
     private FrameLayout flNotification;
-    private TextView tvBadgeCount, tvAppTitle;
+    private TextView tvBadgeCount;
     private SupabaseRealtimeClient realtimeClient;
     private int unreadCount = 0;
 
@@ -55,6 +55,9 @@ public class MerchantHomeActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (SessionManager.getInstance(this).getMerchantId() == null) {
+            com.uccd3223.group13.foodhero.data.repository.AuthRepository.getInstance(this).restoreSession(null);
+        }
         loadUnreadNotificationsCount();
     }
 
@@ -84,11 +87,6 @@ public class MerchantHomeActivity extends AppCompatActivity {
         bottomNav = findViewById(R.id.merchant_bottom_navigation);
         flNotification = findViewById(R.id.fl_notification_container);
         tvBadgeCount = findViewById(R.id.tv_notification_badge_count);
-        tvAppTitle = findViewById(R.id.tv_app_title);
-
-        if (tvAppTitle != null) {
-            tvAppTitle.setText("FoodHero Merchant");
-        }
 
         if (flNotification != null) {
             flNotification.setOnClickListener(v -> {

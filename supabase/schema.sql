@@ -22,8 +22,15 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-    CREATE TYPE order_status AS ENUM ('reserved', 'completed', 'cancelled', 'expired');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    CREATE TYPE order_status AS ENUM ('awaiting_payment', 'pending_verification', 'reserved', 'rejected', 'completed', 'cancelled', 'expired');
+EXCEPTION WHEN duplicate_object THEN
+    BEGIN
+        ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'awaiting_payment' BEFORE 'reserved';
+        ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'pending_verification' BEFORE 'reserved';
+        ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'rejected' AFTER 'reserved';
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+END $$;
 
 DO $$ BEGIN
     CREATE TYPE image_source_type AS ENUM ('storage', 'external_url', 'none');
@@ -58,22 +65,6 @@ DO $$ BEGIN
         FOREIGN KEY (id) REFERENCES auth.users(id)
         ON DELETE CASCADE;
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
-
--- 2.2 ALLOWLISTS (Demo Verification for UTAR Kampar)
-CREATE TABLE IF NOT EXISTS public.student_allowlist (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email TEXT UNIQUE NOT NULL,
-    student_id TEXT NOT NULL,
-    faculty TEXT NOT NULL,
-    full_name TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS public.merchant_allowlist (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email TEXT UNIQUE NOT NULL,
-    business_name TEXT NOT NULL,
-    campus_location TEXT NOT NULL
-);
 
 -- ============================================================================
 -- SECTION 3: DOMAIN 2 - CAMPUS GEOLOCATION & MAPPING
@@ -118,10 +109,10 @@ CREATE TABLE IF NOT EXISTS public.merchants (
     owner_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     business_name TEXT NOT NULL,
     campus_location TEXT NOT NULL,
-    latitude DOUBLE PRECISION NOT NULL,
-    longitude DOUBLE PRECISION NOT NULL,
+    latitude DOUBLE PRECISION NOT NULL DEFAULT 4.336214,
+    longitude DOUBLE PRECISION NOT NULL DEFAULT 101.142111,
     closing_time TEXT NOT NULL DEFAULT '18:00',
-    rating NUMERIC(3, 2) NOT NULL DEFAULT 5.00,
+    rating NUMERIC(3, 2) NOT NULL DEFAULT 0.00,
     total_reviews INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -132,6 +123,12 @@ DO $$ BEGIN
         ADD CONSTRAINT merchants_owner_id_fkey
         FOREIGN KEY (owner_id) REFERENCES public.profiles(id)
         ON DELETE CASCADE;
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+DO $$ BEGIN
+    ALTER TABLE public.merchants
+        ADD CONSTRAINT merchants_owner_id_unique
+        UNIQUE (owner_id);
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 -- 4.2 LISTINGS (Surplus Mystery Bags & Food Items)
@@ -179,10 +176,20 @@ CREATE TABLE IF NOT EXISTS public.orders (
     pickup_start TEXT NOT NULL,
     pickup_end TEXT NOT NULL,
     pickup_token TEXT NOT NULL,
-    status order_status NOT NULL DEFAULT 'reserved',
+    status order_status NOT NULL DEFAULT 'awaiting_payment',
+    payment_expires_at BIGINT,
+    payment_receipt_url TEXT,
+    payment_method TEXT NOT NULL DEFAULT 'DUITNOW_QR',
+    payment_reference TEXT,
     completed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Ensure newly added columns exist if table was already created in Supabase
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_expires_at BIGINT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_receipt_url TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'DUITNOW_QR';
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_reference TEXT;
 
 -- 5.2 REWARD REDEMPTIONS (Audit Trail for Eco Point Discounts)
 CREATE TABLE IF NOT EXISTS public.reward_redemptions (
@@ -234,6 +241,7 @@ CREATE INDEX IF NOT EXISTS idx_listings_status ON public.listings(status);
 CREATE INDEX IF NOT EXISTS idx_orders_student ON public.orders(student_id, status);
 CREATE INDEX IF NOT EXISTS idx_orders_merchant ON public.orders(merchant_id, status);
 CREATE INDEX IF NOT EXISTS idx_orders_code ON public.orders(order_code);
+CREATE INDEX IF NOT EXISTS idx_orders_token ON public.orders(pickup_token);
 CREATE INDEX IF NOT EXISTS idx_reviews_merchant ON public.reviews(merchant_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON public.notifications(recipient_id, is_read);
 
@@ -241,7 +249,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON public.notifications(r
 -- SECTION 8: AUTOMATED BUSINESS LOGIC TRIGGERS
 -- ============================================================================
 
--- 8.1 TRIGGER: Auto-create Profile on Auth Signup (Email & OAuth)
+-- 8.1 TRIGGER: Auto-create Profile and Merchant Outlet on Auth Signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -253,6 +261,8 @@ DECLARE
     user_role_val public.user_role;
     user_student_id TEXT;
     user_faculty TEXT;
+    biz_name TEXT;
+    camp_loc TEXT;
 BEGIN
     user_full_name := COALESCE(
         NEW.raw_user_meta_data->>'full_name',
@@ -268,7 +278,10 @@ BEGIN
 
     user_student_id := NEW.raw_user_meta_data->>'student_id';
     user_faculty := NEW.raw_user_meta_data->>'faculty';
+    biz_name := COALESCE(NEW.raw_user_meta_data->>'business_name', user_full_name, 'Merchant Outlet');
+    camp_loc := COALESCE(NEW.raw_user_meta_data->>'campus_location', 'Student Pavilion I, Cafeteria');
 
+    -- Insert clean profile (0 initial stats)
     INSERT INTO public.profiles (
         id, email, full_name, role, student_id, faculty,
         eco_points, meals_rescued, money_saved, co2_prevented
@@ -280,12 +293,28 @@ BEGIN
         COALESCE(user_role_val, 'student'::public.user_role),
         user_student_id,
         user_faculty,
-        100, 5, 27.50, 6.0
+        0, 0, 0.00, 0.00
     )
     ON CONFLICT (id) DO UPDATE
     SET email = EXCLUDED.email,
         full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
+        role = EXCLUDED.role,
+        student_id = COALESCE(EXCLUDED.student_id, profiles.student_id),
+        faculty = COALESCE(EXCLUDED.faculty, profiles.faculty),
         updated_at = NOW();
+
+    -- If merchant, auto-create their corresponding merchant record
+    IF user_role_val = 'merchant' THEN
+        INSERT INTO public.merchants (
+            owner_id, business_name, campus_location, latitude, longitude, closing_time, rating, total_reviews
+        )
+        VALUES (
+            NEW.id, biz_name, camp_loc, 4.336214, 101.142111, '18:00', 0.00, 0
+        )
+        ON CONFLICT (owner_id) DO UPDATE
+        SET business_name = EXCLUDED.business_name,
+            campus_location = EXCLUDED.campus_location;
+    END IF;
 
     RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
@@ -353,9 +382,9 @@ BEGIN
     IF curr_stock = 0 THEN
         INSERT INTO public.notifications (recipient_id, recipient_role, title, message, event_type, related_listing_id)
         VALUES (
-            listing_rec.merchant_id,
-            'merchant',
-            'Listing Sold Out',
+            listing_rec.merchant_id, 
+            'merchant', 
+            'Listing Sold Out', 
             '"' || listing_rec.title || '" has sold out!',
             'listing_sold_out',
             NEW.listing_id
@@ -371,8 +400,8 @@ CREATE TRIGGER trg_process_order_reservation
     BEFORE INSERT ON public.orders
     FOR EACH ROW EXECUTE FUNCTION public.process_order_reservation();
 
--- 8.3 TRIGGER: Order Completion & Reward Accrual
-CREATE OR REPLACE FUNCTION public.process_order_completion()
+-- 8.3 TRIGGER: Order Status Progression & Restitution
+CREATE OR REPLACE FUNCTION public.process_order_status_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -382,11 +411,12 @@ DECLARE
     saved_amt NUMERIC(10, 2);
     co2_amt NUMERIC(10, 2);
 BEGIN
-    IF OLD.status = 'reserved' AND NEW.status = 'completed' THEN
+    -- Completed order -> Award Eco-points, update student stats
+    IF OLD.status != 'completed' AND NEW.status = 'completed' THEN
         SELECT * INTO listing_rec FROM public.listings WHERE id = NEW.listing_id;
         earned_pts := NEW.quantity * 10;
         saved_amt := (NEW.total_original_price - NEW.final_paid_price);
-        co2_amt := (listing_rec.co2_kg_per_item * NEW.quantity);
+        co2_amt := (COALESCE(listing_rec.co2_kg_per_item, 1.20) * NEW.quantity);
 
         UPDATE public.profiles
         SET eco_points = eco_points + earned_pts,
@@ -406,14 +436,55 @@ BEGIN
             NEW.id
         );
     END IF;
+
+    -- Order cancelled / expired / rejected -> Return stock to listing & refund reward points
+    IF OLD.status IN ('awaiting_payment', 'pending_verification', 'reserved') AND NEW.status IN ('cancelled', 'expired', 'rejected') THEN
+        UPDATE public.listings 
+        SET remaining_quantity = remaining_quantity + NEW.quantity,
+            status = 'active',
+            updated_at = NOW()
+        WHERE id = NEW.listing_id;
+
+        IF NEW.reward_points_used > 0 THEN
+            UPDATE public.profiles
+            SET eco_points = eco_points + NEW.reward_points_used
+            WHERE id = NEW.student_id;
+
+            DELETE FROM public.reward_redemptions WHERE order_id = NEW.id;
+        END IF;
+
+        IF NEW.status = 'expired' THEN
+            INSERT INTO public.notifications (recipient_id, recipient_role, title, message, event_type, related_order_id)
+            VALUES (
+                NEW.student_id,
+                'student',
+                'Order Expired',
+                'Order #' || NEW.order_code || ' expired because payment was not completed in time.',
+                'order_expired',
+                NEW.id
+            );
+        ELSIF NEW.status = 'rejected' THEN
+            INSERT INTO public.notifications (recipient_id, recipient_role, title, message, event_type, related_order_id)
+            VALUES (
+                NEW.student_id,
+                'student',
+                'Payment Slip Rejected',
+                'The merchant could not verify your receipt for Order #' || NEW.order_code || '. Stock has been restored.',
+                'payment_rejected',
+                NEW.id
+            );
+        END IF;
+    END IF;
+
     RETURN NEW;
 END;
 $$;
 
 DROP TRIGGER IF EXISTS trg_process_order_completion ON public.orders;
-CREATE TRIGGER trg_process_order_completion
+DROP TRIGGER IF EXISTS trg_process_order_status_change ON public.orders;
+CREATE TRIGGER trg_process_order_status_change
     AFTER UPDATE ON public.orders
-    FOR EACH ROW EXECUTE FUNCTION public.process_order_completion();
+    FOR EACH ROW EXECUTE FUNCTION public.process_order_status_change();
 
 -- 8.4 TRIGGER: Review Aggregation & Rating Rollup
 CREATE OR REPLACE FUNCTION public.process_review_submission()
@@ -428,7 +499,7 @@ BEGIN
     FROM public.reviews WHERE merchant_id = NEW.merchant_id;
 
     UPDATE public.merchants 
-    SET rating = avg_r, total_reviews = tot_r 
+    SET rating = COALESCE(avg_r, 0.00), total_reviews = COALESCE(tot_r, 0)
     WHERE id = NEW.merchant_id;
 
     INSERT INTO public.notifications (recipient_id, recipient_role, title, message, event_type, related_order_id)
@@ -464,61 +535,80 @@ ALTER TABLE public.campus_landmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reward_redemptions ENABLE ROW LEVEL SECURITY;
 
--- Profiles: Public read, insert/update for owner
+-- Profiles
+DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Users can read all profiles" ON public.profiles;
-CREATE POLICY "Users can read all profiles" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Public read profiles" ON public.profiles FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Public insert profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
-CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT TO authenticated, anon WITH CHECK (true);
+CREATE POLICY "Public insert profiles" ON public.profiles FOR INSERT TO authenticated, anon WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Public update profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Public update profiles" ON public.profiles FOR UPDATE TO authenticated, anon USING (true) WITH CHECK (true);
 
--- Merchants: Public read, owner manage
+-- Merchants
 DROP POLICY IF EXISTS "Public read merchants" ON public.merchants;
 CREATE POLICY "Public read merchants" ON public.merchants FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Public insert merchants" ON public.merchants;
 DROP POLICY IF EXISTS "Merchants can insert own record" ON public.merchants;
-CREATE POLICY "Merchants can insert own record" ON public.merchants FOR INSERT TO authenticated, anon WITH CHECK (true);
+CREATE POLICY "Public insert merchants" ON public.merchants FOR INSERT TO authenticated, anon WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Public update merchants" ON public.merchants;
 DROP POLICY IF EXISTS "Merchants can update own record" ON public.merchants;
-CREATE POLICY "Merchants can update own record" ON public.merchants FOR UPDATE USING (auth.uid() = owner_id);
+CREATE POLICY "Public update merchants" ON public.merchants FOR UPDATE TO authenticated, anon USING (true) WITH CHECK (true);
 
--- Listings: Public read, merchants manage
+-- Listings
 DROP POLICY IF EXISTS "Public read active listings" ON public.listings;
 CREATE POLICY "Public read active listings" ON public.listings FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Public insert listings" ON public.listings;
 DROP POLICY IF EXISTS "Merchants can manage own listings" ON public.listings;
-CREATE POLICY "Merchants can manage own listings" ON public.listings FOR ALL TO authenticated, anon USING (true);
+CREATE POLICY "Public insert listings" ON public.listings FOR INSERT TO authenticated, anon WITH CHECK (true);
 
--- Orders: Students and merchants can read and manage
+DROP POLICY IF EXISTS "Public update listings" ON public.listings;
+CREATE POLICY "Public update listings" ON public.listings FOR UPDATE TO authenticated, anon USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public delete listings" ON public.listings;
+CREATE POLICY "Public delete listings" ON public.listings FOR DELETE TO authenticated, anon USING (true);
+
+-- Orders
+DROP POLICY IF EXISTS "Public read orders" ON public.orders;
 DROP POLICY IF EXISTS "Students and Merchants can read relevant orders" ON public.orders;
-CREATE POLICY "Students and Merchants can read relevant orders" ON public.orders FOR SELECT USING (true);
+CREATE POLICY "Public read orders" ON public.orders FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Public insert orders" ON public.orders;
 DROP POLICY IF EXISTS "Students can create orders" ON public.orders;
-CREATE POLICY "Students can create orders" ON public.orders FOR INSERT TO authenticated, anon WITH CHECK (true);
+CREATE POLICY "Public insert orders" ON public.orders FOR INSERT TO authenticated, anon WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Public update orders" ON public.orders;
 DROP POLICY IF EXISTS "Students and Merchants can update relevant orders" ON public.orders;
-CREATE POLICY "Students and Merchants can update relevant orders" ON public.orders FOR UPDATE USING (true);
+CREATE POLICY "Public update orders" ON public.orders FOR UPDATE TO authenticated, anon USING (true) WITH CHECK (true);
 
--- Reviews: Public read, students insert
+-- Reviews
 DROP POLICY IF EXISTS "Public read reviews" ON public.reviews;
 CREATE POLICY "Public read reviews" ON public.reviews FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Public insert reviews" ON public.reviews;
 DROP POLICY IF EXISTS "Students can insert reviews" ON public.reviews;
-CREATE POLICY "Students can insert reviews" ON public.reviews FOR INSERT TO authenticated, anon WITH CHECK (true);
+CREATE POLICY "Public insert reviews" ON public.reviews FOR INSERT TO authenticated, anon WITH CHECK (true);
 
--- Notifications: Recipient can read and manage
+-- Notifications
+DROP POLICY IF EXISTS "Public read notifications" ON public.notifications;
 DROP POLICY IF EXISTS "Users can read own notifications" ON public.notifications;
-CREATE POLICY "Users can read own notifications" ON public.notifications FOR SELECT USING (true);
+CREATE POLICY "Public read notifications" ON public.notifications FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Public insert notifications" ON public.notifications;
 DROP POLICY IF EXISTS "Users can insert notifications" ON public.notifications;
-CREATE POLICY "Users can insert notifications" ON public.notifications FOR INSERT TO authenticated, anon WITH CHECK (true);
+CREATE POLICY "Public insert notifications" ON public.notifications FOR INSERT TO authenticated, anon WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Public update notifications" ON public.notifications;
 DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
-CREATE POLICY "Users can update own notifications" ON public.notifications FOR UPDATE USING (true);
+CREATE POLICY "Public update notifications" ON public.notifications FOR UPDATE TO authenticated, anon USING (true) WITH CHECK (true);
 
--- Landmarks & Service Areas: Public read
+-- Landmarks & Service Areas
 DROP POLICY IF EXISTS "Public read service areas" ON public.service_areas;
 CREATE POLICY "Public read service areas" ON public.service_areas FOR SELECT USING (true);
 
@@ -528,95 +618,20 @@ CREATE POLICY "Public read campus landmarks" ON public.campus_landmarks FOR SELE
 -- Realtime publication
 DO $$ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.listings;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 ALTER TABLE public.notifications REPLICA IDENTITY FULL;
+ALTER TABLE public.orders REPLICA IDENTITY FULL;
+ALTER TABLE public.listings REPLICA IDENTITY FULL;
 
 -- ============================================================================
--- SECTION 10: SEED DATA & DEMO ACCOUNTS (UTAR KAMPAR)
+-- SECTION 10: UTAR KAMPAR CAMPUS REFERENCE BOUNDARIES & LANDMARKS ONLY
+-- (No hardcoded demo users, merchants, or listings - Clean Database)
 -- ============================================================================
 
--- 10.1 Fix existing GoTrue Auth scan issues (convert NULL string columns to empty strings)
-UPDATE auth.users
-SET
-    confirmation_token = COALESCE(confirmation_token, ''),
-    recovery_token = COALESCE(recovery_token, ''),
-    email_change_token_new = COALESCE(email_change_token_new, ''),
-    email_change = COALESCE(email_change, ''),
-    email_change_token_current = COALESCE(email_change_token_current, ''),
-    phone = CASE WHEN phone = '' THEN NULL ELSE phone END,
-    phone_change = COALESCE(phone_change, ''),
-    phone_change_token = COALESCE(phone_change_token, ''),
-    reauthentication_token = COALESCE(reauthentication_token, '');
-
--- 10.2 Clean legacy demo users
-DELETE FROM auth.identities 
-WHERE user_id IN (SELECT id FROM auth.users WHERE email IN ('student@foodhero.my', 'merchant@foodhero.my'));
-
-DELETE FROM auth.users 
-WHERE email IN ('student@foodhero.my', 'merchant@foodhero.my');
-
-DELETE FROM public.profiles 
-WHERE email IN ('student@foodhero.my', 'merchant@foodhero.my');
-
--- 10.3 Insert fresh, compliant Demo Auth Users
-INSERT INTO auth.users (
-    id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
-    confirmation_token, recovery_token, email_change_token_new, email_change,
-    email_change_token_current, phone, phone_change, phone_change_token,
-    reauthentication_token, raw_app_meta_data, raw_user_meta_data, is_super_admin,
-    created_at, updated_at
-)
-VALUES
-    (
-        'b0000000-0000-0000-0000-000000000002',
-        '00000000-0000-0000-0000-000000000000',
-        'authenticated', 'authenticated', 'student@foodhero.my',
-        crypt('FoodHero123!', gen_salt('bf')),
-        NOW(), '', '', '', '', '', NULL, '', '', '',
-        '{"provider": "email", "providers": ["email"]}'::jsonb,
-        '{"role": "student", "full_name": "Chai Boon Hong (Student)", "student_id": "22ACB01234", "faculty": "FICT"}'::jsonb,
-        FALSE, NOW(), NOW()
-    ),
-    (
-        'a0000000-0000-0000-0000-000000000001',
-        '00000000-0000-0000-0000-000000000000',
-        'authenticated', 'authenticated', 'merchant@foodhero.my',
-        crypt('FoodHero123!', gen_salt('bf')),
-        NOW(), '', '', '', '', '', NULL, '', '', '',
-        '{"provider": "email", "providers": ["email"]}'::jsonb,
-        '{"role": "merchant", "full_name": "Grand Green Cafe (Merchant)"}'::jsonb,
-        FALSE, NOW(), NOW()
-    );
-
--- 10.4 Insert Auth Identities
-INSERT INTO auth.identities (
-    id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
-)
-VALUES
-    (
-        'b0000000-0000-0000-0000-000000000002',
-        'b0000000-0000-0000-0000-000000000002',
-        jsonb_build_object('sub', 'b0000000-0000-0000-0000-000000000002', 'email', 'student@foodhero.my', 'email_verified', true),
-        'email', 'student@foodhero.my', NOW(), NOW(), NOW()
-    ),
-    (
-        'a0000000-0000-0000-0000-000000000001',
-        'a0000000-0000-0000-0000-000000000001',
-        jsonb_build_object('sub', 'a0000000-0000-0000-0000-000000000001', 'email', 'merchant@foodhero.my', 'email_verified', true),
-        'email', 'merchant@foodhero.my', NOW(), NOW(), NOW()
-    );
-
--- 10.5 Seed Demo Profiles
-INSERT INTO public.profiles (
-    id, email, full_name, role, student_id, faculty, eco_points, meals_rescued, money_saved, co2_prevented
-)
-VALUES 
-    ('b0000000-0000-0000-0000-000000000002', 'student@foodhero.my', 'Chai Boon Hong (Student)', 'student', '22ACB01234', 'FICT', 120, 7, 38.50, 8.4),
-    ('a0000000-0000-0000-0000-000000000001', 'merchant@foodhero.my', 'Grand Green Cafe (Merchant)', 'merchant', NULL, NULL, 0, 0, 0.00, 0.0)
-ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, role = EXCLUDED.role;
-
--- 10.6 Seed UTAR Kampar Campus Polygon
+-- 10.1 UTAR Kampar Campus Polygon
 INSERT INTO public.service_areas (name, center_latitude, center_longitude, polygon_coordinates, is_active)
 VALUES (
     'UTAR Kampar Campus',
@@ -632,49 +647,12 @@ VALUES (
     TRUE
 ) ON CONFLICT DO NOTHING;
 
--- 10.7 Seed UTAR Kampar Campus Landmarks
+-- 10.2 UTAR Kampar Campus Landmarks
 INSERT INTO public.campus_landmarks (name, category, latitude, longitude) VALUES
-    ('East Gate (Main Entrance)', 'entrance', 4.338500, 101.146500),
-    ('West Gate (Hostel / Sport Complex Entrance)', 'entrance', 4.332800, 101.137200),
-    ('North Gate', 'entrance', 4.343200, 101.141500),
     ('Student Pavilion I (Cafeteria)', 'student_pavilion', 4.335800, 101.141200),
     ('Student Pavilion II (Cafeteria)', 'student_pavilion', 4.337500, 101.143800),
-    ('Block A - Heritage Hall', 'landmark', 4.339200, 101.144500),
-    ('Dewan Tun Dr Ling Liong Sik', 'landmark', 4.338800, 101.143500),
     ('Block N - FICT', 'academic_block', 4.336500, 101.140200),
     ('Block K - FEGT', 'academic_block', 4.335200, 101.139500),
-    ('Block D - FBF', 'academic_block', 4.337800, 101.142000),
-    ('UTAR Kampar Library', 'academic_block', 4.338200, 101.144000),
-    ('Sports Complex & Gymnasium', 'landmark', 4.333500, 101.138000)
+    ('Block D - FBF', 'academic_block', 4.337800, 101.142000)
 ON CONFLICT DO NOTHING;
 
--- 10.8 Seed UTAR Kampar Merchants
-INSERT INTO public.merchants (id, owner_id, business_name, campus_location, latitude, longitude, closing_time, rating, total_reviews)
-VALUES
-    ('c0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Grand Green Cafe', 'Student Pavilion I, Cafeteria Stn 3', 4.335800, 101.141200, '18:00', 4.9, 128),
-    ('c0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'Kampar Campus Bakery', 'Student Pavilion II, Ground Floor', 4.337500, 101.143800, '19:30', 4.8, 94),
-    ('c0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'ZUS Coffee UTAR Kampar', 'Student Pavilion I, Stall 8', 4.336200, 101.141500, '20:00', 5.0, 210)
-ON CONFLICT (id) DO UPDATE SET business_name = EXCLUDED.business_name, campus_location = EXCLUDED.campus_location;
-
--- 10.9 Seed Real Surplus Listings
-INSERT INTO public.listings (
-    id, merchant_id, title, description, category, original_price, discounted_price, total_quantity, remaining_quantity,
-    pickup_start, pickup_end, pickup_location, latitude, longitude, co2_kg_per_item, status
-)
-VALUES
-    ('d0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', 'Surplus Bento Mystery Bag', 'Chef-curated surplus daily bento set. Fresh protein, multigrain rice, and organic greens.', 'Meals', 12.00, 5.50, 6, 4, '16:30', '18:00', 'Student Pavilion I, Cafeteria Stn 3', 4.335800, 101.141200, 1.20, 'active'),
-    ('d0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002', 'Artisan Pastry & Croissant Box', 'Freshly baked butter croissants, pain au chocolat, and Danish pastries.', 'Bakery', 15.00, 6.00, 5, 3, '17:00', '19:30', 'Student Pavilion II, Ground Floor', 4.337500, 101.143800, 0.85, 'active'),
-    ('d0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000001', 'Eco Roasted Chicken Rice Bowl', 'Juicy roasted chicken thigh over fragrant chicken rice with house chili.', 'Rice & Noodles', 9.50, 4.50, 8, 5, '16:30', '18:00', 'Student Pavilion I, Cafeteria Stn 3', 4.335800, 101.141200, 1.10, 'active'),
-    ('d0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000003', 'Fresh Brew & Muffin Saver Set', 'Handcrafted Americano or Latte paired with a freshly baked blueberry crumb muffin.', 'Beverages', 11.00, 5.00, 4, 2, '17:30', '20:00', 'Student Pavilion I, Stall 8', 4.336200, 101.141500, 0.65, 'active')
-ON CONFLICT (id) DO UPDATE SET remaining_quantity = EXCLUDED.remaining_quantity, status = EXCLUDED.status;
-
--- 10.10 Seed Allowlists
-INSERT INTO public.student_allowlist (email, student_id, faculty, full_name) VALUES
-    ('student@foodhero.my', '22ACB01234', 'FICT', 'Chai Boon Hong (Student)'),
-    ('student.demo@utar.edu.my', '22ACB05678', 'FICT', 'Demo Student UTAR')
-ON CONFLICT (email) DO NOTHING;
-
-INSERT INTO public.merchant_allowlist (email, business_name, campus_location) VALUES
-    ('merchant@foodhero.my', 'Grand Green Cafe', 'Student Pavilion I, Cafeteria Stn 3'),
-    ('merchant.demo@utar.edu.my', 'Kampar Campus Bakery', 'Student Pavilion II, Ground Floor')
-ON CONFLICT (email) DO NOTHING;
