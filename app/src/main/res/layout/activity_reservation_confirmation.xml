@@ -73,7 +73,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_2"
-                android:text="Grand Green Cafe • Student Pavilion I"
+                android:text="Campus Merchant • UTAR Kampar"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="@dimen/text_size_caption" />
 

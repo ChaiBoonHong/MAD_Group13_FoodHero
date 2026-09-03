@@ -548,11 +548,13 @@ public class AddEditListingActivity extends AppCompatActivity {
         listing.setLongitude(selectedLandmark.getLongitude());
         listing.setStatus(ListingStatus.ACTIVE);
 
-        String merchantId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "merchant-demo";
+        String merchantId = sessionManager.getMerchantId() != null ? sessionManager.getMerchantId() : sessionManager.getUserId();
         listing.setMerchantId(merchantId);
 
-        Merchant merchant = new Merchant(merchantId, merchantId,
-            sessionManager.getFullName() != null ? sessionManager.getFullName() : "Grand Green Cafe",
+        String bizName = sessionManager.getBusinessName() != null ? sessionManager.getBusinessName() :
+            (sessionManager.getFullName() != null ? sessionManager.getFullName() : "Campus Merchant");
+        Merchant merchant = new Merchant(merchantId, sessionManager.getUserId(),
+            bizName,
             selectedLandmark.getName(), selectedLandmark.getLatitude(), selectedLandmark.getLongitude());
         listing.setMerchant(merchant);
 

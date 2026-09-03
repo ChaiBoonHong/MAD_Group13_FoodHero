@@ -78,8 +78,13 @@ public class MerchantDashboardFragment extends Fragment {
         llRecentOrdersContainer = view.findViewById(R.id.ll_recent_orders_container);
         tvEmptyRecentOrders = view.findViewById(R.id.tv_empty_recent_orders);
 
-        if (sessionManager.getFullName() != null && !sessionManager.getFullName().isEmpty()) {
-            tvMerchantName.setText(sessionManager.getFullName() + " 👋");
+        String bizName = sessionManager.getBusinessName() != null ? sessionManager.getBusinessName() : sessionManager.getFullName();
+        if (bizName != null && !bizName.isEmpty()) {
+            tvMerchantName.setText(bizName + " 👋");
+        }
+        String loc = sessionManager.getCampusLocation();
+        if (loc != null && !loc.isEmpty()) {
+            tvMerchantLocation.setText(loc);
         }
     }
 
@@ -100,7 +105,7 @@ public class MerchantDashboardFragment extends Fragment {
 
     private void loadDashboardData() {
         swipeRefresh.setRefreshing(true);
-        String merchantId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "merchant-demo";
+        String merchantId = sessionManager.getMerchantId() != null ? sessionManager.getMerchantId() : sessionManager.getUserId();
 
         foodHeroRepo.getMerchantDashboard(merchantId, new ResultCallback<MerchantDashboardData>() {
             @Override
@@ -207,7 +212,7 @@ public class MerchantDashboardFragment extends Fragment {
         row1.addView(tvStatus);
         content.addView(row1);
 
-        String itemTitle = (order.getListing() != null) ? order.getListing().getTitle() : "Surplus Bento Bag";
+        String itemTitle = (order.getListing() != null) ? order.getListing().getTitle() : "Surplus Meal Bag";
         TextView tvDetails = new TextView(requireContext());
         tvDetails.setText(String.format(Locale.US, "%s (x%d) • %s", itemTitle, order.getQuantity(), CurrencyUtils.format(order.getFinalPaidPrice())));
         tvDetails.setTextColor(getResources().getColor(R.color.colorTextSecondary));

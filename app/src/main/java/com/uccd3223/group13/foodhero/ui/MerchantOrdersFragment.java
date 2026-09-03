@@ -126,7 +126,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
 
     private void loadOrders() {
         swipeRefresh.setRefreshing(true);
-        String merchantId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "merchant-demo";
+        String merchantId = sessionManager.getMerchantId() != null ? sessionManager.getMerchantId() : sessionManager.getUserId();
 
         foodHeroRepo.getMerchantOrders(merchantId, new ResultCallback<List<Order>>() {
             @Override
@@ -194,8 +194,11 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
         dialogLayout.setPadding(36, 24, 36, 16);
 
         TextView tvOrderInfo = new TextView(requireContext());
-        tvOrderInfo.setText(String.format(Locale.US, "Order: #%s\nCustomer: Chai Boon Hong (Student)\nTotal Amount: %s\nPayment Method: DuitNow QR",
-            order.getOrderCode(), CurrencyUtils.format(order.getFinalPaidPrice())));
+        String customerName = (order.getStudent() != null && order.getStudent().getFullName() != null)
+            ? order.getStudent().getFullName() + " (Student)"
+            : "Student Customer";
+        tvOrderInfo.setText(String.format(Locale.US, "Order: #%s\nCustomer: %s\nTotal Amount: %s\nPayment Method: DuitNow QR",
+            order.getOrderCode(), customerName, CurrencyUtils.format(order.getFinalPaidPrice())));
         tvOrderInfo.setTextSize(14);
         tvOrderInfo.setTextColor(getResources().getColor(R.color.colorTextPrimary));
         tvOrderInfo.setPadding(0, 0, 0, 16);
@@ -293,7 +296,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
                     return;
                 }
 
-                String merchantId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "merchant-demo";
+                String merchantId = sessionManager.getMerchantId() != null ? sessionManager.getMerchantId() : sessionManager.getUserId();
                 foodHeroRepo.verifyPickupToken(code, merchantId, new ResultCallback<OrderVerificationResult>() {
                     @Override
                     public void onSuccess(OrderVerificationResult result) {

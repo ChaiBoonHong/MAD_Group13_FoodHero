@@ -30,7 +30,7 @@ public class ImpactFragment extends Fragment {
     private AuthRepository authRepo;
     private FoodHeroRepository foodHeroRepo;
 
-    private TextView tvStudentName, tvStudentMeta, tvMetricMeals, tvMetricMoney, tvMetricCo2, tvPointsBalance, tvTreeProgressText;
+    private TextView tvStudentName, tvStudentMeta, tvLevelBadge, tvMetricMeals, tvMetricMoney, tvMetricCo2, tvPointsBalance, tvTreeProgressText;
     private ProgressBar progressTreeGrowth;
     private RecyclerView rvBadges, rvLeaderboard;
     private MaterialButton btnLogout;
@@ -60,6 +60,7 @@ public class ImpactFragment extends Fragment {
     private void initViews(View view) {
         tvStudentName = view.findViewById(R.id.tv_student_name);
         tvStudentMeta = view.findViewById(R.id.tv_student_meta);
+        tvLevelBadge = view.findViewById(R.id.tv_level_badge);
         tvMetricMeals = view.findViewById(R.id.tv_metric_meals);
         tvMetricMoney = view.findViewById(R.id.tv_metric_money);
         tvMetricCo2 = view.findViewById(R.id.tv_metric_co2);
@@ -105,25 +106,41 @@ public class ImpactFragment extends Fragment {
     private void loadImpactData() {
         Profile profile = authRepo.getCurrentProfile();
         if (profile != null) {
-            tvStudentName.setText(profile.getFullName());
-            String studentId = profile.getStudentId() != null ? profile.getStudentId() : "22ACB01234";
-            String faculty = profile.getFaculty() != null ? profile.getFaculty() : "FICT";
+            String name = profile.getFullName() != null ? profile.getFullName() : "Student Hero";
+            tvStudentName.setText(name);
+            String studentId = profile.getStudentId() != null ? profile.getStudentId() : "Student";
+            String faculty = profile.getFaculty() != null ? profile.getFaculty() : "UTAR Kampar";
             tvStudentMeta.setText(String.format("%s • %s", studentId, faculty));
         }
 
         foodHeroRepo.getStudentImpact(new ResultCallback<ImpactSummary>() {
             @Override
             public void onSuccess(ImpactSummary impact) {
-                if (impact == null) return;
+                if (impact == null || !isAdded()) return;
 
-                tvMetricMeals.setText(String.valueOf(impact.getMealsRescued()));
+                int meals = impact.getMealsRescued();
+                tvMetricMeals.setText(String.valueOf(meals));
                 tvMetricMoney.setText(CurrencyUtils.format(impact.getMoneySaved()));
                 tvMetricCo2.setText(String.format(Locale.US, "%.1f kg", impact.getCo2Prevented()));
                 tvPointsBalance.setText(String.format(Locale.US, "%d Points", impact.getEcoPoints()));
 
+                if (tvLevelBadge != null) {
+                    if (meals >= 25) {
+                        tvLevelBadge.setText("👑 Level 5: Zero-Waste Master");
+                    } else if (meals >= 10) {
+                        tvLevelBadge.setText("⭐ Level 4: Campus Hero");
+                    } else if (meals >= 5) {
+                        tvLevelBadge.setText("🛡️ Level 3: Green Guardian");
+                    } else if (meals >= 1) {
+                        tvLevelBadge.setText("🌿 Level 2: Food Rescuer");
+                    } else {
+                        tvLevelBadge.setText("🌱 Level 1: Eco Sprout");
+                    }
+                }
+
                 int progress = impact.getTreeProgressPercent();
                 progressTreeGrowth.setProgress(progress);
-                tvTreeProgressText.setText(String.format(Locale.US, "%d/25 meals rescued to grow your next campus tree", impact.getMealsRescued()));
+                tvTreeProgressText.setText(String.format(Locale.US, "%d/25 meals rescued to grow your next campus tree", meals));
 
                 badgeAdapter.setItems(impact.getBadges());
                 leaderboardAdapter.setItems(impact.getLeaderboard());
@@ -131,6 +148,7 @@ public class ImpactFragment extends Fragment {
 
             @Override
             public void onError(DataError error) {
+                if (!isAdded()) return;
                 Toast.makeText(requireContext(), "Error loading impact data", Toast.LENGTH_SHORT).show();
             }
         });

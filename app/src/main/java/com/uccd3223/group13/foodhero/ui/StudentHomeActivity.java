@@ -12,10 +12,15 @@ import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.uccd3223.group13.foodhero.R;
+import com.uccd3223.group13.foodhero.data.callback.DataError;
+import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.FoodHeroNotification;
+import com.uccd3223.group13.foodhero.data.model.UserRole;
 import com.uccd3223.group13.foodhero.data.remote.SupabaseRealtimeClient;
+import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
 import com.uccd3223.group13.foodhero.util.NotificationWorker;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class StudentHomeActivity extends AppCompatActivity {
@@ -23,7 +28,7 @@ public class StudentHomeActivity extends AppCompatActivity {
     private FrameLayout flNotification;
     private TextView tvBadgeCount;
     private SupabaseRealtimeClient realtimeClient;
-    private int unreadCount = 2;
+    private int unreadCount = 0;
 
     private final Fragment feedFragment = new FeedFragment();
     private final Fragment mapFragment = new CampusMapFragment();
@@ -43,6 +48,34 @@ public class StudentHomeActivity extends AppCompatActivity {
         setupNavigation();
         setupRealtimeNotifications();
         scheduleBackgroundNotificationWorker();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadUnreadNotificationsCount();
+    }
+
+    private void loadUnreadNotificationsCount() {
+        FoodHeroRepository.getInstance(this).getNotifications(UserRole.STUDENT, new ResultCallback<List<FoodHeroNotification>>() {
+            @Override
+            public void onSuccess(List<FoodHeroNotification> list) {
+                int count = 0;
+                if (list != null) {
+                    for (FoodHeroNotification n : list) {
+                        if (!n.isRead()) count++;
+                    }
+                }
+                unreadCount = count;
+                updateBadgeCount();
+            }
+
+            @Override
+            public void onError(DataError error) {
+                unreadCount = 0;
+                updateBadgeCount();
+            }
+        });
     }
 
     private void initViews() {

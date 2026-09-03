@@ -89,8 +89,7 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
             try {
                 imagePickerLauncher.launch("image/*");
             } catch (Exception e) {
-                // Fallback demo receipt
-                applyMockReceipt();
+                Toast.makeText(this, "Unable to open image picker", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -104,17 +103,9 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
                 if (uri != null) {
                     selectedReceiptUri = uri;
                     displayReceiptPreview(uri);
-                } else if (selectedReceiptUri == null) {
-                    // Fallback demo receipt if user backs out without selecting
-                    applyMockReceipt();
                 }
             }
         );
-    }
-
-    private void applyMockReceipt() {
-        selectedReceiptUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.ic_foodhero_logo);
-        displayReceiptPreview(selectedReceiptUri);
     }
 
     private void displayReceiptPreview(Uri uri) {
@@ -126,9 +117,9 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
 
     private void bindOrderData() {
         String merchantName = (order.getMerchant() != null && order.getMerchant().getBusinessName() != null) 
-            ? order.getMerchant().getBusinessName() : "Grand Green Cafe";
+            ? order.getMerchant().getBusinessName() : "Campus Merchant";
         String loc = (order.getMerchant() != null && order.getMerchant().getCampusLocation() != null) 
-            ? order.getMerchant().getCampusLocation() : "Student Pavilion I";
+            ? order.getMerchant().getCampusLocation() : "UTAR Kampar";
         tvPayeeMerchant.setText(String.format("%s (%s)", merchantName, loc));
         tvOrderReference.setText(String.format("Reference: Order #%s", order.getOrderCode()));
         tvPaymentAmount.setText(CurrencyUtils.format(order.getFinalPaidPrice()));

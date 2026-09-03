@@ -127,7 +127,7 @@ public class FoodHeroRepository {
                     "created_at.desc"
                 ).execute();
 
-                if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
+                if (resp.isSuccessful() && resp.body() != null) {
                     List<Listing> listings = resp.body();
                     localCache.cacheFeed(listings);
                     postSuccess(callback, listings);
@@ -136,20 +136,12 @@ public class FoodHeroRepository {
                     localCache.getCachedFeed(new ResultCallback<List<Listing>>() {
                         @Override
                         public void onSuccess(List<Listing> cached) {
-                            if (cached != null && !cached.isEmpty()) {
-                                postSuccess(callback, cached);
-                            } else {
-                                // Provide pre-seeded test listings for UTAR Kampar campus
-                                List<Listing> sampleListings = createSeededListings();
-                                localCache.cacheFeed(sampleListings);
-                                postSuccess(callback, sampleListings);
-                            }
+                            postSuccess(callback, (cached != null) ? cached : new ArrayList<>());
                         }
 
                         @Override
                         public void onError(DataError error) {
-                            List<Listing> sampleListings = createSeededListings();
-                            postSuccess(callback, sampleListings);
+                            postSuccess(callback, new ArrayList<>());
                         }
                     });
                 }
@@ -157,16 +149,12 @@ public class FoodHeroRepository {
                 localCache.getCachedFeed(new ResultCallback<List<Listing>>() {
                     @Override
                     public void onSuccess(List<Listing> cached) {
-                        if (cached != null && !cached.isEmpty()) {
-                            postSuccess(callback, cached);
-                        } else {
-                            postSuccess(callback, createSeededListings());
-                        }
+                        postSuccess(callback, (cached != null) ? cached : new ArrayList<>());
                     }
 
                     @Override
                     public void onError(DataError err) {
-                        postSuccess(callback, createSeededListings());
+                        postSuccess(callback, new ArrayList<>());
                     }
                 });
             }
@@ -223,7 +211,11 @@ public class FoodHeroRepository {
                     return;
                 }
 
-                String studentId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "student-demo-id";
+                String studentId = sessionManager.getUserId();
+                if (studentId == null) {
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "Please sign in to reserve surplus meals."));
+                    return;
+                }
                 double totalOriginal = listing.getOriginalPrice() * quantity;
                 double totalDiscounted = listing.getDiscountedPrice() * quantity;
 
@@ -329,10 +321,10 @@ public class FoodHeroRepository {
         executor.execute(() -> {
             try {
                 Profile profile = sessionManager.getProfile();
-                int meals = profile != null ? profile.getMealsRescued() : 7;
-                double saved = profile != null ? profile.getMoneySaved() : 38.50;
-                double co2 = profile != null ? profile.getCo2Prevented() : 8.4;
-                int points = profile != null ? profile.getEcoPoints() : 120;
+                int meals = profile != null ? profile.getMealsRescued() : 0;
+                double saved = profile != null ? profile.getMoneySaved() : 0.00;
+                double co2 = profile != null ? profile.getCo2Prevented() : 0.00;
+                int points = profile != null ? profile.getEcoPoints() : 0;
 
                 ImpactSummary summary = new ImpactSummary();
                 summary.setMealsRescued(meals);
@@ -350,11 +342,12 @@ public class FoodHeroRepository {
 
                 // Faculty leaderboard
                 List<LeaderboardEntry> leaderboard = new ArrayList<>();
-                leaderboard.add(new LeaderboardEntry("FICT (Faculty of Info & Comm Tech)", 142, 1));
-                leaderboard.add(new LeaderboardEntry("FBF (Faculty of Business & Finance)", 128, 2));
-                leaderboard.add(new LeaderboardEntry("FEGT (Faculty of Eng & Green Tech)", 95, 3));
-                leaderboard.add(new LeaderboardEntry("FAS (Faculty of Arts & Social Science)", 64, 4));
-                leaderboard.add(new LeaderboardEntry("FSc (Faculty of Science)", 42, 5));
+                String studentFaculty = (profile != null && profile.getFaculty() != null) ? profile.getFaculty() : "FICT";
+                leaderboard.add(new LeaderboardEntry("FICT (Faculty of Info & Comm Tech)", studentFaculty.equalsIgnoreCase("FICT") ? meals : 0, 1));
+                leaderboard.add(new LeaderboardEntry("FBF (Faculty of Business & Finance)", studentFaculty.equalsIgnoreCase("FBF") ? meals : 0, 2));
+                leaderboard.add(new LeaderboardEntry("FEGT (Faculty of Eng & Green Tech)", studentFaculty.equalsIgnoreCase("FEGT") ? meals : 0, 3));
+                leaderboard.add(new LeaderboardEntry("FAS (Faculty of Arts & Social Science)", studentFaculty.equalsIgnoreCase("FAS") ? meals : 0, 4));
+                leaderboard.add(new LeaderboardEntry("FSc (Faculty of Science)", studentFaculty.equalsIgnoreCase("FSc") ? meals : 0, 5));
                 summary.setLeaderboard(leaderboard);
 
                 postSuccess(callback, summary);
@@ -367,7 +360,11 @@ public class FoodHeroRepository {
     public void submitReview(String orderId, String listingId, String merchantId, int rating, String comment, ResultCallback<Review> callback) {
         executor.execute(() -> {
             try {
-                String studentId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "student-demo-id";
+                String studentId = sessionManager.getUserId();
+                if (studentId == null) {
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "Please sign in to submit a review."));
+                    return;
+                }
                 Review review = new Review(orderId, listingId, studentId, merchantId, rating, comment);
                 review.setId(UUID.randomUUID().toString());
                 review.setCreatedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
@@ -610,14 +607,94 @@ public class FoodHeroRepository {
         executor.execute(() -> {
             try {
                 MerchantDashboardData data = new MerchantDashboardData();
-                data.setRevenueRecovered(342.50);
-                data.setFoodDivertedKg(48.2);
-                data.setOrdersCompleted(46);
-                data.setAverageRating(4.9);
-                data.setActiveListingsCount(4);
-                data.setLowStockAlertsCount(1);
-                data.setUnreadNotificationsCount(2);
-                data.setRecentOrders(createSeededOrders());
+                List<Order> merchantOrders = new ArrayList<>();
+                List<Listing> merchantListings = new ArrayList<>();
+                List<Review> merchantReviews = new ArrayList<>();
+
+                if (merchantId != null) {
+                    try {
+                        Response<List<Order>> oResp = restClient.getMerchantOrders(
+                            SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + merchantId, "created_at.desc"
+                        ).execute();
+                        if (oResp.isSuccessful() && oResp.body() != null) {
+                            merchantOrders.addAll(oResp.body());
+                        }
+                    } catch (Exception ignored) {}
+
+                    try {
+                        Response<List<Listing>> lResp = restClient.getMerchantListings(
+                            SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + merchantId, "created_at.desc"
+                        ).execute();
+                        if (lResp.isSuccessful() && lResp.body() != null) {
+                            merchantListings.addAll(lResp.body());
+                        }
+                    } catch (Exception ignored) {}
+
+                    try {
+                        Response<List<Review>> rResp = restClient.getMerchantReviews(
+                            SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + merchantId, "created_at.desc"
+                        ).execute();
+                        if (rResp.isSuccessful() && rResp.body() != null) {
+                            merchantReviews.addAll(rResp.body());
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                // If remote returned nothing, check cached orders for this merchant
+                if (merchantOrders.isEmpty()) {
+                    for (Order o : cachedOrders) {
+                        if (merchantId != null && merchantId.equals(o.getMerchantId())) {
+                            merchantOrders.add(o);
+                        }
+                    }
+                }
+
+                // Compute metrics from actual data
+                double revenue = 0.0;
+                double foodDiverted = 0.0;
+                int completedCount = 0;
+                for (Order o : merchantOrders) {
+                    if (o.getStatus() == OrderStatus.COMPLETED) {
+                        completedCount++;
+                        revenue += o.getFinalPaidPrice();
+                        double co2 = (o.getListing() != null && o.getListing().getCo2KgPerItem() > 0) ? o.getListing().getCo2KgPerItem() : 1.20;
+                        foodDiverted += (co2 * Math.max(o.getQuantity(), 1));
+                    }
+                }
+
+                int activeBags = 0;
+                int lowStock = 0;
+                for (Listing l : merchantListings) {
+                    if (l.getStatus() == ListingStatus.ACTIVE && l.getRemainingQuantity() > 0) {
+                        activeBags++;
+                        if (l.getRemainingQuantity() <= 2) {
+                            lowStock++;
+                        }
+                    }
+                }
+
+                double avgRating = 5.0;
+                if (!merchantReviews.isEmpty()) {
+                    double sumRating = 0;
+                    for (Review r : merchantReviews) {
+                        sumRating += r.getRating();
+                    }
+                    avgRating = sumRating / merchantReviews.size();
+                }
+
+                data.setRevenueRecovered(revenue);
+                data.setFoodDivertedKg(foodDiverted);
+                data.setOrdersCompleted(completedCount);
+                data.setAverageRating(avgRating);
+                data.setActiveListingsCount(activeBags);
+                data.setLowStockAlertsCount(lowStock);
+                data.setUnreadNotificationsCount(0);
+
+                List<Order> recent = new ArrayList<>();
+                for (int i = 0; i < Math.min(merchantOrders.size(), 5); i++) {
+                    recent.add(merchantOrders.get(i));
+                }
+                data.setRecentOrders(recent);
 
                 localCache.cacheDashboard(merchantId, data);
                 postSuccess(callback, data);
@@ -630,20 +707,22 @@ public class FoodHeroRepository {
     public void getMerchantListings(String merchantId, ResultCallback<List<Listing>> callback) {
         executor.execute(() -> {
             try {
-                Response<List<Listing>> resp = restClient.getMerchantListings(
-                    SupabaseConfig.SUPABASE_ANON_KEY,
-                    getBearer(),
-                    "eq." + merchantId,
-                    "created_at.desc"
-                ).execute();
+                if (merchantId != null) {
+                    Response<List<Listing>> resp = restClient.getMerchantListings(
+                        SupabaseConfig.SUPABASE_ANON_KEY,
+                        getBearer(),
+                        "eq." + merchantId,
+                        "created_at.desc"
+                    ).execute();
 
-                if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                    postSuccess(callback, resp.body());
-                } else {
-                    postSuccess(callback, createSeededListings());
+                    if (resp.isSuccessful() && resp.body() != null) {
+                        postSuccess(callback, resp.body());
+                        return;
+                    }
                 }
+                postSuccess(callback, new ArrayList<>());
             } catch (Exception e) {
-                postSuccess(callback, createSeededListings());
+                postSuccess(callback, new ArrayList<>());
             }
         });
     }
@@ -759,9 +838,9 @@ public class FoodHeroRepository {
                 if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
                     matchedOrder = resp.body().get(0);
                 } else {
-                    // Check seeded orders for demo verification
-                    for (Order o : createSeededOrders()) {
-                        if (o.getOrderCode().equalsIgnoreCase(cleanedCode) || o.getPickupToken().equalsIgnoreCase(tokenOrCode)) {
+                    for (Order o : cachedOrders) {
+                        if ((o.getOrderCode() != null && o.getOrderCode().equalsIgnoreCase(cleanedCode)) ||
+                            (o.getPickupToken() != null && o.getPickupToken().equalsIgnoreCase(tokenOrCode))) {
                             matchedOrder = o;
                             break;
                         }
@@ -806,20 +885,22 @@ public class FoodHeroRepository {
     public void getMerchantReviews(String merchantId, ResultCallback<List<Review>> callback) {
         executor.execute(() -> {
             try {
-                Response<List<Review>> resp = restClient.getMerchantReviews(
-                    SupabaseConfig.SUPABASE_ANON_KEY,
-                    getBearer(),
-                    "eq." + merchantId,
-                    "created_at.desc"
-                ).execute();
+                if (merchantId != null) {
+                    Response<List<Review>> resp = restClient.getMerchantReviews(
+                        SupabaseConfig.SUPABASE_ANON_KEY,
+                        getBearer(),
+                        "eq." + merchantId,
+                        "created_at.desc"
+                    ).execute();
 
-                if (resp.isSuccessful() && resp.body() != null) {
-                    postSuccess(callback, resp.body());
-                } else {
-                    postSuccess(callback, createSeededReviews());
+                    if (resp.isSuccessful() && resp.body() != null) {
+                        postSuccess(callback, resp.body());
+                        return;
+                    }
                 }
+                postSuccess(callback, new ArrayList<>());
             } catch (Exception e) {
-                postSuccess(callback, createSeededReviews());
+                postSuccess(callback, new ArrayList<>());
             }
         });
     }
@@ -865,188 +946,9 @@ public class FoodHeroRepository {
                 int code = conn.getResponseCode();
                 postSuccess(callback, (code >= 200 && code < 400));
             } catch (Exception e) {
-                // Fallback: accept https valid formatted urls
                 postSuccess(callback, urlString != null && urlString.startsWith("https://"));
             }
         });
-    }
-
-    // ========================================================================
-    // SEED DATA GENERATORS (FOR SMOOTH OFFLINE & INITIAL DEMO EXPERIENCE)
-    // ========================================================================
-
-    private List<Listing> createSeededListings() {
-        List<Listing> list = new ArrayList<>();
-
-        Merchant m1 = new Merchant("m1", "owner1", "Grand Green Cafe", "Student Pavilion I, Cafeteria Stn 3", 4.335800, 101.141200);
-        m1.setRating(4.9);
-        m1.setTotalReviews(28);
-
-        Merchant m2 = new Merchant("m2", "owner2", "Kampar Campus Bakery", "Student Pavilion II, Ground Floor", 4.337500, 101.143800);
-        m2.setRating(4.8);
-        m2.setTotalReviews(19);
-
-        Listing l1 = new Listing();
-        l1.setId("list-001");
-        l1.setMerchantId(m1.getId());
-        l1.setMerchant(m1);
-        l1.setTitle("Surplus Bento Mystery Bag");
-        l1.setDescription("Fresh chicken cutlet, mixed veggies, steamed fragrant rice, and iced lemon tea prepared today.");
-        l1.setCategory("Meals");
-        l1.setOriginalPrice(12.50);
-        l1.setDiscountedPrice(5.50);
-        l1.setRemainingQuantity(4);
-        l1.setTotalQuantity(5);
-        l1.setPickupStart("16:30");
-        l1.setPickupEnd("18:00");
-        l1.setPickupLocation("Student Pavilion I, Stn 3");
-        l1.setLatitude(4.335800);
-        l1.setLongitude(101.141200);
-        l1.setCo2KgPerItem(1.80);
-        l1.setImageSource(ImageSource.NONE);
-        l1.setStatus(ListingStatus.ACTIVE);
-        list.add(l1);
-
-        Listing l2 = new Listing();
-        l2.setId("list-002");
-        l2.setMerchantId(m2.getId());
-        l2.setMerchant(m2);
-        l2.setTitle("Pastry & Croissant Surprise Pack");
-        l2.setDescription("3 assorted butter croissants, chocolate danishes, and egg tarts freshly baked this morning.");
-        l2.setCategory("Bakery");
-        l2.setOriginalPrice(9.80);
-        l2.setDiscountedPrice(4.00); // Under RM5 filter target
-        l2.setRemainingQuantity(2);
-        l2.setTotalQuantity(4);
-        l2.setPickupStart("17:00");
-        l2.setPickupEnd("19:00");
-        l2.setPickupLocation("Student Pavilion II, Bakery Counter");
-        l2.setLatitude(4.337500);
-        l2.setLongitude(101.143800);
-        l2.setCo2KgPerItem(0.95);
-        l2.setImageSource(ImageSource.NONE);
-        l2.setStatus(ListingStatus.ACTIVE);
-        list.add(l2);
-
-        Listing l3 = new Listing();
-        l3.setId("list-003");
-        l3.setMerchantId(m1.getId());
-        l3.setMerchant(m1);
-        l3.setTitle("Vegetarian Noodle Delight Bag");
-        l3.setDescription("Stir-fried noodles with tofu, mushrooms, seasonal greens, and vegetarian spring roll.");
-        l3.setCategory("Vegetarian");
-        l3.setOriginalPrice(8.00);
-        l3.setDiscountedPrice(3.50);
-        l3.setRemainingQuantity(3);
-        l3.setTotalQuantity(3);
-        l3.setPickupStart("16:00");
-        l3.setPickupEnd("17:30");
-        l3.setPickupLocation("Student Pavilion I, Stn 3");
-        l3.setLatitude(4.335800);
-        l3.setLongitude(101.141200);
-        l3.setCo2KgPerItem(1.10);
-        l3.setImageSource(ImageSource.NONE);
-        l3.setStatus(ListingStatus.ACTIVE);
-        list.add(l3);
-
-        return list;
-    }
-
-    private List<Order> createSeededOrders() {
-        List<Order> list = new ArrayList<>();
-        List<Listing> listings = createSeededListings();
-
-        Order o1 = new Order();
-        o1.setId("ord-001");
-        o1.setOrderCode("FH-829104");
-        o1.setListingId(listings.get(0).getId());
-        o1.setListing(listings.get(0));
-        o1.setMerchantId(listings.get(0).getMerchantId());
-        o1.setMerchant(listings.get(0).getMerchant());
-        o1.setQuantity(1);
-        o1.setTotalOriginalPrice(12.50);
-        o1.setTotalDiscountedPrice(5.50);
-        o1.setFinalPaidPrice(5.50);
-        o1.setPickupStart("16:30");
-        o1.setPickupEnd("18:00");
-        o1.setPickupToken("FH-TOKEN-829104");
-        o1.setStatus(OrderStatus.RESERVED);
-        o1.setCreatedAt("2026-09-02T16:05:00Z");
-        list.add(o1);
-
-        Order o2 = new Order();
-        o2.setId("ord-002");
-        o2.setOrderCode("FH-719382");
-        o2.setListingId(listings.get(1).getId());
-        o2.setListing(listings.get(1));
-        o2.setMerchantId(listings.get(1).getMerchantId());
-        o2.setMerchant(listings.get(1).getMerchant());
-        o2.setQuantity(1);
-        o2.setTotalOriginalPrice(9.80);
-        o2.setTotalDiscountedPrice(4.00);
-        o2.setFinalPaidPrice(4.00);
-        o2.setPickupStart("17:00");
-        o2.setPickupEnd("19:00");
-        o2.setPickupToken("FH-TOKEN-719382");
-        o2.setStatus(OrderStatus.COMPLETED);
-        o2.setCompletedAt("2026-09-01T17:45:00Z");
-        o2.setCreatedAt("2026-09-01T15:20:00Z");
-        list.add(o2);
-
-        return list;
-    }
-
-    private List<Review> createSeededReviews() {
-        List<Review> list = new ArrayList<>();
-        Review r1 = new Review("ord-002", "list-002", "student-1", "m2", 5, "Croissants were incredibly flaky and delicious! Excellent initiative.");
-        r1.setId("rev-001");
-        r1.setCreatedAt("2026-09-01T18:00:00Z");
-        Profile p = new Profile("student-1", "student@utar.edu.my", UserRole.STUDENT, "Tan Wei Lun");
-        r1.setReviewer(p);
-        list.add(r1);
-        return list;
-    }
-
-    private List<FoodHeroNotification> createSeededNotifications(UserRole role) {
-        List<FoodHeroNotification> list = new ArrayList<>();
-        if (role == UserRole.STUDENT) {
-            FoodHeroNotification n1 = new FoodHeroNotification();
-            n1.setId("notif-s1");
-            n1.setRecipientRole(UserRole.STUDENT);
-            n1.setTitle("New Surplus Food Near You!");
-            n1.setMessage("Grand Green Cafe just listed 5 Bento Mystery Bags at Pavilion I.");
-            n1.setEventType(NotificationType.NEARBY_LISTING);
-            n1.setCreatedAt("10 mins ago");
-            list.add(n1);
-
-            FoodHeroNotification n2 = new FoodHeroNotification();
-            n2.setId("notif-s2");
-            n2.setRecipientRole(UserRole.STUDENT);
-            n2.setTitle("Pickup Window Starting Soon");
-            n2.setMessage("Order #FH-829104 is ready for pickup between 16:30 and 18:00.");
-            n2.setEventType(NotificationType.PICKUP_REMINDER);
-            n2.setCreatedAt("25 mins ago");
-            list.add(n2);
-        } else {
-            FoodHeroNotification n1 = new FoodHeroNotification();
-            n1.setId("notif-m1");
-            n1.setRecipientRole(UserRole.MERCHANT);
-            n1.setTitle("New Reservation Received!");
-            n1.setMessage("Student reserved 1 Bento Bag (Order #FH-829104).");
-            n1.setEventType(NotificationType.RESERVATION_CREATED);
-            n1.setCreatedAt("5 mins ago");
-            list.add(n1);
-
-            FoodHeroNotification n2 = new FoodHeroNotification();
-            n2.setId("notif-m2");
-            n2.setRecipientRole(UserRole.MERCHANT);
-            n2.setTitle("New 5-Star Review Received");
-            n2.setMessage("A student left a 5-star review for Pastry Surprise Pack.");
-            n2.setEventType(NotificationType.REVIEW_RECEIVED);
-            n2.setCreatedAt("1 hour ago");
-            list.add(n2);
-        }
-        return list;
     }
 
     private <T> void postSuccess(ResultCallback<T> callback, T result) {

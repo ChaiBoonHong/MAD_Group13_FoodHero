@@ -67,8 +67,13 @@ public class MerchantProfileFragment extends Fragment {
         btnLogout = view.findViewById(R.id.btn_merchant_logout);
         rvReviews = view.findViewById(R.id.rv_merchant_reviews);
 
-        if (sessionManager.getFullName() != null && !sessionManager.getFullName().isEmpty()) {
-            tvBusinessName.setText(sessionManager.getFullName());
+        String bizName = sessionManager.getBusinessName() != null ? sessionManager.getBusinessName() : sessionManager.getFullName();
+        if (bizName != null && !bizName.isEmpty()) {
+            tvBusinessName.setText(bizName);
+        }
+        String loc = sessionManager.getCampusLocation();
+        if (loc != null && !loc.isEmpty()) {
+            tvLocation.setText(loc);
         }
     }
 
@@ -84,7 +89,7 @@ public class MerchantProfileFragment extends Fragment {
     }
 
     private void loadReviews() {
-        String merchantId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "merchant-demo";
+        String merchantId = sessionManager.getMerchantId() != null ? sessionManager.getMerchantId() : sessionManager.getUserId();
 
         foodHeroRepo.getMerchantReviews(merchantId, new ResultCallback<List<Review>>() {
             @Override
@@ -93,16 +98,25 @@ public class MerchantProfileFragment extends Fragment {
                 if (reviews != null && !reviews.isEmpty()) {
                     reviewAdapter.setItems(reviews);
                     tvNoReviews.setVisibility(View.GONE);
-                    tvReviewCount.setText(String.format("Based on %d verified student pickups", reviews.size()));
+                    tvReviewCount.setText(String.format(java.util.Locale.US, "Based on %d verified student pickups", reviews.size()));
+                    double sum = 0;
+                    for (Review r : reviews) sum += r.getRating();
+                    tvAvgRating.setText(String.format(java.util.Locale.US, "%.1f", sum / reviews.size()));
                 } else {
+                    reviewAdapter.setItems(new java.util.ArrayList<>());
                     tvNoReviews.setVisibility(View.VISIBLE);
+                    tvReviewCount.setText("No reviews yet from student pickups");
+                    tvAvgRating.setText("-");
                 }
             }
 
             @Override
             public void onError(DataError error) {
                 if (!isAdded()) return;
+                reviewAdapter.setItems(new java.util.ArrayList<>());
                 tvNoReviews.setVisibility(View.VISIBLE);
+                tvReviewCount.setText("No reviews yet from student pickups");
+                tvAvgRating.setText("-");
             }
         });
     }

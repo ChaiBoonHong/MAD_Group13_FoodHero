@@ -96,10 +96,10 @@
             android:background="@drawable/bg_circle_container"
             android:backgroundTint="@color/colorAccent"
             android:gravity="center"
-            android:text="2"
+            android:text="0"
             android:textColor="@color/white"
             android:textSize="9sp"
             android:textStyle="bold"
-            android:visibility="visible" />
+            android:visibility="gone" />
     </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

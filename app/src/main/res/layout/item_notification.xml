@@ -50,7 +50,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Grand Green Cafe just listed 5 Bento Mystery Bags."
+                android:text="Campus Merchant listed surplus bags."
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="@dimen/text_size_sub" />
 

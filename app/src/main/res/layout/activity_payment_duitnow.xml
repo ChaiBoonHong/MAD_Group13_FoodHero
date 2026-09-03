@@ -115,7 +115,7 @@
                         android:id="@+id/tv_payee_merchant"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Grand Green Cafe (UTAR Kampar)"
+                        android:text="Campus Merchant (UTAR Kampar)"
                         android:textColor="@color/colorTextPrimary"
                         android:textSize="@dimen/text_size_title"
                         android:textStyle="bold" />

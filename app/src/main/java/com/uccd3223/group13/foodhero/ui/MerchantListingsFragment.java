@@ -118,7 +118,7 @@ public class MerchantListingsFragment extends Fragment implements MerchantListin
 
     private void loadListings() {
         swipeRefresh.setRefreshing(true);
-        String merchantId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "merchant-demo";
+        String merchantId = sessionManager.getMerchantId() != null ? sessionManager.getMerchantId() : sessionManager.getUserId();
 
         foodHeroRepo.getMerchantListings(merchantId, new ResultCallback<List<Listing>>() {
             @Override

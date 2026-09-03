@@ -138,7 +138,7 @@ public class MerchantQrScannerActivity extends AppCompatActivity {
     }
 
     private void processPickupToken(String rawToken) {
-        String merchantId = sessionManager.getUserId() != null ? sessionManager.getUserId() : "merchant-demo";
+        String merchantId = sessionManager.getMerchantId() != null ? sessionManager.getMerchantId() : sessionManager.getUserId();
 
         foodHeroRepo.verifyPickupToken(rawToken, merchantId, new ResultCallback<OrderVerificationResult>() {
             @Override

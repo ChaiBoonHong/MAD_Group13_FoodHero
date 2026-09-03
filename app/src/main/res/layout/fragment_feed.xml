@@ -46,11 +46,12 @@
                         android:textSize="15sp" />
 
                     <TextView
+                        android:id="@+id/tv_eco_banner_text"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="@dimen/spacing_8"
-                        android:text="You have diverted 4.2 kg of food waste this month!"
+                        android:text="Rescue surplus meals today and cut food waste on campus!"
                         android:textColor="@color/colorPrimaryDark"
                         android:textSize="12sp"
                         android:textStyle="bold" />

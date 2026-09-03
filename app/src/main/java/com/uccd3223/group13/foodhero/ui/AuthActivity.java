@@ -43,7 +43,7 @@ public class AuthActivity extends AppCompatActivity {
     private TextInputLayout tilName, tilStudentId, tilFaculty, tilBusinessName, tilCampusLocation, tilEmail, tilPassword;
     private EditText etName, etStudentId, etFaculty, etBusinessName, etCampusLocation, etEmail, etPassword;
     private LinearLayout llStudentFields, llMerchantFields;
-    private MaterialButton btnAuthSubmit, btnFillStudent, btnFillMerchant, btnGoogleSignIn;
+    private MaterialButton btnAuthSubmit, btnGoogleSignIn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -219,8 +219,6 @@ public class AuthActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.et_password);
 
         btnAuthSubmit = findViewById(R.id.btn_auth_submit);
-        btnFillStudent = findViewById(R.id.btn_fill_student);
-        btnFillMerchant = findViewById(R.id.btn_fill_merchant);
     }
 
     private void setupListeners() {
@@ -239,30 +237,6 @@ public class AuthActivity extends AppCompatActivity {
         tvSwitchMode.setOnClickListener(v -> {
             isLoginMode = !isLoginMode;
             updateModeUI();
-        });
-
-        btnFillStudent.setOnClickListener(v -> {
-            selectedRole = UserRole.STUDENT;
-            updateRoleSelectionUI();
-            etEmail.setText("student@foodhero.my");
-            etPassword.setText("FoodHero123!");
-            if (!isLoginMode) {
-                etName.setText("Chai Boon Hong (Student)");
-                etStudentId.setText("22ACB01234");
-                etFaculty.setText("FICT");
-            }
-        });
-
-        btnFillMerchant.setOnClickListener(v -> {
-            selectedRole = UserRole.MERCHANT;
-            updateRoleSelectionUI();
-            etEmail.setText("merchant@foodhero.my");
-            etPassword.setText("FoodHero123!");
-            if (!isLoginMode) {
-                etName.setText("Grand Green Cafe");
-                etBusinessName.setText("Grand Green Cafe");
-                etCampusLocation.setText("Student Pavilion I, Cafeteria Stn 3");
-            }
         });
 
         if (btnGoogleSignIn != null) {

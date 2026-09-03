@@ -52,7 +52,8 @@
                                 android:id="@+id/tv_merchant_name"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Grand Green Cafe 👋"
+                                android:text="Merchant Portal 👋"
+                                tools:text="Campus Cafe 👋"
                                 android:textColor="@color/white"
                                 android:textSize="20sp"
                                 android:textStyle="bold" />
@@ -125,7 +126,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="@dimen/spacing_8"
-                            android:text="4 Active Bags"
+                            android:text="0 Active Bags"
+                            tools:text="4 Active Bags"
                             android:textColor="@color/colorPrimaryDark"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -161,7 +163,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="@dimen/spacing_8"
-                            android:text="1 Low Stock Alert"
+                            android:text="0 Low Stock Alerts"
+                            tools:text="1 Low Stock Alert"
                             android:textColor="@color/colorAccentDark"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -214,7 +217,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_6"
                             android:fontFamily="monospace"
-                            android:text="RM 342.50"
+                            android:text="RM 0.00"
+                            tools:text="RM 342.50"
                             android:textColor="@color/colorPrimary"
                             android:textSize="20sp"
                             android:textStyle="bold" />
@@ -257,7 +261,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_6"
                             android:fontFamily="monospace"
-                            android:text="48.2 kg"
+                            android:text="0.0 kg"
+                            tools:text="48.2 kg"
                             android:textColor="@color/colorSuccess"
                             android:textSize="20sp"
                             android:textStyle="bold" />
@@ -308,7 +313,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_6"
                             android:fontFamily="monospace"
-                            android:text="46"
+                            android:text="0"
+                            tools:text="46"
                             android:textColor="@color/colorAccentDark"
                             android:textSize="20sp"
                             android:textStyle="bold" />
@@ -357,7 +363,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="monospace"
-                                android:text="4.9"
+                                android:text="5.0"
+                                tools:text="4.9"
                                 android:textColor="@color/colorLevelBadgeGold"
                                 android:textSize="20sp"
                                 android:textStyle="bold" />

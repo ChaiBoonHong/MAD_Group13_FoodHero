@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,6 +42,7 @@ public class FeedFragment extends Fragment implements ListingAdapter.OnListingCl
     private ChipGroup chipGroupCategories;
     private View layoutEmpty, layoutError;
     private MaterialButton btnEmptyAction, btnRetry;
+    private TextView tvEcoBanner;
 
     private String currentSearchQuery = "";
     private int selectedChipId = R.id.chip_all;
@@ -64,6 +66,12 @@ public class FeedFragment extends Fragment implements ListingAdapter.OnListingCl
         loadFeedData();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateEcoBanner();
+    }
+
     private void initViews(View view) {
         swipeRefresh = view.findViewById(R.id.swipe_refresh_feed);
         rvListings = view.findViewById(R.id.rv_feed_listings);
@@ -72,12 +80,25 @@ public class FeedFragment extends Fragment implements ListingAdapter.OnListingCl
         chipGroupCategories = view.findViewById(R.id.chip_group_categories);
         layoutEmpty = view.findViewById(R.id.layout_empty);
         layoutError = view.findViewById(R.id.layout_error);
+        tvEcoBanner = view.findViewById(R.id.tv_eco_banner_text);
+
+        updateEcoBanner();
 
         if (layoutEmpty != null) {
             btnEmptyAction = layoutEmpty.findViewById(R.id.btn_empty_action);
         }
         if (layoutError != null) {
             btnRetry = layoutError.findViewById(R.id.btn_retry);
+        }
+    }
+
+    private void updateEcoBanner() {
+        if (tvEcoBanner == null || !isAdded()) return;
+        com.uccd3223.group13.foodhero.data.model.Profile p = com.uccd3223.group13.foodhero.data.session.SessionManager.getInstance(requireContext()).getProfile();
+        if (p != null && p.getCo2Prevented() > 0) {
+            tvEcoBanner.setText(String.format(java.util.Locale.US, "You have diverted %.1f kg of food waste this month!", p.getCo2Prevented()));
+        } else {
+            tvEcoBanner.setText("Rescue surplus meals today and cut food waste on campus!");
         }
     }
 

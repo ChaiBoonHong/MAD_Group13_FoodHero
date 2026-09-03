@@ -58,7 +58,7 @@ public class MerchantOrderAdapter extends RecyclerView.Adapter<MerchantOrderAdap
 
         String studentName = (order.getStudent() != null && order.getStudent().getFullName() != null)
             ? order.getStudent().getFullName() + " (Student)"
-            : "Chai Boon Hong (Student)";
+            : "Student Customer";
         holder.tvCustomer.setText(studentName);
 
         String title = (order.getListing() != null) ? order.getListing().getTitle() : "Surplus Mystery Bag";

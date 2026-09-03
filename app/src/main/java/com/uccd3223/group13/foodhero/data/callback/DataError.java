@@ -11,6 +11,7 @@ public class DataError {
     public static final int CODE_INVALID_TOKEN = 1008;
     public static final int CODE_SERVER_ERROR = 1009;
     public static final int CODE_UNKNOWN = 1010;
+    public static final int CODE_UNAUTHORIZED = 1011;
 
     private final int code;
     private final String message;

@@ -17,6 +17,9 @@ public class SessionManager {
     private static final String KEY_USER_ROLE = "key_user_role";
     private static final String KEY_PROFILE_JSON = "key_profile_json";
     private static final String KEY_IS_LOGGED_IN = "key_is_logged_in";
+    private static final String KEY_MERCHANT_ID = "key_merchant_id";
+    private static final String KEY_BUSINESS_NAME = "key_business_name";
+    private static final String KEY_CAMPUS_LOCATION = "key_campus_location";
 
     private static volatile SessionManager INSTANCE;
     private final SharedPreferences prefs;
@@ -116,6 +119,26 @@ public class SessionManager {
     public String getFullName() {
         Profile p = getProfile();
         return p != null ? p.getFullName() : null;
+    }
+
+    public void saveMerchantInfo(String merchantId, String businessName, String campusLocation) {
+        SharedPreferences.Editor editor = prefs.edit();
+        if (merchantId != null) editor.putString(KEY_MERCHANT_ID, merchantId);
+        if (businessName != null) editor.putString(KEY_BUSINESS_NAME, businessName);
+        if (campusLocation != null) editor.putString(KEY_CAMPUS_LOCATION, campusLocation);
+        editor.apply();
+    }
+
+    public String getMerchantId() {
+        return prefs.getString(KEY_MERCHANT_ID, null);
+    }
+
+    public String getBusinessName() {
+        return prefs.getString(KEY_BUSINESS_NAME, null);
+    }
+
+    public String getCampusLocation() {
+        return prefs.getString(KEY_CAMPUS_LOCATION, null);
     }
 
     public void clearSession() {

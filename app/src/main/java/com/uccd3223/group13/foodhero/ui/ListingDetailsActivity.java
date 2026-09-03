@@ -28,7 +28,7 @@ public class ListingDetailsActivity extends AppCompatActivity {
     private FoodHeroRepository foodHeroRepo;
     private int selectedQuantity = 1;
     private boolean usePoints = false;
-    private int availablePoints = 120;
+    private int availablePoints = 0;
 
     private ImageView ivHero;
     private Toolbar toolbar;
