@@ -79,11 +79,14 @@ B-Tree indexes are applied on foreign keys and frequently queried filter columns
 
 ---
 
-## 4. Quick Account Fill Credentials
+## 4. User Accounts & Dynamic Data
 
-Once the consolidated schema is executed, both pre-seeded demo accounts are fully active:
+FoodHero contains **zero hardcoded mock data**. All profiles, merchants, listings, and orders are retrieved dynamically from Supabase:
 
-| Role | Email | Password | Pre-seeded Features |
-|---|---|---|---|
-| **Student** | `student@foodhero.my` | `FoodHero123!` | 120 Eco Points, 7 Meals Rescued, FICT |
-| **Merchant** | `merchant@foodhero.my` | `FoodHero123!` | Grand Green Cafe, 3 Outlets, 4 Active Listings |
+- **Pre-Configured Clean Slate Accounts (In Supabase Auth)**:
+  - Student: `student@foodhero.my` / `FoodHero123!` (Role: Student, FICT, 0 Eco Points, 0 Meals Rescued, RM0.00 Saved)
+  - Merchant: `merchant@foodhero.my` / `FoodHero123!` (Role: Merchant, Grand Green Cafe, 0 Listings, 0 Reviews)
+- **Instant Self-Registration**:
+  - Any new user can click **"Don't have an account? Register"** in the app.
+  - The PostgreSQL trigger `on_auth_user_created` automatically provisions the profile row in `public.profiles` (and merchant outlet row in `public.merchants`) with clean zero initial metrics.
+

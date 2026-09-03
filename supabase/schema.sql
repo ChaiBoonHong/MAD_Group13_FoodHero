@@ -560,6 +560,9 @@ DROP POLICY IF EXISTS "Public update merchants" ON public.merchants;
 DROP POLICY IF EXISTS "Merchants can update own record" ON public.merchants;
 CREATE POLICY "Public update merchants" ON public.merchants FOR UPDATE TO authenticated, anon USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Public delete merchants" ON public.merchants;
+CREATE POLICY "Public delete merchants" ON public.merchants FOR DELETE TO authenticated, anon USING (true);
+
 -- Listings
 DROP POLICY IF EXISTS "Public read active listings" ON public.listings;
 CREATE POLICY "Public read active listings" ON public.listings FOR SELECT USING (true);
@@ -654,11 +657,150 @@ INSERT INTO public.campus_landmarks (name, category, latitude, longitude) VALUES
     ('Cafeteria D & E', 'student_pavilion', 4.338326, 101.144057),
     ('Tin Road UTAR Cafe', 'student_pavilion', 4.339827, 101.142947),
     ('Block N - FICT', 'academic_block', 4.338707, 101.136712),
-    ('Block G - Faculty of Science', 'academic_block', 4.335900, 101.140200),
+    ('Block G - Faculty of Science', 'academic_block', 4.335900, 101.140200)
 ON CONFLICT (name) DO UPDATE 
 SET latitude = EXCLUDED.latitude,
     longitude = EXCLUDED.longitude,
     category = EXCLUDED.category;
+
+-- ============================================================================
+-- SECTION 11: CLEAN DATABASE TEST ACCOUNTS (EMPTY POINTS, ZERO LISTINGS)
+-- ============================================================================
+
+-- 11.1 Clean out any mock or orphaned transaction data
+DELETE FROM public.reward_redemptions;
+DELETE FROM public.reviews;
+DELETE FROM public.orders;
+DELETE FROM public.listings;
+DELETE FROM public.notifications;
+
+-- 11.2 Create or Reset Auth Users in GoTrue (Password: FoodHero123!)
+INSERT INTO auth.users (
+    id, instance_id, aud, role, email, encrypted_password,
+    email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+)
+VALUES
+    (
+        'b0000000-0000-0000-0000-000000000002',
+        '00000000-0000-0000-0000-000000000000',
+        'authenticated',
+        'authenticated',
+        'student@foodhero.my',
+        crypt('FoodHero123!', gen_salt('bf')),
+        NOW(),
+        '{"provider": "email", "providers": ["email"]}'::jsonb,
+        '{"role": "student", "full_name": "Chai Boon Hong (Student)", "student_id": "22ACB01234", "faculty": "FICT"}'::jsonb,
+        NOW(),
+        NOW()
+    ),
+    (
+        'a0000000-0000-0000-0000-000000000001',
+        '00000000-0000-0000-0000-000000000000',
+        'authenticated',
+        'authenticated',
+        'merchant@foodhero.my',
+        crypt('FoodHero123!', gen_salt('bf')),
+        NOW(),
+        '{"provider": "email", "providers": ["email"]}'::jsonb,
+        '{"role": "merchant", "full_name": "Grand Green Cafe (Merchant)"}'::jsonb,
+        NOW(),
+        NOW()
+    )
+ON CONFLICT (id) DO UPDATE SET
+    encrypted_password = crypt('FoodHero123!', gen_salt('bf')),
+    email_confirmed_at = NOW(),
+    updated_at = NOW();
+
+-- 11.3 Link Auth Identities for Email/Password Authentication
+INSERT INTO auth.identities (
+    id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+)
+VALUES
+    (
+        'b0000000-0000-0000-0000-000000000002',
+        'b0000000-0000-0000-0000-000000000002',
+        jsonb_build_object('sub', 'b0000000-0000-0000-0000-000000000002', 'email', 'student@foodhero.my'),
+        'email',
+        'student@foodhero.my',
+        NOW(), NOW(), NOW()
+    ),
+    (
+        'a0000000-0000-0000-0000-000000000001',
+        'a0000000-0000-0000-0000-000000000001',
+        jsonb_build_object('sub', 'a0000000-0000-0000-0000-000000000001', 'email', 'merchant@foodhero.my'),
+        'email',
+        'merchant@foodhero.my',
+        NOW(), NOW(), NOW()
+    )
+ON CONFLICT (provider, provider_id) DO NOTHING;
+
+-- 11.4 Clean Profiles (Guaranteed 0 Eco-Points, 0 Meals Rescued, 0 Saved)
+INSERT INTO public.profiles (
+    id, email, full_name, role, student_id, faculty,
+    eco_points, meals_rescued, money_saved, co2_prevented
+)
+VALUES
+    (
+        'b0000000-0000-0000-0000-000000000002',
+        'student@foodhero.my',
+        'Chai Boon Hong (Student)',
+        'student'::public.user_role,
+        '22ACB01234',
+        'FICT',
+        0, 0, 0.00, 0.00
+    ),
+    (
+        'a0000000-0000-0000-0000-000000000001',
+        'merchant@foodhero.my',
+        'Grand Green Cafe (Merchant)',
+        'merchant'::public.user_role,
+        NULL,
+        NULL,
+        0, 0, 0.00, 0.00
+    )
+ON CONFLICT (id) DO UPDATE SET
+    full_name = EXCLUDED.full_name,
+    role = EXCLUDED.role,
+    eco_points = 0,
+    meals_rescued = 0,
+    money_saved = 0.00,
+    co2_prevented = 0.00,
+    updated_at = NOW();
+
+-- Zero all student profile metrics across the database
+UPDATE public.profiles
+SET eco_points = 0,
+    meals_rescued = 0,
+    money_saved = 0.00,
+    co2_prevented = 0.00,
+    updated_at = NOW();
+
+-- 11.5 Single Clean Merchant Outlet (0 Rating, 0 Reviews, 0 Listings)
+DELETE FROM public.merchants WHERE id NOT IN ('c0000000-0000-0000-0000-000000000001');
+
+INSERT INTO public.merchants (
+    id, owner_id, business_name, campus_location, latitude, longitude, closing_time, rating, total_reviews
+)
+VALUES (
+    'c0000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001',
+    'Grand Green Cafe',
+    'Block C - Student Pavilion I',
+    4.337243,
+    101.142379,
+    '18:00',
+    0.00,
+    0
+)
+ON CONFLICT (id) DO UPDATE SET
+    owner_id = EXCLUDED.owner_id,
+    business_name = EXCLUDED.business_name,
+    campus_location = EXCLUDED.campus_location,
+    latitude = EXCLUDED.latitude,
+    longitude = EXCLUDED.longitude,
+    closing_time = EXCLUDED.closing_time,
+    rating = 0.00,
+    total_reviews = 0;
 
 
 

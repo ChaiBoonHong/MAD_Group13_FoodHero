@@ -129,14 +129,4 @@ public class CampusBoundaryManager {
         area.setPolygonCoordinates(CAMPUS_POLYGON);
         return area;
     }
-
-    public static List<CampusLandmark> getSeededLandmarks() {
-        List<CampusLandmark> list = new ArrayList<>(ENTRANCES);
-        list.add(new CampusLandmark("l1", "Block N - FICT", "academic_block", 4.338707, 101.136712));
-        list.add(new CampusLandmark("l2", "Block C - Student Pavilion I", "student_pavilion", 4.337243, 101.142379));
-        list.add(new CampusLandmark("l3", "Block K - Student Pavilion II", "student_pavilion", 4.341959, 101.141229));
-        list.add(new CampusLandmark("l4", "Cafeteria D & E", "student_pavilion", 4.338326, 101.144057));
-        list.add(new CampusLandmark("l5", "Tin Road UTAR Cafe", "student_pavilion", 4.339827, 101.142947));
-        return list;
-    }
 }

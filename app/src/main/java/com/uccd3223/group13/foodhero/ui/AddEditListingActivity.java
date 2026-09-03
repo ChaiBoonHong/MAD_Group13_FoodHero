@@ -41,6 +41,7 @@ import com.uccd3223.group13.foodhero.util.CampusBoundaryManager;
 import com.uccd3223.group13.foodhero.util.SystemBarUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -83,8 +84,7 @@ public class AddEditListingActivity extends AppCompatActivity {
 
         foodHeroRepo = FoodHeroRepository.getInstance(this);
         sessionManager = SessionManager.getInstance(this);
-        availableLandmarks = CampusBoundaryManager.getSeededLandmarks();
-        selectedLandmark = availableLandmarks.get(3); // Default: Pavilion I
+        availableLandmarks = new ArrayList<>();
 
         existingListingId = getIntent().getStringExtra(EXTRA_LISTING_ID);
 
@@ -377,6 +377,12 @@ public class AddEditListingActivity extends AppCompatActivity {
     }
 
     private void showLandmarkPickerDialog() {
+        if (availableLandmarks.isEmpty()) {
+            Toast.makeText(this, "Loading campus landmarks from Supabase...", Toast.LENGTH_SHORT).show();
+            loadCampusLandmarks();
+            return;
+        }
+
         String[] names = new String[availableLandmarks.size()];
         for (int i = 0; i < availableLandmarks.size(); i++) {
             names[i] = availableLandmarks.get(i).getName();
@@ -427,6 +433,9 @@ public class AddEditListingActivity extends AppCompatActivity {
                     }
                 }
             }
+        }
+        if (selectedLandmark == null && !availableLandmarks.isEmpty()) {
+            selectedLandmark = availableLandmarks.get(0);
         }
         updateLandmarkUI();
     }

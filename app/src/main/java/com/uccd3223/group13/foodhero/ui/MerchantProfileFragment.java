@@ -180,7 +180,7 @@ public class MerchantProfileFragment extends Fragment {
             @Override
             public void onError(DataError error) {
                 if (!isAdded()) return;
-                displayEditDialogWithLandmarks(dialogView, etBusiness, etHours, actvLandmark, etStall, CampusBoundaryManager.getSeededLandmarks(), currentLoc);
+                displayEditDialogWithLandmarks(dialogView, etBusiness, etHours, actvLandmark, etStall, new ArrayList<>(), currentLoc);
             }
         });
     }
@@ -194,8 +194,8 @@ public class MerchantProfileFragment extends Fragment {
         List<CampusLandmark> landmarks,
         String currentLoc
     ) {
-        if (landmarks == null || landmarks.isEmpty()) {
-            landmarks = CampusBoundaryManager.getSeededLandmarks();
+        if (landmarks == null) {
+            landmarks = new ArrayList<>();
         }
 
         List<String> names = new ArrayList<>();

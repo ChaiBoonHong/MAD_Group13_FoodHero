@@ -6,6 +6,7 @@ import android.os.Looper;
 import com.google.gson.Gson;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
+import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
 import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.model.Profile;
 import com.uccd3223.group13.foodhero.data.model.UserRole;
@@ -295,16 +296,23 @@ public class AuthRepository {
                 sessionManager.saveMerchantInfo(m.getId(), m.getBusinessName(), m.getCampusLocation());
             } else {
                 String bName = (defaultName != null && !defaultName.trim().isEmpty()) ? defaultName.trim() : "Merchant Outlet";
-                String cLoc = (defaultLoc != null && !defaultLoc.trim().isEmpty()) ? defaultLoc.trim() : "Block C - Student Pavilion I";
-                double lat = 4.337243;
-                double lng = 101.142379;
-                for (com.uccd3223.group13.foodhero.data.model.CampusLandmark lm : com.uccd3223.group13.foodhero.util.CampusBoundaryManager.getSeededLandmarks()) {
-                    if (cLoc.contains(lm.getName())) {
-                        lat = lm.getLatitude();
-                        lng = lm.getLongitude();
-                        break;
+                String cLoc = (defaultLoc != null && !defaultLoc.trim().isEmpty()) ? defaultLoc.trim() : "UTAR Kampar Campus";
+                double lat = 4.336214;
+                double lng = 101.142111;
+
+                try {
+                    Response<List<CampusLandmark>> lmResp = restClient.getCampusLandmarks(SupabaseConfig.SUPABASE_ANON_KEY, bearer).execute();
+                    if (lmResp.isSuccessful() && lmResp.body() != null) {
+                        for (CampusLandmark lm : lmResp.body()) {
+                            if (cLoc.contains(lm.getName())) {
+                                lat = lm.getLatitude();
+                                lng = lm.getLongitude();
+                                break;
+                            }
+                        }
                     }
-                }
+                } catch (Exception ignored) {}
+
                 String mId = UUID.randomUUID().toString();
                 Merchant m = new Merchant(mId, userId, bName, cLoc, lat, lng);
                 Response<List<Merchant>> createResp = restClient.createMerchant(SupabaseConfig.SUPABASE_ANON_KEY, bearer, m).execute();
@@ -317,7 +325,7 @@ public class AuthRepository {
             }
         } catch (Exception e) {
             if (sessionManager.getMerchantId() == null) {
-                sessionManager.saveMerchantInfo(userId, defaultName != null ? defaultName : "Merchant Outlet", defaultLoc != null ? defaultLoc : "Student Pavilion I");
+                sessionManager.saveMerchantInfo(userId, defaultName != null ? defaultName : "Merchant Outlet", defaultLoc != null ? defaultLoc : "UTAR Kampar Campus");
             }
         }
     }

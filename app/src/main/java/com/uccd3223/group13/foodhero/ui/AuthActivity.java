@@ -124,22 +124,14 @@ public class AuthActivity extends AppCompatActivity {
                         }
                     });
                 } else {
-                    // Fallback when Google Web Client ID is not yet connected
-                    String email = account.getEmail() != null ? account.getEmail() : "student.google@utar.edu.my";
-                    String name = account.getDisplayName() != null ? account.getDisplayName() : "Google User";
-                    Profile profile = new Profile("google-" + System.currentTimeMillis(), email, selectedRole, name);
-                    profile.setStudentId("22ACB08888");
-                    profile.setFaculty("FICT");
-                    SessionManager.getInstance(AuthActivity.this).saveSession("google-access-token", "google-refresh-token", profile);
-                    Toast.makeText(AuthActivity.this, "Logged in via Google (" + name + ")", Toast.LENGTH_SHORT).show();
-                    routeToHome(profile);
+                    // Direct to Supabase Web OAuth to get real authenticated session from Supabase
+                    launchSupabaseWebOAuth();
                 }
             }
         } catch (ApiException e) {
             int code = e.getStatusCode();
             if (code == 10) {
-                // DEVELOPER_ERROR: SHA-1 not registered in Google Cloud Console or Web Client ID mismatch
-                Toast.makeText(this, "Google error 10 (Keystore SHA-1 missing). Opening Web OAuth...", Toast.LENGTH_LONG).show();
+                // Keystore SHA-1 not registered in Google Cloud Console -> Open Supabase Web OAuth
                 launchSupabaseWebOAuth();
             } else {
                 Toast.makeText(this, "Google Sign-In (" + code + "): " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -240,13 +232,13 @@ public class AuthActivity extends AppCompatActivity {
         foodHeroRepo.getCampusLandmarks(new ResultCallback<List<CampusLandmark>>() {
             @Override
             public void onSuccess(List<CampusLandmark> list) {
-                campusLandmarks = (list != null && !list.isEmpty()) ? list : CampusBoundaryManager.getSeededLandmarks();
+                campusLandmarks = (list != null && !list.isEmpty()) ? list : new ArrayList<>();
                 populateLandmarksDropdown();
             }
 
             @Override
             public void onError(DataError error) {
-                campusLandmarks = CampusBoundaryManager.getSeededLandmarks();
+                campusLandmarks = new ArrayList<>();
                 populateLandmarksDropdown();
             }
         });

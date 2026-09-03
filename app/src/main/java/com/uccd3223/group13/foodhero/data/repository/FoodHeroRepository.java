@@ -38,8 +38,10 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -325,6 +327,19 @@ public class FoodHeroRepository {
         executor.execute(() -> {
             try {
                 Profile profile = sessionManager.getProfile();
+                String userId = sessionManager.getUserId();
+
+                // 1. Fetch live updated profile metrics from Supabase
+                if (userId != null && !userId.isEmpty()) {
+                    try {
+                        Response<List<Profile>> pResp = restClient.getProfile(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + userId).execute();
+                        if (pResp.isSuccessful() && pResp.body() != null && !pResp.body().isEmpty()) {
+                            profile = pResp.body().get(0);
+                            sessionManager.updateProfile(profile);
+                        }
+                    } catch (Exception ignored) {}
+                }
+
                 int meals = profile != null ? profile.getMealsRescued() : 0;
                 double saved = profile != null ? profile.getMoneySaved() : 0.00;
                 double co2 = profile != null ? profile.getCo2Prevented() : 0.00;
@@ -336,7 +351,7 @@ public class FoodHeroRepository {
                 summary.setCo2Prevented(co2);
                 summary.setEcoPoints(points);
 
-                // Derived badges (1, 5, 10, 25 meals)
+                // Derived milestone achievement badges based on real student rescues
                 List<Badge> badges = new ArrayList<>();
                 badges.add(new Badge("b1", "Eco Sprout", "Rescued your 1st surplus meal", 1, "bronze", meals >= 1));
                 badges.add(new Badge("b2", "Green Guardian", "Rescued 5 surplus meals", 5, "silver", meals >= 5));
@@ -344,19 +359,41 @@ public class FoodHeroRepository {
                 badges.add(new Badge("b4", "Zero-Waste Master", "Rescued 25 surplus meals", 25, "emerald", meals >= 25));
                 summary.setBadges(badges);
 
-                // Faculty leaderboard
+                // 2. Dynamic faculty leaderboard aggregated strictly from Supabase student profiles
+                Map<String, Integer> facultyMealsMap = new LinkedHashMap<>();
+                try {
+                    Response<List<Profile>> studentsResp = restClient.getProfilesByRole(
+                        SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq.student"
+                    ).execute();
+                    if (studentsResp.isSuccessful() && studentsResp.body() != null) {
+                        for (Profile sp : studentsResp.body()) {
+                            String f = (sp.getFaculty() != null && !sp.getFaculty().trim().isEmpty())
+                                ? sp.getFaculty().trim().toUpperCase() : "GENERAL";
+                            int prev = facultyMealsMap.containsKey(f) ? facultyMealsMap.get(f) : 0;
+                            facultyMealsMap.put(f, prev + sp.getMealsRescued());
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                String myFaculty = (profile != null && profile.getFaculty() != null && !profile.getFaculty().trim().isEmpty())
+                    ? profile.getFaculty().trim().toUpperCase() : null;
+                if (myFaculty != null && !facultyMealsMap.containsKey(myFaculty)) {
+                    facultyMealsMap.put(myFaculty, meals);
+                }
+
+                List<Map.Entry<String, Integer>> sortedFaculties = new ArrayList<>(facultyMealsMap.entrySet());
+                sortedFaculties.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+
                 List<LeaderboardEntry> leaderboard = new ArrayList<>();
-                String studentFaculty = (profile != null && profile.getFaculty() != null) ? profile.getFaculty() : "FICT";
-                leaderboard.add(new LeaderboardEntry("FICT (Faculty of Info & Comm Tech)", studentFaculty.equalsIgnoreCase("FICT") ? meals : 0, 1));
-                leaderboard.add(new LeaderboardEntry("FBF (Faculty of Business & Finance)", studentFaculty.equalsIgnoreCase("FBF") ? meals : 0, 2));
-                leaderboard.add(new LeaderboardEntry("FEGT (Faculty of Eng & Green Tech)", studentFaculty.equalsIgnoreCase("FEGT") ? meals : 0, 3));
-                leaderboard.add(new LeaderboardEntry("FAS (Faculty of Arts & Social Science)", studentFaculty.equalsIgnoreCase("FAS") ? meals : 0, 4));
-                leaderboard.add(new LeaderboardEntry("FSc (Faculty of Science)", studentFaculty.equalsIgnoreCase("FSc") ? meals : 0, 5));
+                int rank = 1;
+                for (Map.Entry<String, Integer> entry : sortedFaculties) {
+                    leaderboard.add(new LeaderboardEntry(entry.getKey(), entry.getValue(), rank++));
+                }
                 summary.setLeaderboard(leaderboard);
 
                 postSuccess(callback, summary);
             } catch (Exception e) {
-                postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to load impact stats", e));
+                postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to load impact stats from Supabase", e));
             }
         });
     }
@@ -395,10 +432,10 @@ public class FoodHeroRepository {
                 if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
                     postSuccess(callback, resp.body());
                 } else {
-                    postSuccess(callback, CampusBoundaryManager.getSeededLandmarks());
+                    postSuccess(callback, new ArrayList<>());
                 }
             } catch (Exception e) {
-                postSuccess(callback, CampusBoundaryManager.getSeededLandmarks());
+                postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to load campus landmarks from Supabase: " + e.getMessage(), e));
             }
         });
     }

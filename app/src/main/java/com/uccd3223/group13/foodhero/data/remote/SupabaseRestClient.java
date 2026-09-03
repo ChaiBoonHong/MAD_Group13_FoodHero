@@ -30,6 +30,13 @@ public interface SupabaseRestClient {
         @Query("id") String idQuery
     );
 
+    @GET("/rest/v1/profiles?select=*")
+    Call<List<Profile>> getProfilesByRole(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Query("role") String roleQuery
+    );
+
     @Headers({"Content-Type: application/json", "Prefer: return=representation"})
     @POST("/rest/v1/profiles")
     Call<List<Profile>> createProfile(
