@@ -13,6 +13,21 @@
         style="@style/Widget.FoodHero.TextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:hint="Business / Outlet Name">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_edit_business_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapWords"
+            android:textSize="14sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.FoodHero.TextInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_12"
         android:hint="Operating Hours">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -23,18 +38,37 @@
             android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Campus Landmark Dropdown (Loaded from Supabase campus_landmarks) -->
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_12"
+        android:hint="Campus Landmark Location"
+        app:boxStrokeColor="@color/colorPrimary"
+        app:hintTextColor="@color/colorPrimary">
+
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/actv_landmark_dropdown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:textSize="14sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Optional Specific Stall / Station Detail -->
     <com.google.android.material.textfield.TextInputLayout
         style="@style/Widget.FoodHero.TextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_12"
-        android:hint="Campus Stall / Station Details">
+        android:hint="Stall / Station No. (e.g. Stall 3, G Flr)">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_edit_station"
+            android:id="@+id/et_edit_stall_no"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Student Pavilion I, Cafeteria Stn 3"
+            android:inputType="text"
             android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>

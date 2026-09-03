@@ -295,9 +295,18 @@ public class AuthRepository {
                 sessionManager.saveMerchantInfo(m.getId(), m.getBusinessName(), m.getCampusLocation());
             } else {
                 String bName = (defaultName != null && !defaultName.trim().isEmpty()) ? defaultName.trim() : "Merchant Outlet";
-                String cLoc = (defaultLoc != null && !defaultLoc.trim().isEmpty()) ? defaultLoc.trim() : "Student Pavilion I";
+                String cLoc = (defaultLoc != null && !defaultLoc.trim().isEmpty()) ? defaultLoc.trim() : "Block C - Student Pavilion I";
+                double lat = 4.337243;
+                double lng = 101.142379;
+                for (com.uccd3223.group13.foodhero.data.model.CampusLandmark lm : com.uccd3223.group13.foodhero.util.CampusBoundaryManager.getSeededLandmarks()) {
+                    if (cLoc.contains(lm.getName())) {
+                        lat = lm.getLatitude();
+                        lng = lm.getLongitude();
+                        break;
+                    }
+                }
                 String mId = UUID.randomUUID().toString();
-                Merchant m = new Merchant(mId, userId, bName, cLoc, 4.336214, 101.142111);
+                Merchant m = new Merchant(mId, userId, bName, cLoc, lat, lng);
                 Response<List<Merchant>> createResp = restClient.createMerchant(SupabaseConfig.SUPABASE_ANON_KEY, bearer, m).execute();
                 if (createResp.isSuccessful() && createResp.body() != null && !createResp.body().isEmpty()) {
                     Merchant created = createResp.body().get(0);

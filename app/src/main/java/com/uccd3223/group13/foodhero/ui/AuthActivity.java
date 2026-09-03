@@ -30,8 +30,17 @@ import com.uccd3223.group13.foodhero.data.model.UserRole;
 import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
 
+import android.widget.ArrayAdapter;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
+import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
+import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
+import com.uccd3223.group13.foodhero.util.CampusBoundaryManager;
+import java.util.ArrayList;
+import java.util.List;
+
 public class AuthActivity extends AppCompatActivity {
     private AuthRepository authRepo;
+    private FoodHeroRepository foodHeroRepo;
     private UserRole selectedRole = UserRole.STUDENT;
     private boolean isLoginMode = true;
 
@@ -40,10 +49,12 @@ public class AuthActivity extends AppCompatActivity {
 
     private MaterialCardView cardRoleStudent, cardRoleMerchant;
     private TextView tvAuthModeTitle, tvSwitchMode, tvRoleStudentLabel, tvRoleMerchantLabel;
-    private TextInputLayout tilName, tilStudentId, tilFaculty, tilBusinessName, tilCampusLocation, tilEmail, tilPassword;
-    private EditText etName, etStudentId, etFaculty, etBusinessName, etCampusLocation, etEmail, etPassword;
+    private TextInputLayout tilName, tilStudentId, tilFaculty, tilBusinessName, tilCampusLocation, tilMerchantStallNo, tilEmail, tilPassword;
+    private EditText etName, etStudentId, etFaculty, etBusinessName, etMerchantStallNo, etEmail, etPassword;
+    private MaterialAutoCompleteTextView actvCampusLocation;
     private LinearLayout llStudentFields, llMerchantFields;
     private MaterialButton btnAuthSubmit, btnGoogleSignIn;
+    private List<CampusLandmark> campusLandmarks = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,11 +64,13 @@ public class AuthActivity extends AppCompatActivity {
         com.uccd3223.group13.foodhero.util.SystemBarUtils.applySafeInsets(this, findViewById(R.id.root_auth));
 
         authRepo = AuthRepository.getInstance(this);
+        foodHeroRepo = FoodHeroRepository.getInstance(this);
         setupGoogleSignIn();
         initViews();
         setupListeners();
         updateRoleSelectionUI();
         updateModeUI();
+        loadCampusLandmarks();
 
         handleDeepLinkCallback(getIntent());
     }
@@ -211,7 +224,9 @@ public class AuthActivity extends AppCompatActivity {
         tilBusinessName = findViewById(R.id.til_business_name);
         etBusinessName = findViewById(R.id.et_business_name);
         tilCampusLocation = findViewById(R.id.til_campus_location);
-        etCampusLocation = findViewById(R.id.et_campus_location);
+        actvCampusLocation = findViewById(R.id.actv_campus_location);
+        tilMerchantStallNo = findViewById(R.id.til_merchant_stall_no);
+        etMerchantStallNo = findViewById(R.id.et_merchant_stall_no);
 
         tilEmail = findViewById(R.id.til_email);
         etEmail = findViewById(R.id.et_email);
@@ -219,6 +234,36 @@ public class AuthActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.et_password);
 
         btnAuthSubmit = findViewById(R.id.btn_auth_submit);
+    }
+
+    private void loadCampusLandmarks() {
+        foodHeroRepo.getCampusLandmarks(new ResultCallback<List<CampusLandmark>>() {
+            @Override
+            public void onSuccess(List<CampusLandmark> list) {
+                campusLandmarks = (list != null && !list.isEmpty()) ? list : CampusBoundaryManager.getSeededLandmarks();
+                populateLandmarksDropdown();
+            }
+
+            @Override
+            public void onError(DataError error) {
+                campusLandmarks = CampusBoundaryManager.getSeededLandmarks();
+                populateLandmarksDropdown();
+            }
+        });
+    }
+
+    private void populateLandmarksDropdown() {
+        List<String> names = new ArrayList<>();
+        for (CampusLandmark lm : campusLandmarks) {
+            names.add(lm.getName());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, names);
+        if (actvCampusLocation != null) {
+            actvCampusLocation.setAdapter(adapter);
+            if (!names.isEmpty() && (actvCampusLocation.getText() == null || actvCampusLocation.getText().toString().isEmpty())) {
+                actvCampusLocation.setText(names.get(0), false);
+            }
+        }
     }
 
     private void setupListeners() {
@@ -344,7 +389,16 @@ public class AuthActivity extends AppCompatActivity {
             String studentId = etStudentId.getText().toString().trim();
             String faculty = etFaculty.getText().toString().trim();
             String businessName = etBusinessName.getText().toString().trim();
-            String campusLocation = etCampusLocation.getText().toString().trim();
+            String campusLocation = "";
+
+            if (selectedRole == UserRole.MERCHANT) {
+                String landmark = actvCampusLocation != null ? actvCampusLocation.getText().toString().trim() : "";
+                String stall = etMerchantStallNo != null ? etMerchantStallNo.getText().toString().trim() : "";
+                if (landmark.isEmpty() && !campusLandmarks.isEmpty()) {
+                    landmark = campusLandmarks.get(0).getName();
+                }
+                campusLocation = !stall.isEmpty() ? landmark + ", " + stall : landmark;
+            }
 
             if (fullName.isEmpty()) {
                 tilName.setError("Full name is required");

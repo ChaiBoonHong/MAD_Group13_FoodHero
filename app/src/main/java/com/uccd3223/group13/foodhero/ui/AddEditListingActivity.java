@@ -91,9 +91,12 @@ public class AddEditListingActivity extends AppCompatActivity {
         initViews();
         setupPhotoPicker();
         setupListeners();
+        loadCampusLandmarks();
 
         if (existingListingId != null && !existingListingId.isEmpty()) {
             loadExistingListing(existingListingId);
+        } else {
+            syncSelectedLandmarkWithMerchantLocation();
         }
     }
 
@@ -389,6 +392,45 @@ public class AddEditListingActivity extends AppCompatActivity {
             .show();
     }
 
+    private void loadCampusLandmarks() {
+        foodHeroRepo.getCampusLandmarks(new ResultCallback<List<CampusLandmark>>() {
+            @Override
+            public void onSuccess(List<CampusLandmark> landmarks) {
+                if (landmarks != null && !landmarks.isEmpty()) {
+                    availableLandmarks = landmarks;
+                    syncSelectedLandmarkWithMerchantLocation();
+                }
+            }
+
+            @Override
+            public void onError(DataError error) {}
+        });
+    }
+
+    private void syncSelectedLandmarkWithMerchantLocation() {
+        if (existingListing != null && existingListing.getPickupLocation() != null) {
+            for (CampusLandmark lm : availableLandmarks) {
+                if (existingListing.getPickupLocation().contains(lm.getName())) {
+                    selectedLandmark = lm;
+                    updateLandmarkUI();
+                    return;
+                }
+            }
+        } else {
+            String mLoc = sessionManager.getCampusLocation();
+            if (mLoc != null && !mLoc.isEmpty()) {
+                for (CampusLandmark lm : availableLandmarks) {
+                    if (mLoc.contains(lm.getName())) {
+                        selectedLandmark = lm;
+                        updateLandmarkUI();
+                        return;
+                    }
+                }
+            }
+        }
+        updateLandmarkUI();
+    }
+
     private void updateLandmarkUI() {
         if (selectedLandmark != null) {
             tvSelectedLandmarkName.setText(selectedLandmark.getName());
@@ -436,6 +478,7 @@ public class AddEditListingActivity extends AppCompatActivity {
 
                 // Select category chip
                 selectCategoryChip(listing.getCategory());
+                syncSelectedLandmarkWithMerchantLocation();
                 hasUnsavedEdits = false;
             }
 

@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS public.service_areas (
 -- 3.2 CAMPUS LANDMARKS (Approved Landmark Hotspots)
 CREATE TABLE IF NOT EXISTS public.campus_landmarks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     category TEXT NOT NULL, -- 'entrance', 'academic_block', 'student_pavilion', 'landmark'
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
@@ -649,11 +649,16 @@ VALUES (
 
 -- 10.2 UTAR Kampar Campus Landmarks (Exact Google Maps Coordinates)
 INSERT INTO public.campus_landmarks (name, category, latitude, longitude) VALUES
-    ('Block N - FICT', 'academic_block', 4.338707, 101.136712),
     ('Block C - Student Pavilion I', 'student_pavilion', 4.337243, 101.142379),
     ('Block K - Student Pavilion II', 'student_pavilion', 4.341959, 101.141229),
     ('Cafeteria D & E', 'student_pavilion', 4.338326, 101.144057),
-    ('Tin Road UTAR Cafe', 'student_pavilion', 4.339827, 101.142947)
-ON CONFLICT DO NOTHING;
+    ('Tin Road UTAR Cafe', 'student_pavilion', 4.339827, 101.142947),
+    ('Block N - FICT', 'academic_block', 4.338707, 101.136712),
+    ('Block G - Faculty of Science', 'academic_block', 4.335900, 101.140200),
+ON CONFLICT (name) DO UPDATE 
+SET latitude = EXCLUDED.latitude,
+    longitude = EXCLUDED.longitude,
+    category = EXCLUDED.category;
+
 
 

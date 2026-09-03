@@ -976,7 +976,56 @@ public class FoodHeroRepository {
         });
     }
 
+    public void getMerchantProfile(String merchantId, ResultCallback<Merchant> callback) {
+        executor.execute(() -> {
+            try {
+                String resolvedId = merchantId != null && !merchantId.trim().isEmpty() ? merchantId.trim() : sessionManager.getMerchantId();
+                if (resolvedId == null || resolvedId.isEmpty()) {
+                    resolvedId = sessionManager.getUserId();
+                }
+
+                if (resolvedId != null && !resolvedId.isEmpty()) {
+                    // Try query by merchant id first
+                    Response<List<Merchant>> resp = restClient.getMerchantById(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + resolvedId).execute();
+                    if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
+                        Merchant m = resp.body().get(0);
+                        sessionManager.saveMerchantInfo(m.getId(), m.getBusinessName(), m.getCampusLocation());
+                        postSuccess(callback, m);
+                        return;
+                    }
+                }
+
+                // If not matched by id, try by owner_id
+                String ownerId = sessionManager.getUserId();
+                if (ownerId != null && !ownerId.isEmpty()) {
+                    Response<List<Merchant>> ownerResp = restClient.getMerchantByOwner(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + ownerId).execute();
+                    if (ownerResp.isSuccessful() && ownerResp.body() != null && !ownerResp.body().isEmpty()) {
+                        Merchant m = ownerResp.body().get(0);
+                        sessionManager.saveMerchantInfo(m.getId(), m.getBusinessName(), m.getCampusLocation());
+                        postSuccess(callback, m);
+                        return;
+                    }
+                }
+
+                // Fallback to local session
+                String bName = sessionManager.getBusinessName() != null ? sessionManager.getBusinessName() : "Merchant Outlet";
+                String cLoc = sessionManager.getCampusLocation() != null ? sessionManager.getCampusLocation() : "Block C - Student Pavilion I";
+                Merchant localFallback = new Merchant(resolvedId, sessionManager.getUserId(), bName, cLoc, 4.337243, 101.142379);
+                postSuccess(callback, localFallback);
+            } catch (Exception e) {
+                String bName = sessionManager.getBusinessName() != null ? sessionManager.getBusinessName() : "Merchant Outlet";
+                String cLoc = sessionManager.getCampusLocation() != null ? sessionManager.getCampusLocation() : "Block C - Student Pavilion I";
+                Merchant localFallback = new Merchant(sessionManager.getMerchantId(), sessionManager.getUserId(), bName, cLoc, 4.337243, 101.142379);
+                postSuccess(callback, localFallback);
+            }
+        });
+    }
+
     public void updateMerchantProfile(String businessName, String campusLocation, String closingTime, ResultCallback<Merchant> callback) {
+        updateMerchantProfile(businessName, campusLocation, 0.0, 0.0, closingTime, callback);
+    }
+
+    public void updateMerchantProfile(String businessName, String campusLocation, double latitude, double longitude, String closingTime, ResultCallback<Merchant> callback) {
         executor.execute(() -> {
             try {
                 String mId = sessionManager.getMerchantId();
@@ -990,6 +1039,10 @@ public class FoodHeroRepository {
                 if (campusLocation != null && !campusLocation.trim().isEmpty()) {
                     body.addProperty("campus_location", campusLocation.trim());
                 }
+                if (latitude != 0.0 && longitude != 0.0) {
+                    body.addProperty("latitude", latitude);
+                    body.addProperty("longitude", longitude);
+                }
                 if (closingTime != null && !closingTime.trim().isEmpty()) {
                     body.addProperty("closing_time", closingTime.trim());
                 }
@@ -1001,7 +1054,9 @@ public class FoodHeroRepository {
                     postSuccess(callback, updated);
                 } else {
                     sessionManager.saveMerchantInfo(mId, businessName != null ? businessName : "Merchant", campusLocation != null ? campusLocation : "");
-                    Merchant m = new Merchant(mId, sessionManager.getUserId(), businessName, campusLocation, 4.336214, 101.142111);
+                    double finalLat = (latitude != 0.0) ? latitude : 4.337243;
+                    double finalLng = (longitude != 0.0) ? longitude : 101.142379;
+                    Merchant m = new Merchant(mId, sessionManager.getUserId(), businessName, campusLocation, finalLat, finalLng);
                     postSuccess(callback, m);
                 }
             } catch (Exception e) {

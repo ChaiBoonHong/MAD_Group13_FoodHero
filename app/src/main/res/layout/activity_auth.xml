@@ -254,17 +254,34 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/til_campus_location"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_8"
+                        android:hint="Campus Landmark Location">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actv_campus_location"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_merchant_stall_no"
                         style="@style/Widget.FoodHero.TextInputLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_8"
-                        android:hint="@string/business_location">
+                        android:hint="Stall / Station Details (Optional, e.g. Stall 3)">
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/et_campus_location"
+                            android:id="@+id/et_merchant_stall_no"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="text" />
+                            android:inputType="text"
+                            android:textSize="14sp" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 

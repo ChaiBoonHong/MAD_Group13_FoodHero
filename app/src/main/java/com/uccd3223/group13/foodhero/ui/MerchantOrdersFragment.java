@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.tabs.TabLayout;
@@ -219,11 +220,12 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
         ivReceipt.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
         if (order.getPaymentReceiptUrl() != null && !order.getPaymentReceiptUrl().isEmpty()) {
-            try {
-                ivReceipt.setImageURI(Uri.parse(order.getPaymentReceiptUrl()));
-            } catch (Exception e) {
-                ivReceipt.setImageResource(R.drawable.ic_foodhero_logo);
-            }
+            Glide.with(requireContext())
+                .load(order.getPaymentReceiptUrl())
+                .placeholder(R.drawable.ic_foodhero_logo)
+                .error(R.drawable.ic_foodhero_logo)
+                .centerCrop()
+                .into(ivReceipt);
         } else {
             ivReceipt.setImageResource(R.drawable.ic_foodhero_logo);
         }

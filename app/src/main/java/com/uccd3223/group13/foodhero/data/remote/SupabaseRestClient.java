@@ -63,6 +63,13 @@ public interface SupabaseRestClient {
     );
 
     @GET("/rest/v1/merchants")
+    Call<List<Merchant>> getMerchantById(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Query("id") String idQuery
+    );
+
+    @GET("/rest/v1/merchants")
     Call<List<Merchant>> getMerchantByOwner(
         @Header("apikey") String apiKey,
         @Header("Authorization") String bearer,
