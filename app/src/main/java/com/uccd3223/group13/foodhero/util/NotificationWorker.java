@@ -38,6 +38,9 @@ public class NotificationWorker extends Worker {
         UserRole role = session.getUserRole();
         createNotificationChannels(context);
 
+        java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+        final Result[] workerResult = new Result[]{Result.success()};
+
         FoodHeroRepository.getInstance(context).getNotifications(role, new ResultCallback<List<FoodHeroNotification>>() {
             @Override
             public void onSuccess(List<FoodHeroNotification> list) {
@@ -49,14 +52,23 @@ public class NotificationWorker extends Worker {
                         }
                     }
                 }
+                latch.countDown();
             }
 
             @Override
             public void onError(DataError error) {
+                workerResult[0] = Result.retry();
+                latch.countDown();
             }
         });
 
-        return Result.success();
+        try {
+            latch.await(30, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            return Result.failure();
+        }
+
+        return workerResult[0];
     }
 
     private void createNotificationChannels(Context context) {

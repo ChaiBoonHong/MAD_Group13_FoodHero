@@ -592,8 +592,14 @@ public class AddEditListingActivity extends AppCompatActivity {
         listing.setCategory(getSelectedCategory());
         listing.setOriginalPrice(origPrice);
         listing.setDiscountedPrice(discPrice);
-        listing.setTotalQuantity(quantity);
-        listing.setRemainingQuantity(quantity);
+        if (existingListing != null) {
+            int diff = quantity - existingListing.getRemainingQuantity();
+            listing.setTotalQuantity(existingListing.getTotalQuantity() + diff);
+            listing.setRemainingQuantity(quantity);
+        } else {
+            listing.setTotalQuantity(quantity);
+            listing.setRemainingQuantity(quantity);
+        }
         listing.setCo2KgPerItem(co2);
         listing.setPickupStart(start);
         listing.setPickupEnd(end);

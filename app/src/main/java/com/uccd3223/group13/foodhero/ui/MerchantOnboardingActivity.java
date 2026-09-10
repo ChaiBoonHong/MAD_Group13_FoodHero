@@ -54,6 +54,7 @@ import java.util.Locale;
 
 public class MerchantOnboardingActivity extends AppCompatActivity implements OnMapReadyCallback {
     public static final String EXTRA_EDIT_MODE = "edit_merchant_profile";
+    public static final String EXTRA_START_STEP = "start_step";
     private static final long MAX_QR_BYTES = 5L * 1024L * 1024L;
     private static final String STATE_STEP = "merchant_step";
     private static final String STATE_QR = "merchant_qr";
@@ -98,6 +99,9 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         auth = AuthRepository.getInstance(this);
         food = FoodHeroRepository.getInstance(this);
         editMode = getIntent().getBooleanExtra(EXTRA_EDIT_MODE, false);
+        if (state == null && getIntent().hasExtra(EXTRA_START_STEP)) {
+            currentStep = getIntent().getIntExtra(EXTRA_START_STEP, 1);
+        }
         bindViews();
         restoreState(state);
         mapView.onCreate(state);
@@ -112,6 +116,11 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     }
 
     private void bindViews() {
+        ImageView btnClose = findViewById(R.id.btn_onboarding_close);
+        if (btnClose != null) {
+            btnClose.setVisibility(editMode ? View.VISIBLE : View.GONE);
+            btnClose.setOnClickListener(v -> finish());
+        }
         business = findViewById(R.id.et_onboarding_business);
         description = findViewById(R.id.et_onboarding_description);
         phone = findViewById(R.id.et_onboarding_phone);
@@ -148,10 +157,16 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
             if (uri == null) return;
             try {
                 String type = getContentResolver().getType(uri);
-                long size = getContentResolver().openAssetFileDescriptor(uri, "r").getLength();
-                if (type == null || !(type.equals("image/jpeg") || type.equals("image/png") || type.equals("image/webp")))
+                if (type != null && !type.startsWith("image/")) {
                     throw new IOException("Choose a JPEG, PNG or WebP image.");
-                if (size > MAX_QR_BYTES) throw new IOException("The QR image must be 5 MB or smaller.");
+                }
+                try (android.content.res.AssetFileDescriptor fd = getContentResolver().openAssetFileDescriptor(uri, "r")) {
+                    if (fd != null && fd.getLength() > MAX_QR_BYTES) {
+                        throw new IOException("The QR image must be 5 MB or smaller.");
+                    }
+                } catch (IOException e) {
+                    if (e.getMessage() != null && e.getMessage().contains("5 MB")) throw e;
+                }
                 qrUri = uri;
                 uploadedQrPath = null;
                 renderQr();
@@ -258,11 +273,21 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         qrPreview.setVisibility(selected ? View.VISIBLE : View.GONE);
         removeQr.setVisibility(selected ? View.VISIBLE : View.GONE);
         chooseQr.setText(selected ? "Replace QR" : "Choose QR");
-        qrStatus.setText(qrUri != null ? "New QR selected and ready to upload"
-            : uploadedQrPath != null ? "Current secure DuitNow QR · choose Replace QR to change it"
-            : "No QR selected\nJPEG, PNG or WebP · maximum 5 MB");
-        if (qrUri != null) qrPreview.setImageURI(qrUri);
-        else if (!selected) qrPreview.setImageDrawable(null);
+        if (qrUri != null) {
+            qrStatus.setText("New QR selected and ready to save");
+            Glide.with(this).load(qrUri).into(qrPreview);
+        } else if (uploadedQrPath != null) {
+            qrStatus.setText("Current verified DuitNow QR · choose Replace QR to change it");
+            String url = com.uccd3223.group13.foodhero.data.remote.SupabaseConfig.getMerchantQrUrl(uploadedQrPath);
+            GlideUrl authorized = new GlideUrl(url, new LazyHeaders.Builder()
+                .addHeader("Authorization", "Bearer " + com.uccd3223.group13.foodhero.data.session.SessionManager.getInstance(this).getAccessToken())
+                .addHeader("apikey", com.uccd3223.group13.foodhero.data.remote.SupabaseConfig.SUPABASE_ANON_KEY).build());
+            Glide.with(this).load(authorized).placeholder(R.drawable.ic_qr_code).error(R.drawable.ic_qr_code).into(qrPreview);
+        } else {
+            qrStatus.setText("No QR selected\nJPEG, PNG or WebP · maximum 5 MB");
+            Glide.with(this).clear(qrPreview);
+            qrPreview.setImageDrawable(null);
+        }
     }
 
     private void centerCampus(int position) {
@@ -334,21 +359,45 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         terms.setError(null); campusLayout.setError(null);
         if (selectedCampus < 0 || selectedCampus >= campuses.size()) { campusLayout.setError("Select an active campus."); return; }
         if (Double.isNaN(pinnedLat)) { showError("Place the exact pickup pin on the map."); return; }
-        if (!terms.isChecked()) { terms.setError("Confirm the details before activation."); return; }
+        if (!terms.isChecked()) { terms.setError(editMode ? "Confirm the updated details." : "Confirm the details before activation."); return; }
         setLoading(true);
-        if (uploadedQrPath != null) {
+        if (qrUri != null) {
+            uploadNewQrAndFinish(campuses.get(selectedCampus));
+        } else if (uploadedQrPath != null) {
             finishRegistration(campuses.get(selectedCampus), uploadedQrPath);
-            return;
+        } else {
+            setLoading(false);
+            showError("Choose the real DuitNow QR image used by this merchant.");
         }
+    }
+
+    private void uploadNewQrAndFinish(Campus campus) {
         try (InputStream input = getContentResolver().openInputStream(qrUri)) {
-            Bitmap bitmap = BitmapFactory.decodeStream(input);
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(input, null, options);
+
+            int sampleSize = 1;
+            int maxDim = Math.max(options.outWidth, options.outHeight);
+            while (maxDim / sampleSize > 2048) {
+                sampleSize *= 2;
+            }
+
+            Bitmap bitmap;
+            try (InputStream secondInput = getContentResolver().openInputStream(qrUri)) {
+                BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+                decodeOptions.inSampleSize = sampleSize;
+                bitmap = BitmapFactory.decodeStream(secondInput, null, decodeOptions);
+            }
+
             if (bitmap == null) throw new IOException("The selected QR image can no longer be read.");
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 90, output);
             food.uploadMerchantDuitNowQr(output.toByteArray(), new ResultCallback<String>() {
                 @Override public void onSuccess(String path) {
                     uploadedQrPath = path;
-                    finishRegistration(campuses.get(selectedCampus), path);
+                    qrUri = null;
+                    finishRegistration(campus, path);
                 }
                 @Override public void onError(DataError error) { setLoading(false); showError(error.getMessage()); }
             });
@@ -362,9 +411,14 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
                 @Override public void onSuccess(Merchant merchant) {
                     primary.setText(editMode ? "Merchant profile updated" : "Merchant account activated");
                     MotionUtils.success(primary, () -> {
-                        Intent intent = new Intent(MerchantOnboardingActivity.this, MerchantHomeActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
+                        if (editMode) {
+                            setResult(RESULT_OK);
+                            finish();
+                        } else {
+                            Intent intent = new Intent(MerchantOnboardingActivity.this, MerchantHomeActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                        }
                     });
                 }
                 @Override public void onError(DataError error) { setLoading(false); showError(error.getMessage()); }
@@ -392,6 +446,10 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
                 uploadedQrPath = merchant.getDuitNowQrPath();
                 pinnedLat = merchant.getLatitude();
                 pinnedLng = merchant.getLongitude();
+                if (editMode) {
+                    terms.setChecked(true);
+                    terms.setText("I confirm the updated business, payment, and pickup details are accurate.");
+                }
                 if (uploadedQrPath != null) {
                     String url = com.uccd3223.group13.foodhero.data.remote.SupabaseConfig.getMerchantQrUrl(uploadedQrPath);
                     GlideUrl authorized = new GlideUrl(url, new LazyHeaders.Builder()

@@ -19,7 +19,21 @@ public class OrderExpirationWorker extends Worker {
         String orderId = getInputData().getString(KEY_ORDER_ID);
         if (orderId != null && !orderId.trim().isEmpty()) {
             FoodHeroRepository repo = FoodHeroRepository.getInstance(getApplicationContext());
-            repo.checkAndExpireOrder(orderId);
+            java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+            repo.expireUnpaidOrder(orderId, new com.uccd3223.group13.foodhero.data.callback.ResultCallback<com.uccd3223.group13.foodhero.data.model.Order>() {
+                @Override
+                public void onSuccess(com.uccd3223.group13.foodhero.data.model.Order result) {
+                    latch.countDown();
+                }
+
+                @Override
+                public void onError(com.uccd3223.group13.foodhero.data.callback.DataError error) {
+                    latch.countDown();
+                }
+            });
+            try {
+                latch.await(30, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {}
         }
         return Result.success();
     }
