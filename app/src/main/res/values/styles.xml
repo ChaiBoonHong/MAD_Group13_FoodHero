@@ -115,6 +115,20 @@
         <item name="android:textColorHint">@color/colorTextSecondary</item>
     </style>
 
+    <style name="TextAppearance.FoodHero.ScreenTitle" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="fontFamily">@font/roboto_slab</item>
+        <item name="android:fontFamily">@font/roboto_slab</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">24sp</item>
+    </style>
+
+    <style name="Widget.FoodHero.Card.Large" parent="Widget.FoodHero.Card">
+        <item name="cardCornerRadius">24dp</item>
+        <item name="strokeColor">@color/colorCardBorder</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
     <!-- Filter Chips (Modern Full-Pill) -->
     <style name="Widget.FoodHero.Chip" parent="Widget.MaterialComponents.Chip.Choice">
         <item name="chipCornerRadius">@dimen/corner_pill</item>

@@ -1190,12 +1190,16 @@ USING (student_id = (SELECT auth.uid()));
 REVOKE ALL ON FUNCTION public.issue_institution_verification(UUID,TEXT,TEXT) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.issue_institution_verification(UUID,TEXT,TEXT) TO service_role;
 
-CREATE OR REPLACE FUNCTION public.confirm_institution_verification(p_email TEXT,p_code TEXT)
+DROP FUNCTION IF EXISTS public.confirm_institution_verification(TEXT,TEXT);
+CREATE OR REPLACE FUNCTION public.confirm_institution_verification(p_email TEXT,p_code TEXT,p_student_id TEXT,p_faculty TEXT)
 RETURNS public.profiles LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE challenge public.institution_verification_challenges%ROWTYPE; domain_row public.institution_email_domains%ROWTYPE;
         campus UUID; result public.profiles%ROWTYPE;
 BEGIN
     IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+    IF length(trim(coalesce(p_student_id,'')))<3 OR length(trim(coalesce(p_faculty,'')))<2 THEN
+        RAISE EXCEPTION 'Student ID and faculty are required';
+    END IF;
     SELECT * INTO challenge FROM public.institution_verification_challenges WHERE user_id=auth.uid() FOR UPDATE;
     IF NOT FOUND OR challenge.institutional_email<>lower(trim(p_email)) OR challenge.expires_at<=NOW() OR challenge.failed_attempts>=5 THEN
         RAISE EXCEPTION 'Verification code is invalid or expired';
@@ -1212,13 +1216,13 @@ BEGIN
     VALUES(auth.uid(),lower(trim(p_email)),domain_row.institution_code,campus,domain_row.affiliation_type,NOW())
     ON CONFLICT(user_id) DO UPDATE SET institutional_email=EXCLUDED.institutional_email,institution_code=EXCLUDED.institution_code,
       campus_id=EXCLUDED.campus_id,affiliation_type=EXCLUDED.affiliation_type,verified_at=NOW();
-    UPDATE public.profiles SET campus_id=campus,institution_code=domain_row.institution_code,institution_name=domain_row.institution_name,
+    UPDATE public.profiles SET student_id=trim(p_student_id),faculty=trim(p_faculty),campus_id=campus,institution_code=domain_row.institution_code,institution_name=domain_row.institution_name,
       institution_affiliation=domain_row.affiliation_type,last_active_role='student',updated_at=NOW() WHERE id=auth.uid() RETURNING * INTO result;
     DELETE FROM public.institution_verification_challenges WHERE user_id=auth.uid();
     RETURN result;
 END; $$;
-REVOKE ALL ON FUNCTION public.confirm_institution_verification(TEXT,TEXT) FROM PUBLIC,anon;
-GRANT EXECUTE ON FUNCTION public.confirm_institution_verification(TEXT,TEXT) TO authenticated;
+REVOKE ALL ON FUNCTION public.confirm_institution_verification(TEXT,TEXT,TEXT,TEXT) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.confirm_institution_verification(TEXT,TEXT,TEXT,TEXT) TO authenticated;
 
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_active_role user_role;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS campus_id UUID REFERENCES public.campuses(id);

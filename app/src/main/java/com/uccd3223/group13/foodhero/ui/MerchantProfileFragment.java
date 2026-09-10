@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.uccd3223.group13.foodhero.R;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
@@ -25,6 +26,7 @@ import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.model.Review;
 import com.uccd3223.group13.foodhero.data.model.Profile;
 import com.uccd3223.group13.foodhero.data.model.UserRole;
+import com.uccd3223.group13.foodhero.data.model.UserRoleRecord;
 import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
@@ -42,6 +44,7 @@ public class MerchantProfileFragment extends Fragment {
     private AuthRepository authRepo;
     private SessionManager sessionManager;
     private ReviewAdapter reviewAdapter;
+    private RoleActionState roleActionState = RoleActionState.LOADING;
 
     @Nullable
     @Override
@@ -69,6 +72,7 @@ public class MerchantProfileFragment extends Fragment {
         super.onResume();
         loadMerchantProfile();
         loadReviews();
+        if (authRepo != null && btnSwitchToStudent != null) loadRoleAction();
     }
 
     private void initViews(View view) {
@@ -123,82 +127,56 @@ public class MerchantProfileFragment extends Fragment {
 
     private void setupListeners() {
         btnEditProfile.setOnClickListener(v -> showEditProfileDialog());
-        btnSwitchToStudent.setOnClickListener(v -> {
-            btnSwitchToStudent.setEnabled(false);
-            authRepo.switchActiveRole(UserRole.STUDENT, new ResultCallback<Profile>() {
-                @Override public void onSuccess(Profile result) {
-                    if (!isAdded()) return;
-                    Intent intent = new Intent(requireContext(), StudentHomeActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                }
-                @Override public void onError(DataError error) {
-                    if (!isAdded()) return;
-                    btnSwitchToStudent.setEnabled(true);
-                    showStudentEmailDialog();
-                }
-            });
-        });
+        btnSwitchToStudent.setOnClickListener(v -> handleRoleAction());
         btnLogout.setOnClickListener(v -> showLogoutConfirmationDialog());
     }
 
-    private void showStudentEmailDialog() {
-        EditText emailInput = new EditText(requireContext());
-        emailInput.setHint("Institutional email");
-        emailInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        int padding = (int) (24 * getResources().getDisplayMetrics().density);
-        emailInput.setPadding(padding, padding / 2, padding, 0);
-        new MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Add Student access")
-            .setMessage("We will send a 6-digit code to your supported university email.")
-            .setView(emailInput)
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Send code", (dialog, which) -> {
-                String email = emailInput.getText().toString().trim();
-                btnSwitchToStudent.setEnabled(false);
-                authRepo.requestInstitutionalEmailVerification(email, new ResultCallback<Void>() {
-                    @Override public void onSuccess(Void ignored) {
-                        if (!isAdded()) return;
-                        btnSwitchToStudent.setEnabled(true);
-                        showStudentCodeDialog(email);
-                    }
-                    @Override public void onError(DataError error) {
-                        if (!isAdded()) return;
-                        btnSwitchToStudent.setEnabled(true);
-                        Toast.makeText(requireContext(), error.getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                });
-            }).show();
+    private void handleRoleAction() {
+        if (roleActionState == RoleActionState.ERROR) {
+            loadRoleAction();
+        } else if (roleActionState == RoleActionState.SIGNUP_REQUIRED) {
+            startActivity(new Intent(requireContext(), StudentRoleSignupActivity.class));
+        } else if (roleActionState == RoleActionState.SWITCH_AVAILABLE) {
+            switchToStudent();
+        }
     }
 
-    private void showStudentCodeDialog(String email) {
-        EditText codeInput = new EditText(requireContext());
-        codeInput.setHint("6-digit code");
-        codeInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        int padding = (int) (24 * getResources().getDisplayMetrics().density);
-        codeInput.setPadding(padding, padding / 2, padding, 0);
-        new MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Verify university email")
-            .setMessage("Enter the code sent to " + email)
-            .setView(codeInput)
-            .setNegativeButton("Cancel", null)
-            .setNeutralButton("Resend", (dialog, which) -> showStudentEmailDialog())
-            .setPositiveButton("Verify", (dialog, which) -> {
-                btnSwitchToStudent.setEnabled(false);
-                authRepo.confirmInstitutionalEmailVerification(email, codeInput.getText().toString(), new ResultCallback<Profile>() {
-                    @Override public void onSuccess(Profile result) {
-                        if (!isAdded()) return;
-                        Intent intent = new Intent(requireContext(), StudentHomeActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                    }
-                    @Override public void onError(DataError error) {
-                        if (!isAdded()) return;
-                        btnSwitchToStudent.setEnabled(true);
-                        Toast.makeText(requireContext(), error.getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                });
-            }).show();
+    private void loadRoleAction() {
+        roleActionState = RoleActionState.LOADING;
+        btnSwitchToStudent.setText("Checking account access…");
+        btnSwitchToStudent.setEnabled(false);
+        authRepo.getAvailableRoles(new ResultCallback<List<UserRoleRecord>>() {
+            @Override public void onSuccess(List<UserRoleRecord> roles) {
+                if (!isAdded()) return;
+                boolean hasStudent = roles != null && roles.stream().anyMatch(r -> r.getRole() == UserRole.STUDENT);
+                roleActionState = hasStudent ? RoleActionState.SWITCH_AVAILABLE : RoleActionState.SIGNUP_REQUIRED;
+                btnSwitchToStudent.setText(hasStudent ? "Switch to Student" : "Sign up as Student");
+                btnSwitchToStudent.setEnabled(true);
+            }
+            @Override public void onError(DataError error) {
+                if (!isAdded()) return;
+                roleActionState = RoleActionState.ERROR;
+                btnSwitchToStudent.setText("Retry account access");
+                btnSwitchToStudent.setEnabled(true);
+            }
+        });
+    }
+
+    private void switchToStudent() {
+        btnSwitchToStudent.setEnabled(false);
+        authRepo.switchActiveRole(UserRole.STUDENT, new ResultCallback<Profile>() {
+            @Override public void onSuccess(Profile result) {
+                if (!isAdded()) return;
+                Intent intent = new Intent(requireContext(), StudentHomeActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            }
+            @Override public void onError(DataError error) {
+                if (!isAdded()) return;
+                btnSwitchToStudent.setEnabled(true);
+                Snackbar.make(requireView(), error.getMessage(), Snackbar.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void loadReviews() {
@@ -336,22 +314,21 @@ public class MerchantProfileFragment extends Fragment {
                     finalLocation = selectedLandmarkName;
                 }
 
-                if (!newBiz.isEmpty()) tvBusinessName.setText(newBiz);
-                if (!newHours.isEmpty()) tvOperatingHours.setText(newHours);
-                if (!finalLocation.isEmpty()) tvLocation.setText(finalLocation);
-
                 foodHeroRepo.updateMerchantProfile(newBiz, finalLocation, lat, lng, newHours, new ResultCallback<Merchant>() {
                     @Override
                     public void onSuccess(Merchant result) {
                         if (isAdded()) {
-                            Toast.makeText(requireContext(), "✓ Business information & location updated!", Toast.LENGTH_SHORT).show();
+                            if (!newBiz.isEmpty()) tvBusinessName.setText(newBiz);
+                            if (!newHours.isEmpty()) tvOperatingHours.setText(newHours);
+                            if (!finalLocation.isEmpty()) tvLocation.setText(finalLocation);
+                            Snackbar.make(requireView(), "Business information updated", Snackbar.LENGTH_SHORT).show();
                         }
                     }
 
                     @Override
                     public void onError(DataError error) {
                         if (isAdded()) {
-                            Toast.makeText(requireContext(), "✓ Saved locally", Toast.LENGTH_SHORT).show();
+                            Snackbar.make(requireView(), error.getMessage(), Snackbar.LENGTH_LONG).show();
                         }
                     }
                 });

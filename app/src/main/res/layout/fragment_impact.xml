@@ -412,7 +412,8 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="@dimen/spacing_24"
-            android:text="Switch to Merchant" />
+            android:enabled="false"
+            android:text="Checking account access…" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_logout"

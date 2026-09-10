@@ -61,7 +61,7 @@
             <!-- Modern Search Bar (Pill with crisp border) -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="46dp"
+                android:layout_height="48dp"
                 android:background="@drawable/bg_search_bar">
 
                 <LinearLayout
@@ -79,7 +79,7 @@
                         android:src="@drawable/ic_search"
                         app:tint="@color/colorTextSecondary" />
 
-                    <EditText
+                    <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_search_feed"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
@@ -95,8 +95,8 @@
 
                     <ImageView
                         android:id="@+id/btn_clear_search"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="Clear search"
                         android:padding="4dp"

@@ -1,14 +1,18 @@
 package com.uccd3223.group13.foodhero.ui;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.*;
-import android.Manifest;
-import android.content.pm.PackageManager;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,156 +20,369 @@ import androidx.core.content.ContextCompat;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.CancellationTokenSource;
-import com.google.android.gms.maps.*;
-import com.google.android.gms.maps.model.*;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
+import com.google.android.material.textfield.TextInputLayout;
 import com.uccd3223.group13.foodhero.R;
-import com.uccd3223.group13.foodhero.data.callback.*;
-import com.uccd3223.group13.foodhero.data.model.*;
-import com.uccd3223.group13.foodhero.data.repository.*;
-import java.io.*;
-import java.util.*;
+import com.uccd3223.group13.foodhero.data.callback.DataError;
+import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
+import com.uccd3223.group13.foodhero.data.model.Campus;
+import com.uccd3223.group13.foodhero.data.model.Merchant;
+import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
+import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
+import com.uccd3223.group13.foodhero.util.MotionUtils;
+import com.uccd3223.group13.foodhero.util.SystemBarUtils;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class MerchantOnboardingActivity extends AppCompatActivity implements OnMapReadyCallback {
+    private static final long MAX_QR_BYTES = 5L * 1024L * 1024L;
+    private static final String STATE_STEP = "merchant_step";
+    private static final String STATE_QR = "merchant_qr";
+    private static final String STATE_CAMPUS = "merchant_campus";
+    private static final String STATE_LAT = "merchant_lat";
+    private static final String STATE_LNG = "merchant_lng";
+
     private EditText business, description, phone, duitNowName;
-    private Spinner campusSpinner;
+    private TextInputLayout businessLayout, descriptionLayout, phoneLayout, duitNowLayout, campusLayout;
+    private MaterialAutoCompleteTextView campusDropdown;
     private ImageView qrPreview;
-    private TextView pinLabel;
+    private TextView qrStatus, pinLabel, review, stepLabel;
     private CheckBox terms;
-    private Button complete;
-    private Button locateMe;
-    private ProgressBar progress;
+    private MaterialButton primary, back, chooseQr, removeQr, locateMe;
+    private ProgressBar loading;
+    private LinearProgressIndicator stepProgress;
+    private View businessStep, paymentStep, locationStep, root;
     private MapView mapView;
     private GoogleMap map;
     private Marker marker;
+    private FusedLocationProviderClient locationClient;
     private final List<Campus> campuses = new ArrayList<>();
     private Uri qrUri;
     private double pinnedLat = Double.NaN, pinnedLng = Double.NaN;
+    private int selectedCampus = -1;
+    private int currentStep = 1;
+    private boolean submitting;
     private AuthRepository auth;
     private FoodHeroRepository food;
     private ActivityResultLauncher<String> picker;
     private ActivityResultLauncher<String> locationPermission;
-    private FusedLocationProviderClient locationClient;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_merchant_onboarding);
-        auth=AuthRepository.getInstance(this); food=FoodHeroRepository.getInstance(this);
-        business=findViewById(R.id.et_onboarding_business); description=findViewById(R.id.et_onboarding_description);
-        phone=findViewById(R.id.et_onboarding_phone); duitNowName=findViewById(R.id.et_onboarding_duitnow_name);
-        campusSpinner=findViewById(R.id.spinner_onboarding_campus); qrPreview=findViewById(R.id.iv_onboarding_qr);
-        pinLabel=findViewById(R.id.tv_onboarding_pin); terms=findViewById(R.id.check_onboarding_terms);
-        complete=findViewById(R.id.btn_complete_onboarding); progress=findViewById(R.id.progress_onboarding);
-        locateMe=findViewById(R.id.btn_onboarding_locate_me);
-        mapView=findViewById(R.id.map_onboarding_location); mapView.onCreate(state); mapView.getMapAsync(this);
-        locationClient=LocationServices.getFusedLocationProviderClient(this);
-        locationPermission=registerForActivityResult(new ActivityResultContracts.RequestPermission(),granted->{
-            if(granted)locateCurrentPosition();
-            else{pinLabel.setText("Location permission denied. Tap the map to pin your stall manually.");locateMe.setEnabled(true);}
-        });
-        picker=registerForActivityResult(new ActivityResultContracts.GetContent(),uri->{ if(uri!=null){qrUri=uri;qrPreview.setImageURI(uri);} });
-        findViewById(R.id.btn_choose_duitnow_qr).setOnClickListener(v->picker.launch("image/*"));
-        locateMe.setOnClickListener(v->requestCurrentPosition());
-        complete.setOnClickListener(v->submit());
+        root = findViewById(R.id.root_merchant_onboarding);
+        SystemBarUtils.applySafeInsets(this, root);
+        auth = AuthRepository.getInstance(this);
+        food = FoodHeroRepository.getInstance(this);
+        bindViews();
+        restoreState(state);
+        mapView.onCreate(state);
+        mapView.getMapAsync(this);
+        locationClient = LocationServices.getFusedLocationProviderClient(this);
+        setupLaunchers();
+        setupActions();
+        renderStep(false);
         loadCampuses();
+        MotionUtils.enter(root);
+    }
+
+    private void bindViews() {
+        business = findViewById(R.id.et_onboarding_business);
+        description = findViewById(R.id.et_onboarding_description);
+        phone = findViewById(R.id.et_onboarding_phone);
+        duitNowName = findViewById(R.id.et_onboarding_duitnow_name);
+        businessLayout = findViewById(R.id.til_onboarding_business);
+        descriptionLayout = findViewById(R.id.til_onboarding_description);
+        phoneLayout = findViewById(R.id.til_onboarding_phone);
+        duitNowLayout = findViewById(R.id.til_onboarding_duitnow_name);
+        campusLayout = findViewById(R.id.til_onboarding_campus);
+        campusDropdown = findViewById(R.id.dropdown_onboarding_campus);
+        qrPreview = findViewById(R.id.iv_onboarding_qr);
+        qrStatus = findViewById(R.id.tv_onboarding_qr_status);
+        pinLabel = findViewById(R.id.tv_onboarding_pin);
+        review = findViewById(R.id.tv_onboarding_review);
+        stepLabel = findViewById(R.id.tv_onboarding_step);
+        terms = findViewById(R.id.check_onboarding_terms);
+        primary = findViewById(R.id.btn_complete_onboarding);
+        back = findViewById(R.id.btn_onboarding_back);
+        chooseQr = findViewById(R.id.btn_choose_duitnow_qr);
+        removeQr = findViewById(R.id.btn_remove_duitnow_qr);
+        locateMe = findViewById(R.id.btn_onboarding_locate_me);
+        loading = findViewById(R.id.progress_onboarding);
+        stepProgress = findViewById(R.id.progress_onboarding_steps);
+        businessStep = findViewById(R.id.step_onboarding_business);
+        paymentStep = findViewById(R.id.step_onboarding_payment);
+        locationStep = findViewById(R.id.step_onboarding_location);
+        mapView = findViewById(R.id.map_onboarding_location);
+    }
+
+    private void setupLaunchers() {
+        picker = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+            if (uri == null) return;
+            try {
+                String type = getContentResolver().getType(uri);
+                long size = getContentResolver().openAssetFileDescriptor(uri, "r").getLength();
+                if (type == null || !(type.equals("image/jpeg") || type.equals("image/png") || type.equals("image/webp")))
+                    throw new IOException("Choose a JPEG, PNG or WebP image.");
+                if (size > MAX_QR_BYTES) throw new IOException("The QR image must be 5 MB or smaller.");
+                qrUri = uri;
+                renderQr();
+            } catch (Exception error) {
+                showError(error.getMessage());
+            }
+        });
+        locationPermission = registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+            if (granted) locateCurrentPosition();
+            else {
+                pinLabel.setText("Location permission denied. Tap the map to pin the stall manually.");
+                locateMe.setEnabled(true);
+            }
+        });
+    }
+
+    private void setupActions() {
+        chooseQr.setOnClickListener(v -> { MotionUtils.press(v); picker.launch("image/*"); });
+        removeQr.setOnClickListener(v -> { qrUri = null; renderQr(); });
+        locateMe.setOnClickListener(v -> requestCurrentPosition());
+        back.setOnClickListener(v -> { if (!submitting && currentStep > 1) { currentStep--; renderStep(true); } });
+        primary.setOnClickListener(v -> {
+            MotionUtils.press(v);
+            if (submitting) return;
+            if (currentStep == 1 && validateBusiness()) { currentStep = 2; renderStep(true); }
+            else if (currentStep == 2 && validatePayment()) { currentStep = 3; renderStep(true); }
+            else if (currentStep == 3) submit();
+        });
     }
 
     private void loadCampuses() {
+        campusLayout.setEnabled(false);
         auth.getInstitutionsAndCampuses(new ResultCallback<List<Campus>>() {
             @Override public void onSuccess(List<Campus> result) {
-                campuses.clear(); campuses.addAll(result);
-                List<String> names=new ArrayList<>(); for(Campus c:campuses) names.add(c.getInstitutionCode()+" — "+c.getName());
-                campusSpinner.setAdapter(new ArrayAdapter<>(MerchantOnboardingActivity.this,android.R.layout.simple_spinner_dropdown_item,names));
-                campusSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
-                    public void onNothingSelected(AdapterView<?> p){} public void onItemSelected(AdapterView<?> p,View v,int pos,long id){centerCampus(pos);}});
+                if (isFinishing()) return;
+                campuses.clear();
+                if (result != null) campuses.addAll(result);
+                List<String> names = new ArrayList<>();
+                for (Campus c : campuses) names.add(c.getInstitutionCode() + " — " + c.getName());
+                campusDropdown.setSimpleItems(names.toArray(new String[0]));
+                campusLayout.setError(null);
+                campusDropdown.setOnItemClickListener((parent, view, position, id) -> {
+                    selectedCampus = position;
+                    centerCampus(position);
+                    updateReview();
+                });
+                campusLayout.setEnabled(true);
+                if (campuses.isEmpty()) {
+                    campusLayout.setError("No active campus is configured.");
+                    primary.setEnabled(false);
+                } else if (selectedCampus >= 0 && selectedCampus < campuses.size()) {
+                    primary.setEnabled(!submitting);
+                    campusDropdown.setText(names.get(selectedCampus), false);
+                    centerCampus(selectedCampus);
+                } else {
+                    primary.setEnabled(!submitting);
+                }
             }
-            @Override public void onError(DataError error){Toast.makeText(MerchantOnboardingActivity.this,error.getMessage(),Toast.LENGTH_LONG).show();}
+            @Override public void onError(DataError error) {
+                campusLayout.setEnabled(true);
+                campusLayout.setError("Campuses could not be loaded. Tap to retry.");
+                campusDropdown.setOnClickListener(v -> loadCampuses());
+            }
         });
     }
 
-    private void centerCampus(int position){
-        if(map==null||position<0||position>=campuses.size())return; Campus c=campuses.get(position);
-        LatLng center=new LatLng(c.getLatitude(),c.getLongitude()); map.animateCamera(CameraUpdateFactory.newLatLngZoom(center,15f));
-        pinnedLat=Double.NaN;pinnedLng=Double.NaN;if(marker!=null)marker.remove();pinLabel.setText("Tap the map to pin the stall within "+c.getName());
+    private boolean validateBusiness() {
+        boolean valid = true;
+        businessLayout.setError(null); descriptionLayout.setError(null); phoneLayout.setError(null);
+        if (text(business).length() < 2) { businessLayout.setError("Enter the business name."); valid = false; }
+        if (text(description).length() < 10) { descriptionLayout.setError("Describe the stall in at least 10 characters."); valid = false; }
+        if (!text(phone).matches("^[+0-9][0-9 -]{6,18}$")) { phoneLayout.setError("Enter a valid contact phone number."); valid = false; }
+        return valid;
     }
 
-    @Override public void onMapReady(GoogleMap googleMap){
-        map=googleMap;
+    private boolean validatePayment() {
+        duitNowLayout.setError(null);
+        if (text(duitNowName).length() < 2) { duitNowLayout.setError("Enter the DuitNow display name."); return false; }
+        if (qrUri == null) { showError("Choose the real DuitNow QR image used by this merchant."); return false; }
+        return true;
+    }
+
+    private void renderStep(boolean animate) {
+        View outgoing = businessStep.getVisibility() == View.VISIBLE ? businessStep
+            : paymentStep.getVisibility() == View.VISIBLE ? paymentStep : locationStep;
+        View incoming = currentStep == 1 ? businessStep : currentStep == 2 ? paymentStep : locationStep;
+        if (animate && outgoing != incoming) MotionUtils.crossfade(outgoing, incoming);
+        else {
+            businessStep.setVisibility(currentStep == 1 ? View.VISIBLE : View.GONE);
+            paymentStep.setVisibility(currentStep == 2 ? View.VISIBLE : View.GONE);
+            locationStep.setVisibility(currentStep == 3 ? View.VISIBLE : View.GONE);
+        }
+        stepProgress.setProgressCompat(currentStep, animate && MotionUtils.enabled());
+        stepLabel.setText(currentStep == 1 ? "Step 1 of 3 · Business details"
+            : currentStep == 2 ? "Step 2 of 3 · DuitNow payment" : "Step 3 of 3 · Pickup and review");
+        primary.setText(currentStep == 3 ? "Activate Merchant Account" : "Continue");
+        back.setVisibility(currentStep == 1 ? View.INVISIBLE : View.VISIBLE);
+        if (currentStep == 3) updateReview();
+    }
+
+    private void renderQr() {
+        boolean selected = qrUri != null;
+        qrPreview.setVisibility(selected ? View.VISIBLE : View.GONE);
+        removeQr.setVisibility(selected ? View.VISIBLE : View.GONE);
+        chooseQr.setText(selected ? "Replace QR" : "Choose QR");
+        qrStatus.setText(selected ? "QR selected and ready to upload" : "No QR selected\nJPEG, PNG or WebP · maximum 5 MB");
+        if (selected) qrPreview.setImageURI(qrUri); else qrPreview.setImageDrawable(null);
+    }
+
+    private void centerCampus(int position) {
+        if (map == null || position < 0 || position >= campuses.size()) return;
+        Campus campus = campuses.get(position);
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(campus.getLatitude(), campus.getLongitude()), 16f));
+        pinnedLat = Double.NaN; pinnedLng = Double.NaN;
+        if (marker != null) marker.remove();
+        pinLabel.setText("Tap the map to pin the stall within " + campus.getName() + ".");
+    }
+
+    @Override public void onMapReady(GoogleMap googleMap) {
+        map = googleMap;
         locateMe.setEnabled(true);
         map.getUiSettings().setZoomControlsEnabled(true);
         map.getUiSettings().setZoomGesturesEnabled(true);
         map.getUiSettings().setScrollGesturesEnabled(true);
         map.getUiSettings().setCompassEnabled(true);
         map.setOnMapClickListener(this::setMerchantPin);
-        map.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener(){
-            @Override public void onMarkerDragStart(Marker dragged){}
-            @Override public void onMarkerDrag(Marker dragged){}
-            @Override public void onMarkerDragEnd(Marker dragged){setMerchantPin(dragged.getPosition());}
+        map.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            @Override public void onMarkerDragStart(Marker dragged) {}
+            @Override public void onMarkerDrag(Marker dragged) {}
+            @Override public void onMarkerDragEnd(Marker dragged) { setMerchantPin(dragged.getPosition()); }
         });
-        if(!campuses.isEmpty())centerCampus(campusSpinner.getSelectedItemPosition());
+        if (!Double.isNaN(pinnedLat)) setMerchantPin(new LatLng(pinnedLat, pinnedLng));
+        else if (selectedCampus >= 0) centerCampus(selectedCampus);
     }
 
-    private void setMerchantPin(LatLng point){
-        pinnedLat=point.latitude;pinnedLng=point.longitude;
-        if(marker!=null)marker.remove();
-        marker=map.addMarker(new MarkerOptions().position(point).title("Merchant pickup location").draggable(true));
-        if(marker!=null)marker.showInfoWindow();
-        pinLabel.setText(String.format(Locale.US,"Pickup pin: %.6f, %.6f — drag the pin to refine it",pinnedLat,pinnedLng));
+    private void setMerchantPin(LatLng point) {
+        pinnedLat = point.latitude; pinnedLng = point.longitude;
+        if (marker != null) marker.remove();
+        marker = map.addMarker(new MarkerOptions().position(point).title("Merchant pickup location").draggable(true));
+        if (marker != null) marker.showInfoWindow();
+        pinLabel.setText(String.format(Locale.US, "Pickup pin: %.6f, %.6f · drag to refine", pinnedLat, pinnedLng));
+        updateReview();
     }
 
-    private void requestCurrentPosition(){
-        if(ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED){
+    private void requestCurrentPosition() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
             locateCurrentPosition();
-        }else locationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+        else locationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION);
     }
 
-    private void locateCurrentPosition(){
-        if(map==null||ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;
-        locateMe.setEnabled(false);pinLabel.setText("Finding your current location…");
-        try{map.setMyLocationEnabled(true);}catch(SecurityException ignored){}
-        CancellationTokenSource source=new CancellationTokenSource();
-        locationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY,source.getToken())
-            .addOnSuccessListener(location->{
+    private void locateCurrentPosition() {
+        if (map == null || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return;
+        locateMe.setEnabled(false); pinLabel.setText("Finding your current location…");
+        try { map.setMyLocationEnabled(true); } catch (SecurityException ignored) {}
+        CancellationTokenSource source = new CancellationTokenSource();
+        locationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, source.getToken())
+            .addOnSuccessListener(location -> {
                 locateMe.setEnabled(true);
-                if(location==null){pinLabel.setText("Current location unavailable. Turn on Location, or tap the map manually.");return;}
-                LatLng current=new LatLng(location.getLatitude(),location.getLongitude());
+                if (location == null) { pinLabel.setText("Current location unavailable. Turn on Location or tap the map."); return; }
+                LatLng current = new LatLng(location.getLatitude(), location.getLongitude());
                 setMerchantPin(current);
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(current,18f));
-            })
-            .addOnFailureListener(error->{locateMe.setEnabled(true);pinLabel.setText("Unable to locate you. Check Location and try again, or tap the map.");});
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(current, 18f));
+            }).addOnFailureListener(error -> {
+                locateMe.setEnabled(true);
+                pinLabel.setText("Unable to locate you. Check Location or tap the map manually.");
+            });
     }
 
-    private void submit(){
-        int pos=campusSpinner.getSelectedItemPosition();
-        if(pos<0||pos>=campuses.size()||qrUri==null||Double.isNaN(pinnedLat)||!terms.isChecked()
-            ||text(business).length()<2||text(description).length()<2||text(phone).length()<7||text(duitNowName).length()<2){
-            Toast.makeText(this,"Complete all fields, select a QR, pin the stall and accept the terms.",Toast.LENGTH_LONG).show();return;}
-        Campus campus=campuses.get(pos);
-        if(distanceKm(campus.getLatitude(),campus.getLongitude(),pinnedLat,pinnedLng)>5.0){
-            Toast.makeText(this,"The pin must be within 5 km of the selected main campus.",Toast.LENGTH_LONG).show();return;}
+    private void updateReview() {
+        String campus = selectedCampus >= 0 && selectedCampus < campuses.size() ? campuses.get(selectedCampus).getName() : "No campus selected";
+        String pin = Double.isNaN(pinnedLat) ? "No pickup pin selected" : String.format(Locale.US, "%.6f, %.6f", pinnedLat, pinnedLng);
+        review.setText(text(business) + "\nDuitNow: " + text(duitNowName) + "\nCampus: " + campus + "\nPickup: " + pin);
+    }
+
+    private void submit() {
+        terms.setError(null); campusLayout.setError(null);
+        if (selectedCampus < 0 || selectedCampus >= campuses.size()) { campusLayout.setError("Select an active campus."); return; }
+        if (Double.isNaN(pinnedLat)) { showError("Place the exact pickup pin on the map."); return; }
+        if (!terms.isChecked()) { terms.setError("Confirm the details before activation."); return; }
         setLoading(true);
-        try(InputStream in=getContentResolver().openInputStream(qrUri)){
-            Bitmap bitmap=BitmapFactory.decodeStream(in);if(bitmap==null)throw new IOException("Unreadable QR image");
-            ByteArrayOutputStream out=new ByteArrayOutputStream();bitmap.compress(Bitmap.CompressFormat.JPEG,90,out);
-            food.uploadMerchantDuitNowQr(out.toByteArray(),new ResultCallback<String>(){
-                @Override public void onSuccess(String path){finishRegistration(campus,path);}
-                @Override public void onError(DataError error){setLoading(false);Toast.makeText(MerchantOnboardingActivity.this,error.getMessage(),Toast.LENGTH_LONG).show();}});
-        }catch(Exception e){setLoading(false);Toast.makeText(this,"Unable to read QR: "+e.getMessage(),Toast.LENGTH_LONG).show();}
+        try (InputStream input = getContentResolver().openInputStream(qrUri)) {
+            Bitmap bitmap = BitmapFactory.decodeStream(input);
+            if (bitmap == null) throw new IOException("The selected QR image can no longer be read.");
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, output);
+            food.uploadMerchantDuitNowQr(output.toByteArray(), new ResultCallback<String>() {
+                @Override public void onSuccess(String path) { finishRegistration(campuses.get(selectedCampus), path); }
+                @Override public void onError(DataError error) { setLoading(false); showError(error.getMessage()); }
+            });
+        } catch (Exception error) { setLoading(false); showError("Unable to read QR: " + error.getMessage()); }
     }
 
-    private void finishRegistration(Campus campus,String path){
-        String location=campus.getName()+" — "+String.format(Locale.US,"%.6f, %.6f",pinnedLat,pinnedLng);
-        auth.completeMerchantRegistration(text(business),text(description),text(phone),text(duitNowName),path,campus,location,pinnedLat,pinnedLng,
-            new ResultCallback<Merchant>(){
-                @Override public void onSuccess(Merchant m){Intent i=new Intent(MerchantOnboardingActivity.this,MerchantHomeActivity.class);i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);startActivity(i);}
-                @Override public void onError(DataError e){setLoading(false);Toast.makeText(MerchantOnboardingActivity.this,e.getMessage(),Toast.LENGTH_LONG).show();}});
+    private void finishRegistration(Campus campus, String path) {
+        String location = campus.getName() + " — " + String.format(Locale.US, "%.6f, %.6f", pinnedLat, pinnedLng);
+        auth.addMerchantRole(text(business), text(description), text(phone), text(duitNowName), path,
+            campus, location, pinnedLat, pinnedLng, new ResultCallback<Merchant>() {
+                @Override public void onSuccess(Merchant merchant) {
+                    primary.setText("Merchant account activated");
+                    MotionUtils.success(primary, () -> {
+                        Intent intent = new Intent(MerchantOnboardingActivity.this, MerchantHomeActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                    });
+                }
+                @Override public void onError(DataError error) { setLoading(false); showError(error.getMessage()); }
+            });
     }
 
-    private String text(EditText e){return e.getText()==null?"":e.getText().toString().trim();}
-    private void setLoading(boolean loading){progress.setVisibility(loading?View.VISIBLE:View.GONE);complete.setEnabled(!loading);}
-    private double distanceKm(double a,double b,double c,double d){double r=6371,x=Math.toRadians(c-a),y=Math.toRadians(d-b);double q=Math.sin(x/2)*Math.sin(x/2)+Math.cos(Math.toRadians(a))*Math.cos(Math.toRadians(c))*Math.sin(y/2)*Math.sin(y/2);return 2*r*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));}
-    @Override protected void onResume(){super.onResume();mapView.onResume();}
-    @Override protected void onPause(){mapView.onPause();super.onPause();}
-    @Override protected void onDestroy(){mapView.onDestroy();super.onDestroy();}
-    @Override public void onLowMemory(){super.onLowMemory();mapView.onLowMemory();}
+    private void setLoading(boolean active) {
+        submitting = active;
+        loading.setVisibility(active ? View.VISIBLE : View.GONE);
+        primary.setEnabled(!active);
+        back.setEnabled(!active);
+        primary.setText(active ? "Activating…" : currentStep == 3 ? "Activate Merchant Account" : "Continue");
+    }
+
+    private void showError(String message) {
+        Snackbar.make(root, message == null ? "Something went wrong. Try again." : message, Snackbar.LENGTH_LONG).show();
+    }
+
+    private String text(EditText field) { return field.getText() == null ? "" : field.getText().toString().trim(); }
+
+    private void restoreState(Bundle state) {
+        if (state == null) return;
+        currentStep = state.getInt(STATE_STEP, 1);
+        selectedCampus = state.getInt(STATE_CAMPUS, -1);
+        pinnedLat = state.getDouble(STATE_LAT, Double.NaN);
+        pinnedLng = state.getDouble(STATE_LNG, Double.NaN);
+        String uri = state.getString(STATE_QR);
+        if (uri != null) { qrUri = Uri.parse(uri); renderQr(); }
+    }
+
+    @Override protected void onSaveInstanceState(Bundle out) {
+        out.putInt(STATE_STEP, currentStep);
+        out.putInt(STATE_CAMPUS, selectedCampus);
+        out.putDouble(STATE_LAT, pinnedLat);
+        out.putDouble(STATE_LNG, pinnedLng);
+        if (qrUri != null) out.putString(STATE_QR, qrUri.toString());
+        mapView.onSaveInstanceState(out);
+        super.onSaveInstanceState(out);
+    }
+
+    @Override protected void onResume() { super.onResume(); mapView.onResume(); }
+    @Override protected void onPause() { mapView.onPause(); super.onPause(); }
+    @Override protected void onDestroy() { mapView.onDestroy(); super.onDestroy(); }
+    @Override public void onLowMemory() { super.onLowMemory(); mapView.onLowMemory(); }
 }

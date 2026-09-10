@@ -14,12 +14,14 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.uccd3223.group13.foodhero.R;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.ImpactSummary;
 import com.uccd3223.group13.foodhero.data.model.Profile;
 import com.uccd3223.group13.foodhero.data.model.UserRole;
+import com.uccd3223.group13.foodhero.data.model.UserRoleRecord;
 import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
 import com.uccd3223.group13.foodhero.ui.adapter.BadgeAdapter;
@@ -38,6 +40,7 @@ public class ImpactFragment extends Fragment {
 
     private BadgeAdapter badgeAdapter;
     private LeaderboardAdapter leaderboardAdapter;
+    private RoleActionState roleActionState = RoleActionState.LOADING;
 
     @Nullable
     @Override
@@ -85,7 +88,7 @@ public class ImpactFragment extends Fragment {
     }
 
     private void setupListeners() {
-        btnSwitchToMerchant.setOnClickListener(v -> switchRole(UserRole.MERCHANT, MerchantHomeActivity.class));
+        btnSwitchToMerchant.setOnClickListener(v -> handleRoleAction());
         btnLogout.setOnClickListener(v -> {
             authRepo.logout(new ResultCallback<Void>() {
                 @Override
@@ -106,6 +109,37 @@ public class ImpactFragment extends Fragment {
         });
     }
 
+    private void handleRoleAction() {
+        if (roleActionState == RoleActionState.ERROR) {
+            loadRoleAction();
+        } else if (roleActionState == RoleActionState.SIGNUP_REQUIRED) {
+            startActivity(new Intent(requireContext(), MerchantOnboardingActivity.class));
+        } else if (roleActionState == RoleActionState.SWITCH_AVAILABLE) {
+            switchRole(UserRole.MERCHANT, MerchantHomeActivity.class);
+        }
+    }
+
+    private void loadRoleAction() {
+        roleActionState = RoleActionState.LOADING;
+        btnSwitchToMerchant.setText("Checking account access…");
+        btnSwitchToMerchant.setEnabled(false);
+        authRepo.getAvailableRoles(new ResultCallback<java.util.List<UserRoleRecord>>() {
+            @Override public void onSuccess(java.util.List<UserRoleRecord> roles) {
+                if (!isAdded()) return;
+                boolean hasMerchant = roles != null && roles.stream().anyMatch(r -> r.getRole() == UserRole.MERCHANT);
+                roleActionState = hasMerchant ? RoleActionState.SWITCH_AVAILABLE : RoleActionState.SIGNUP_REQUIRED;
+                btnSwitchToMerchant.setText(hasMerchant ? "Switch to Merchant" : "Sign up as Merchant");
+                btnSwitchToMerchant.setEnabled(true);
+            }
+            @Override public void onError(DataError error) {
+                if (!isAdded()) return;
+                roleActionState = RoleActionState.ERROR;
+                btnSwitchToMerchant.setText("Retry account access");
+                btnSwitchToMerchant.setEnabled(true);
+            }
+        });
+    }
+
     private void switchRole(UserRole role, Class<?> destination) {
         btnSwitchToMerchant.setEnabled(false);
         authRepo.switchActiveRole(role, new ResultCallback<Profile>() {
@@ -118,10 +152,14 @@ public class ImpactFragment extends Fragment {
             @Override public void onError(DataError error) {
                 if (!isAdded()) return;
                 btnSwitchToMerchant.setEnabled(true);
-                Toast.makeText(requireContext(), "Complete your merchant details to add Merchant access.", Toast.LENGTH_LONG).show();
-                startActivity(new Intent(requireContext(), MerchantOnboardingActivity.class));
+                Snackbar.make(requireView(), error.getMessage(), Snackbar.LENGTH_LONG).show();
             }
         });
+    }
+
+    @Override public void onResume() {
+        super.onResume();
+        if (authRepo != null && btnSwitchToMerchant != null) loadRoleAction();
     }
 
     private void loadImpactData() {

@@ -477,7 +477,8 @@ public class AuthRepository {
         });
     }
 
-    public void confirmInstitutionalEmailVerification(String email, String code, ResultCallback<Profile> callback) {
+    public void confirmInstitutionalEmailVerification(String email, String code, String studentId,
+            String faculty, ResultCallback<Profile> callback) {
         executor.execute(() -> {
             try {
                 String normalized = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
@@ -486,9 +487,18 @@ public class AuthRepository {
                     postError(callback, new DataError(DataError.CODE_VALIDATION_ERROR, "Enter the 6-digit verification code."));
                     return;
                 }
+                String normalizedStudentId = studentId == null ? "" : studentId.trim();
+                String normalizedFaculty = faculty == null ? "" : faculty.trim();
+                if (normalizedStudentId.length() < 3 || normalizedFaculty.length() < 2) {
+                    postError(callback, new DataError(DataError.CODE_VALIDATION_ERROR,
+                        "Student ID and faculty are required."));
+                    return;
+                }
                 JsonObject body = new JsonObject();
                 body.addProperty("p_email", normalized);
                 body.addProperty("p_code", normalizedCode);
+                body.addProperty("p_student_id", normalizedStudentId);
+                body.addProperty("p_faculty", normalizedFaculty);
                 Response<Profile> response = restClient.confirmInstitutionVerification(
                     SupabaseConfig.SUPABASE_ANON_KEY, "Bearer " + sessionManager.getAccessToken(), body).execute();
                 if (!response.isSuccessful() || response.body() == null) {
@@ -506,9 +516,9 @@ public class AuthRepository {
         });
     }
 
-    public void addStudentRole(String institutionalEmail, String verificationCode,
-            ResultCallback<Profile> callback) {
-        confirmInstitutionalEmailVerification(institutionalEmail, verificationCode, callback);
+    public void addStudentRole(String institutionalEmail, String verificationCode, String studentId,
+            String faculty, ResultCallback<Profile> callback) {
+        confirmInstitutionalEmailVerification(institutionalEmail, verificationCode, studentId, faculty, callback);
     }
 
     public void completeMerchantRegistration(String businessName, String description, String phone,

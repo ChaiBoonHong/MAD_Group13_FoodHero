@@ -27,5 +27,13 @@
 
         <!-- Clean Cards: 0dp elevation, zero corner shadow, crisp border -->
         <item name="materialCardViewStyle">@style/Widget.FoodHero.Card</item>
+        <item name="android:windowAnimationStyle">@style/Animation.FoodHero.Activity</item>
+    </style>
+
+    <style name="Animation.FoodHero.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/foodhero_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/foodhero_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/foodhero_pop_enter</item>
+        <item name="android:activityCloseExitAnimation">@anim/foodhero_pop_exit</item>
     </style>
 </resources>

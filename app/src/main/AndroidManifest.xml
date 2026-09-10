@@ -105,6 +105,7 @@
             tools:ignore="LockedOrientationActivity" />
 
         <activity android:name=".ui.MerchantOnboardingActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.StudentRoleSignupActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
 
     </application>
 
