@@ -23,6 +23,8 @@ import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
 import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.model.Review;
+import com.uccd3223.group13.foodhero.data.model.Profile;
+import com.uccd3223.group13.foodhero.data.model.UserRole;
 import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
@@ -34,7 +36,7 @@ import java.util.List;
 public class MerchantProfileFragment extends Fragment {
 
     private TextView tvBusinessName, tvLocation, tvOperatingHours, tvAvgRating, tvReviewCount, tvNoReviews;
-    private MaterialButton btnEditProfile, btnLogout;
+    private MaterialButton btnEditProfile, btnLogout, btnSwitchToStudent;
     private RecyclerView rvReviews;
 
     private FoodHeroRepository foodHeroRepo;
@@ -79,6 +81,7 @@ public class MerchantProfileFragment extends Fragment {
         tvNoReviews = view.findViewById(R.id.tv_no_reviews);
         btnEditProfile = view.findViewById(R.id.btn_edit_profile);
         btnLogout = view.findViewById(R.id.btn_merchant_logout);
+        btnSwitchToStudent = view.findViewById(R.id.btn_switch_to_student);
         rvReviews = view.findViewById(R.id.rv_merchant_reviews);
 
         String bizName = sessionManager.getBusinessName() != null ? sessionManager.getBusinessName() : sessionManager.getFullName();
@@ -121,7 +124,82 @@ public class MerchantProfileFragment extends Fragment {
 
     private void setupListeners() {
         btnEditProfile.setOnClickListener(v -> showEditProfileDialog());
+        btnSwitchToStudent.setOnClickListener(v -> {
+            btnSwitchToStudent.setEnabled(false);
+            authRepo.switchActiveRole(UserRole.STUDENT, new ResultCallback<Profile>() {
+                @Override public void onSuccess(Profile result) {
+                    if (!isAdded()) return;
+                    Intent intent = new Intent(requireContext(), StudentHomeActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                }
+                @Override public void onError(DataError error) {
+                    if (!isAdded()) return;
+                    btnSwitchToStudent.setEnabled(true);
+                    showStudentEmailDialog();
+                }
+            });
+        });
         btnLogout.setOnClickListener(v -> showLogoutConfirmationDialog());
+    }
+
+    private void showStudentEmailDialog() {
+        EditText emailInput = new EditText(requireContext());
+        emailInput.setHint("Institutional email");
+        emailInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        int padding = (int) (24 * getResources().getDisplayMetrics().density);
+        emailInput.setPadding(padding, padding / 2, padding, 0);
+        new MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Add Student access")
+            .setMessage("We will send a 6-digit code to your supported university email.")
+            .setView(emailInput)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Send code", (dialog, which) -> {
+                String email = emailInput.getText().toString().trim();
+                btnSwitchToStudent.setEnabled(false);
+                authRepo.requestInstitutionalEmailVerification(email, new ResultCallback<Void>() {
+                    @Override public void onSuccess(Void ignored) {
+                        if (!isAdded()) return;
+                        btnSwitchToStudent.setEnabled(true);
+                        showStudentCodeDialog(email);
+                    }
+                    @Override public void onError(DataError error) {
+                        if (!isAdded()) return;
+                        btnSwitchToStudent.setEnabled(true);
+                        Toast.makeText(requireContext(), error.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+            }).show();
+    }
+
+    private void showStudentCodeDialog(String email) {
+        EditText codeInput = new EditText(requireContext());
+        codeInput.setHint("6-digit code");
+        codeInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        int padding = (int) (24 * getResources().getDisplayMetrics().density);
+        codeInput.setPadding(padding, padding / 2, padding, 0);
+        new MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Verify university email")
+            .setMessage("Enter the code sent to " + email)
+            .setView(codeInput)
+            .setNegativeButton("Cancel", null)
+            .setNeutralButton("Resend", (dialog, which) -> showStudentEmailDialog())
+            .setPositiveButton("Verify", (dialog, which) -> {
+                btnSwitchToStudent.setEnabled(false);
+                authRepo.confirmInstitutionalEmailVerification(email, codeInput.getText().toString(), new ResultCallback<Profile>() {
+                    @Override public void onSuccess(Profile result) {
+                        if (!isAdded()) return;
+                        Intent intent = new Intent(requireContext(), StudentHomeActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                    }
+                    @Override public void onError(DataError error) {
+                        if (!isAdded()) return;
+                        btnSwitchToStudent.setEnabled(true);
+                        Toast.makeText(requireContext(), error.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+            }).show();
     }
 
     private void loadReviews() {
@@ -245,8 +323,12 @@ public class MerchantProfileFragment extends Fragment {
                     }
                 }
 
-                double lat = matchedLandmark != null ? matchedLandmark.getLatitude() : 4.337243;
-                double lng = matchedLandmark != null ? matchedLandmark.getLongitude() : 101.142379;
+                if (matchedLandmark == null) {
+                    Toast.makeText(requireContext(), "Select a valid campus landmark.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                double lat = matchedLandmark.getLatitude();
+                double lng = matchedLandmark.getLongitude();
 
                 String finalLocation;
                 if (!newStall.isEmpty()) {

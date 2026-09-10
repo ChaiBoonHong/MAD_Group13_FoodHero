@@ -1,6 +1,7 @@
 package com.uccd3223.group13.foodhero.data.remote;
 
 import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
+import com.uccd3223.group13.foodhero.data.model.Campus;
 import com.uccd3223.group13.foodhero.data.model.FoodHeroNotification;
 import com.uccd3223.group13.foodhero.data.model.Listing;
 import com.uccd3223.group13.foodhero.data.model.Merchant;
@@ -8,6 +9,9 @@ import com.uccd3223.group13.foodhero.data.model.Order;
 import com.uccd3223.group13.foodhero.data.model.Profile;
 import com.uccd3223.group13.foodhero.data.model.Review;
 import com.uccd3223.group13.foodhero.data.model.ServiceArea;
+import com.uccd3223.group13.foodhero.data.model.UserRoleRecord;
+import com.uccd3223.group13.foodhero.data.model.InstitutionMatch;
+import com.google.gson.JsonObject;
 import java.util.List;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
@@ -22,6 +26,67 @@ import retrofit2.http.POST;
 import retrofit2.http.Query;
 
 public interface SupabaseRestClient {
+    // --- SERVER-AUTHORITATIVE TRANSACTION WORKFLOW ---
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/reserve_listing")
+    Call<Order> reserveListing(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/submit_payment_receipt")
+    Call<Order> submitPaymentReceipt(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/decide_payment_receipt")
+    Call<Order> decidePaymentReceipt(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/expire_unpaid_order")
+    Call<Order> expireUnpaidOrder(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/complete_pickup")
+    Call<Order> completePickup(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/mark_no_show")
+    Call<Order> markNoShow(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/reconcile_due_orders")
+    Call<Integer> reconcileDueOrders(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/switch_active_role")
+    Call<Profile> switchActiveRole(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/complete_merchant_registration")
+    Call<Merchant> completeMerchantRegistration(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @GET("/rest/v1/user_roles")
+    Call<List<UserRoleRecord>> getAvailableRoles(@Header("apikey") String apiKey, @Header("Authorization") String bearer,
+                                                 @Query("user_id") String userIdQuery);
+
+    @GET("/rest/v1/campuses?select=*")
+    Call<List<Campus>> getCampuses(@Header("apikey") String apiKey, @Header("Authorization") String bearer,
+                                   @Query("is_active") String activeQuery, @Query("order") String orderQuery);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/lookup_institution_domain")
+    Call<List<InstitutionMatch>> lookupInstitution(@Header("apikey") String apiKey, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/functions/v1/request-institution-verification")
+    Call<ResponseBody> requestInstitutionVerification(@Header("apikey") String apiKey,
+                                                       @Header("Authorization") String bearer,
+                                                       @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/confirm_institution_verification")
+    Call<Profile> confirmInstitutionVerification(@Header("apikey") String apiKey,
+                                                  @Header("Authorization") String bearer,
+                                                  @Body JsonObject body);
+
     // --- PROFILES ---
     @GET("/rest/v1/profiles")
     Call<List<Profile>> getProfile(

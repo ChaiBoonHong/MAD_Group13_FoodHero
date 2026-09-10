@@ -198,7 +198,7 @@ public class MerchantDashboardFragment extends Fragment {
         if (isPending) {
             tvStatus.setText("⏳ Slip Pending");
             tvStatus.setTextColor(getResources().getColor(R.color.colorTimerUrgentText));
-        } else if (order.getStatus() == OrderStatus.RESERVED) {
+        } else if (order.getStatus() == OrderStatus.READY_FOR_PICKUP) {
             tvStatus.setText("✓ Ready for Pickup");
             tvStatus.setTextColor(getResources().getColor(R.color.colorPrimary));
         } else if (order.getStatus() == OrderStatus.COMPLETED) {

@@ -32,16 +32,16 @@ android {
 
         val supabaseUrl = secrets.getProperty("SUPABASE_URL")
             ?: (project.findProperty("SUPABASE_URL") as? String)
-            ?: "https://your-project-id.supabase.co"
+            ?: throw GradleException("SUPABASE_URL is required in secrets.properties or local.properties")
         val supabaseAnonKey = secrets.getProperty("SUPABASE_ANON_KEY")
             ?: (project.findProperty("SUPABASE_ANON_KEY") as? String)
-            ?: "dummy-supabase-anon-key"
+            ?: throw GradleException("SUPABASE_ANON_KEY is required in secrets.properties or local.properties")
         val mapsApiKey = secrets.getProperty("MAPS_API_KEY")
             ?: (project.findProperty("MAPS_API_KEY") as? String)
-            ?: "dummy-google-maps-api-key"
+            ?: throw GradleException("MAPS_API_KEY is required in secrets.properties or local.properties")
         val googleWebClientId = secrets.getProperty("GOOGLE_WEB_CLIENT_ID")
             ?: (project.findProperty("GOOGLE_WEB_CLIENT_ID") as? String)
-            ?: "dummy-google-web-client-id"
+            ?: throw GradleException("GOOGLE_WEB_CLIENT_ID is required in secrets.properties or local.properties")
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")

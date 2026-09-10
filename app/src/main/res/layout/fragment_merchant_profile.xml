@@ -291,11 +291,19 @@
 
         <!-- Account Section & Logout -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_merchant_logout"
+            android:id="@+id/btn_switch_to_student"
             style="@style/Widget.FoodHero.Button.Secondary"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="@dimen/spacing_24"
+            android:text="Switch to Student" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_merchant_logout"
+            style="@style/Widget.FoodHero.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="@dimen/spacing_8"
             android:text="@string/logout"
             android:textColor="@color/colorError"
             android:textSize="14sp"

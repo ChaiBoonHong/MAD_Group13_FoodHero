@@ -15,7 +15,7 @@ public class QrTokenSecurityTest {
         Order order = new Order();
         order.setOrderCode("FH-829104");
         order.setPickupToken("FH-TOKEN-829104");
-        order.setStatus(OrderStatus.RESERVED);
+        order.setStatus(OrderStatus.READY_FOR_PICKUP);
 
         assertTrue(order.getOrderCode().startsWith("FH-"));
         assertEquals(9, order.getOrderCode().length());

@@ -57,7 +57,7 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ViewHold
 
         holder.tvTitle.setText(listing.getTitle());
         String merchantName = listing.getMerchant() != null ? listing.getMerchant().getBusinessName() : "Campus Merchant";
-        String location = listing.getPickupLocation() != null ? listing.getPickupLocation() : "UTAR Kampar";
+        String location = listing.getPickupLocation() != null ? listing.getPickupLocation() : "Campus location unavailable";
         holder.tvMerchant.setText(String.format("%s • %s", merchantName, location));
 
         holder.tvCategory.setText(listing.getCategory());
@@ -78,7 +78,7 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ViewHold
         }
 
         // Distance & ETA text
-        holder.tvDistance.setText(String.format(Locale.US, "UTAR Kampar • %s - %s", listing.getPickupStart(), listing.getPickupEnd()));
+        holder.tvDistance.setText(String.format(Locale.US, "%s • %s - %s", location, listing.getPickupStart(), listing.getPickupEnd()));
 
         // Favourite state
         holder.btnFavourite.setImageResource(listing.isFavourite() ? R.drawable.ic_heart_filled : R.drawable.ic_heart_outline);

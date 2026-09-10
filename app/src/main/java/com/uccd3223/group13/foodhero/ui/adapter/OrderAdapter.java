@@ -52,10 +52,10 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
         Order order = items.get(position);
 
         holder.tvOrderCode.setText(String.format("Order #%s", order.getOrderCode()));
-        holder.tvStatus.setText(order.getStatus().getValue().toUpperCase(Locale.US));
+        holder.tvStatus.setText(order.getStatus() != null ? order.getStatus().getValue().toUpperCase(Locale.US) : "UNKNOWN");
 
         // Tint status badge
-        int statusBg = (order.getStatus() == OrderStatus.RESERVED) ? R.color.colorAccent :
+        int statusBg = (order.getStatus() == OrderStatus.READY_FOR_PICKUP) ? R.color.colorAccent :
             (order.getStatus() == OrderStatus.COMPLETED) ? R.color.colorPrimary : R.color.colorError;
         holder.tvStatus.setBackgroundResource(R.drawable.bg_badge_pill);
         holder.tvStatus.setBackgroundTintList(androidx.core.content.ContextCompat.getColorStateList(context, statusBg));
@@ -64,13 +64,14 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
         holder.tvItemTitle.setText(String.format(Locale.US, "%s (x%d)", itemTitle, order.getQuantity()));
 
         String merchantName = (order.getMerchant() != null) ? order.getMerchant().getBusinessName() : "Campus Merchant";
-        String location = (order.getMerchant() != null) ? order.getMerchant().getCampusLocation() : "UTAR Kampar";
+        String location = (order.getMerchant() != null && order.getMerchant().getCampusLocation() != null)
+            ? order.getMerchant().getCampusLocation() : "Campus location unavailable";
         holder.tvMerchant.setText(String.format("%s • %s", merchantName, location));
 
         holder.tvPickupTime.setText(String.format("Pickup: %s - %s", order.getPickupStart(), order.getPickupEnd()));
         holder.tvPrice.setText(CurrencyUtils.format(order.getFinalPaidPrice()));
 
-        if (order.getStatus() == OrderStatus.RESERVED) {
+        if (order.getStatus() == OrderStatus.READY_FOR_PICKUP) {
             holder.btnViewQr.setVisibility(View.VISIBLE);
             holder.btnViewQr.setText("View Pickup QR");
             holder.btnViewQr.setEnabled(true);

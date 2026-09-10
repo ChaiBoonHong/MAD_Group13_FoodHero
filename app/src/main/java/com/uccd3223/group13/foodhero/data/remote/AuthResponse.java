@@ -25,12 +25,19 @@ public class AuthResponse {
         @SerializedName("email")
         private String email;
 
+        @SerializedName("email_confirmed_at")
+        private String emailConfirmedAt;
+
         public String getId() {
             return id;
         }
 
         public String getEmail() {
             return email;
+        }
+
+        public boolean isEmailConfirmed() {
+            return emailConfirmedAt != null && !emailConfirmedAt.trim().isEmpty();
         }
     }
 

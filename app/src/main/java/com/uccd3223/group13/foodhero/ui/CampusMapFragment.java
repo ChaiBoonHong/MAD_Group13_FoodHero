@@ -10,6 +10,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -23,6 +26,8 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.ChipGroup;
@@ -30,12 +35,13 @@ import com.uccd3223.group13.foodhero.R;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
+import com.uccd3223.group13.foodhero.data.model.Campus;
 import com.uccd3223.group13.foodhero.data.model.GeoPoint;
 import com.uccd3223.group13.foodhero.data.model.Listing;
 import com.uccd3223.group13.foodhero.data.model.RouteResult;
 import com.uccd3223.group13.foodhero.data.model.TravelMode;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
-import com.uccd3223.group13.foodhero.util.CampusBoundaryManager;
+import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.util.CurrencyUtils;
 import java.util.HashMap;
 import java.util.List;
@@ -56,10 +62,14 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
     private final Map<Marker, Listing> markerListingMap = new HashMap<>();
     private Polyline currentRoutePolyline;
     private Listing selectedListing;
-
-    // Simulated student position on UTAR Kampar campus (Near FICT Block N)
-    private double studentLat = 4.336500;
-    private double studentLng = 101.140200;
+    private Double studentLat;
+    private Double studentLng;
+    private FusedLocationProviderClient locationClient;
+    private final ActivityResultLauncher<String> locationPermission = registerForActivityResult(
+        new ActivityResultContracts.RequestPermission(), granted -> {
+            if (granted) loadStudentLocation();
+            else if (isAdded()) tvEntranceFallbackWarning.setText("Location permission denied. Route guidance is unavailable.");
+        });
 
     @Nullable
     @Override
@@ -72,6 +82,7 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
         super.onViewCreated(view, savedInstanceState);
 
         foodHeroRepo = FoodHeroRepository.getInstance(requireContext());
+        locationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
         initViews(view);
         setupListeners();
 
@@ -125,24 +136,10 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady(@NonNull GoogleMap map) {
         this.googleMap = map;
 
-        // Center on UTAR Kampar Campus
-        LatLng utarKamparCenter = new LatLng(CampusBoundaryManager.CAMPUS_CENTER_LAT, CampusBoundaryManager.CAMPUS_CENTER_LNG);
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(utarKamparCenter, 15.8f));
-
-        // Restrict bounds so camera doesn't scroll off-campus
-        LatLngBounds campusBounds = new LatLngBounds(
-            new LatLng(4.327000, 101.135000), // Southwest
-            new LatLng(4.344500, 101.150000)  // Northeast
-        );
-        googleMap.setLatLngBoundsForCameraTarget(campusBounds);
         googleMap.setMinZoomPreference(14.0f);
         googleMap.setMaxZoomPreference(19.0f);
-
-        // Add Student Marker
-        googleMap.addMarker(new MarkerOptions()
-            .position(new LatLng(studentLat, studentLng))
-            .title("You (Student Location)")
-            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+        centerVerifiedCampus();
+        requestStudentLocation();
 
         // Load Landmarks and Listings
         loadMapData();
@@ -160,6 +157,49 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
 
         googleMap.setOnMapClickListener(latLng -> {
             cardDealPreview.setVisibility(View.GONE);
+        });
+    }
+
+    private void centerVerifiedCampus() {
+        AuthRepository auth = AuthRepository.getInstance(requireContext());
+        String campusId = auth.getCurrentProfile() == null ? null : auth.getCurrentProfile().getCampusId();
+        auth.getInstitutionsAndCampuses(new ResultCallback<List<Campus>>() {
+            @Override public void onSuccess(List<Campus> campuses) {
+                if (googleMap == null || campuses == null) return;
+                for (Campus campus : campuses) {
+                    if (campus.getId() != null && campus.getId().equals(campusId)) {
+                        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                            new LatLng(campus.getLatitude(), campus.getLongitude()), 15.8f));
+                        return;
+                    }
+                }
+                tvEntranceFallbackWarning.setText("Your verified campus could not be loaded.");
+            }
+            @Override public void onError(DataError error) {
+                if (isAdded()) tvEntranceFallbackWarning.setText("Unable to load the campus map. Retry when connected.");
+            }
+        });
+    }
+
+    private void requestStudentLocation() {
+        if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.ACCESS_FINE_LOCATION)
+            == android.content.pm.PackageManager.PERMISSION_GRANTED) loadStudentLocation();
+        else locationPermission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
+    }
+
+    private void loadStudentLocation() {
+        if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.ACCESS_FINE_LOCATION)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED) return;
+        locationClient.getLastLocation().addOnSuccessListener(location -> {
+            if (googleMap == null || location == null) {
+                tvEntranceFallbackWarning.setText("Current location unavailable. Turn on location and retry.");
+                return;
+            }
+            studentLat = location.getLatitude();
+            studentLng = location.getLongitude();
+            googleMap.addMarker(new MarkerOptions().position(new LatLng(studentLat, studentLng))
+                .title("Your current location")
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
         });
     }
 
@@ -226,6 +266,11 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void drawRouteToListing(Listing listing) {
+        if (studentLat == null || studentLng == null) {
+            tvEntranceFallbackWarning.setText("Current location is required for route guidance.");
+            cardRouteInfo.setVisibility(View.VISIBLE);
+            return;
+        }
         foodHeroRepo.calculateRoute(studentLat, studentLng, listing.getLatitude(), listing.getLongitude(), selectedTravelMode, new ResultCallback<RouteResult>() {
             @Override
             public void onSuccess(RouteResult route) {

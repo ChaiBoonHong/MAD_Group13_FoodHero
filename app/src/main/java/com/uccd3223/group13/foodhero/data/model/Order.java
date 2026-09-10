@@ -19,6 +19,9 @@ public class Order implements Serializable {
     @SerializedName("merchant_id")
     private String merchantId;
 
+    @SerializedName("campus_id")
+    private String campusId;
+
     @SerializedName("quantity")
     private int quantity;
 
@@ -78,7 +81,7 @@ public class Order implements Serializable {
     private Profile studentProfile;
 
     public Order() {
-        this.status = OrderStatus.RESERVED;
+        this.status = OrderStatus.AWAITING_PAYMENT;
         this.quantity = 1;
     }
 
@@ -113,6 +116,9 @@ public class Order implements Serializable {
     public void setListingId(String listingId) {
         this.listingId = listingId;
     }
+
+    public String getCampusId() { return campusId; }
+    public void setCampusId(String campusId) { this.campusId = campusId; }
 
     public String getMerchantId() {
         return merchantId;
@@ -195,7 +201,7 @@ public class Order implements Serializable {
     }
 
     public OrderStatus getStatus() {
-        return status != null ? status : OrderStatus.RESERVED;
+        return status;
     }
 
     public void setStatus(OrderStatus status) {

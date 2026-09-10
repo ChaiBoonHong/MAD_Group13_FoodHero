@@ -119,7 +119,7 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
 
         for (Order o : allOrders) {
             if (selectedTabIndex == 0) {
-                if (o.getStatus() == OrderStatus.RESERVED ||
+                if (o.getStatus() == OrderStatus.READY_FOR_PICKUP ||
                     o.getStatus() == OrderStatus.PENDING_VERIFICATION ||
                     o.getStatus() == OrderStatus.AWAITING_PAYMENT) {
                     filtered.add(o);
@@ -131,7 +131,7 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
             } else {
                 if (o.getStatus() == OrderStatus.CANCELLED ||
                     o.getStatus() == OrderStatus.EXPIRED ||
-                    o.getStatus() == OrderStatus.REJECTED) {
+                    o.getStatus() == OrderStatus.PAYMENT_REJECTED || o.getStatus() == OrderStatus.NO_SHOW) {
                     filtered.add(o);
                 }
             }

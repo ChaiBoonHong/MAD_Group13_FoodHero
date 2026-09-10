@@ -405,8 +405,15 @@ public class AuthActivity extends AppCompatActivity {
                 public void onSuccess(Profile profile) {
                     btnAuthSubmit.setEnabled(true);
                     btnAuthSubmit.setText(R.string.register);
-                    Toast.makeText(AuthActivity.this, "Registration successful!", Toast.LENGTH_SHORT).show();
-                    routeToHome(profile);
+                    if (authRepo.isLoggedIn() && profile.isEmailVerified()) {
+                        Toast.makeText(AuthActivity.this, "Registration and email verification complete.", Toast.LENGTH_SHORT).show();
+                        routeToHome(profile);
+                    } else {
+                        Toast.makeText(AuthActivity.this,
+                            "Confirmation email sent. Verify it, then return here to log in.", Toast.LENGTH_LONG).show();
+                        isLoginMode = true;
+                        updateModeUI();
+                    }
                 }
 
                 @Override
@@ -420,7 +427,7 @@ public class AuthActivity extends AppCompatActivity {
     }
 
     private void routeToHome(Profile profile) {
-        if (profile != null && profile.getRole() == UserRole.MERCHANT) {
+        if (profile != null && profile.getLastActiveRole() == UserRole.MERCHANT) {
             startActivity(new Intent(AuthActivity.this, MerchantHomeActivity.class));
         } else {
             startActivity(new Intent(AuthActivity.this, StudentHomeActivity.class));

@@ -1,294 +1,403 @@
+# 🍱 FoodHero
+
 <div align="center">
 
-<img src="foodhero-logo.png" alt="FoodHero Logo" width="180" />
+<img src="foodhero-logo.png" alt="FoodHero mascot carrying rescued food" width="360">
 
-# 🍱 FoodHero
-### *Save Food. Save Money. Save the Planet.* 🌱
-**Hyper-Localized Surplus Food Rescue & Marketplace Platform for UTAR Kampar Campus**
+### Rescue good food. Save money. Make every pickup count.
 
-[![Platform](https://img.shields.io/badge/Platform-Android_API_28+-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
-[![Language](https://img.shields.io/badge/Language-Java_11-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
-[![Backend](https://img.shields.io/badge/Backend-Supabase_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
-[![Maps](https://img.shields.io/badge/Maps-Google_Maps_SDK-4285F4?style=for-the-badge&logo=googlemaps&logoColor=white)](https://developers.google.com/maps)
-[![Build](https://img.shields.io/badge/Build-Gradle_9.1-02303A?style=for-the-badge&logo=gradle&logoColor=white)](https://gradle.org)
+FoodHero connects verified university communities with campus merchants offering safe surplus meals—before good food becomes waste.
 
-<br/>
+[![Android](https://img.shields.io/badge/Android-Native-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
+[![Java](https://img.shields.io/badge/Java-11-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+[![Material Design](https://img.shields.io/badge/UI-Material%20Design-6750A4?logo=materialdesign&logoColor=white)](https://m3.material.io/)
+[![Build](https://img.shields.io/badge/local%20build-passing-brightgreen)](#-quality-gates)
+[![Course](https://img.shields.io/badge/UCCD3223-Group%2013-FF6B35)](#-academic-declaration)
 
-[⚡ 60-Second Quick Start](#-60-second-quick-start-cli-first) • [🏗️ Architecture](#-system-architecture) • [🗄️ Database Setup](#-database-setup-cli--dashboard) • [🔑 Default Accounts](#-default-user-accounts-pre-seeded--ready) • [🧪 CLI Testing](#-cli-diagnostics--testing)
+[Explore the journey](#-how-foodhero-works) · [Run the app](#-quick-start) · [Configure Supabase](#-supabase-setup) · [Test safely](#-quality-gates)
 
 </div>
 
----
+> [!IMPORTANT]
+> FoodHero handles real identities, stock, orders, receipts, and pickup tokens. Never add fake-success responses, hard-coded users, service-role keys, or device-local `content://` paths as backend records.
 
-## 🌟 Overview
+## 🌱 Why FoodHero?
 
-Every day across campus cafeterias, fresh edible surplus food is discarded simply because vendors reach their afternoon or evening closing hours. Meanwhile, university students are actively looking for healthy, budget-friendly meal options.
+Campus food outlets can finish the day with safe unsold meals while students are searching for affordable food. FoodHero creates a trusted, campus-isolated rescue loop:
 
-**FoodHero** bridges this gap. It enables campus merchants (Pavilion I, Pavilion II, cafeterias, and stalls) to post **Surprise Bags & Meals for ≤ RM10**, allowing students to discover, reserve in under 30 seconds, navigate directly to stalls via GPS campus routes, and redeem meals with cryptographic single-use QR tokens.
+- Students get discounted meals priced at **RM10 or below**.
+- Merchants recover value from food that may otherwise be wasted.
+- Atomic reservations prevent the same stock from being sold twice.
+- DuitNow QR keeps payment familiar for Malaysian users.
+- Private receipts and single-use pickup tokens protect both parties.
+- Completed rescues contribute to savings and environmental-impact totals.
 
----
-
-## ⚡ 60-Second Quick Start (CLI First)
-
-Run these commands directly in your terminal (**PowerShell** or **Bash**) from the project root:
-
-### 1. Clone & Navigate
-```bash
-git clone https://github.com/ChaiBoonHong/MAD_Group13_FoodHero.git
-cd MAD_Group13_FoodHero
-```
-
-### 2. Auto-Generate Secrets Configuration
-Create your local secrets configuration file:
+## ✨ What can it do?
 
 <details open>
-<summary><b>PowerShell (Windows)</b></summary>
+<summary><strong>🎓 Student experience</strong></summary>
 
-```powershell
-# Copy the template to secrets.properties (gitignored)
-Copy-Item secrets.properties.example secrets.properties
+- Register using an exact supported institutional email domain.
+- Confirm the email before entering the Student workspace.
+- See only listings associated with the verified campus.
+- Search, filter, inspect, favourite, and reserve available food.
+- Select quantity while Supabase atomically validates and reduces stock.
+- View the merchant's real DuitNow QR, payment reference, amount, and countdown.
+- Save the QR to Gallery or share it to a compatible Android app.
+- Upload a real payment receipt to private Supabase Storage.
+- Track verification, rejection, pickup, cancellation, expiry, and completion.
+- Present a single-use pickup QR and leave a review after collection.
+- View real device location, campus listings, landmarks, and route estimates.
 
-# Quick check that secrets are ready
-Get-Content secrets.properties
-```
 </details>
 
 <details>
-<summary><b>Bash (macOS / Linux)</b></summary>
+<summary><strong>🏪 Merchant experience</strong></summary>
 
-```bash
-cp secrets.properties.example secrets.properties
-cat secrets.properties
-```
-</details>
+- Register with any confirmed email address.
+- Complete business information and accept the merchant terms.
+- Select a campus and pin the stall location on the map.
+- Upload the actual merchant DuitNow QR.
+- Receive automatic approval only after the complete validated transaction succeeds.
+- Create, edit, restock, and deactivate campus-bound listings.
+- Use Supabase Storage or a validated external HTTPS listing image.
+- Review private payment receipts for associated orders only.
+- Approve a receipt or reject it with a required reason.
+- Scan the pickup QR or enter the fallback code manually.
+- View completed-order revenue, listings, reviews, and order activity.
 
-### 3. Deploy Database via CLI or Dashboard
-Run the single master database schema to initialize all tables, foreign keys, RLS policies, triggers, and UTAR Kampar campus landmarks:
-
-```bash
-# Option A: Supabase CLI (if you have Supabase CLI installed)
-npx supabase db execute --file supabase/schema.sql
-
-# Option B: Direct Web SQL Editor (Zero install required)
-# Open https://supabase.com/dashboard/project/qouifvxsnevpqzafkdbf/sql/new
-# Paste the contents of supabase/schema.sql and click Run.
-```
-
-### 4. Build & Launch on Device / Emulator
-```bash
-# Compile and check for errors
-./gradlew.bat compileDebugSources
-
-# Assemble Debug APK & Install to connected device via ADB
-./gradlew.bat installDebug
-
-# Launch the app immediately via ADB
-adb shell am start -n com.uccd3223.group13.foodhero/.ui.SplashActivity
-```
-
----
-
-## 🔑 User Authentication & 100% Dynamic Supabase Data
-
-> [!IMPORTANT]
-> **Zero Hardcoded Data**: All content displayed throughout FoodHero—including user profiles, eco-impact metrics, merchant outlets, active surplus food listings, order reservations, payment slips, and verification QR codes—is **retrieved dynamically from Supabase (PostgreSQL + PostgREST + Realtime WebSocket)**. No mock or fallback data is hardcoded in the codebase.
-
-### 📋 Default Test Accounts (Stored in Supabase)
-
-The live Supabase database is pre-configured with two verified test accounts with empty points and empty listings:
-
-| Role | Role Selector Pill | Email | Password | Initial State & Dynamic Capabilities |
-|---|---|---|---|---|
-| **🎓 Student** | Tap **🎓 Student** | `student@foodhero.my` | `FoodHero123!` | • **Clean Slate**: 0 Eco-Points, 0 Meals Rescued, RM0.00 Saved, 0.0kg CO₂.<br/>• **Capabilities**: Real-time browsing of live listings, campus GPS navigation to Pavilions, DuitNow QR reservation, single-use QR pickup tokens, merchant rating reviews. |
-| **🏪 Merchant** | Tap **🏪 Merchant** | `merchant@foodhero.my` | `FoodHero123!` | • **Clean Slate**: 0 Listings, 0 Reviews, Grand Green Cafe (Pavilion I).<br/>• **Capabilities**: Real-time merchant dashboard (live revenue & inventory from DB), create/manage surplus listings with photo picker, integrated ZXing camera QR scanner to verify student pickups. |
-
----
-
-### 📲 How to Log In (Step-by-Step)
-
-```
-       Step 1                     Step 2                     Step 3
- ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
- │ [🎓 Student]    │  ──►  │ Email & Password│  ──►  │  [ Login ]      │
- │ [🏪 Merchant]   │       │ student@...     │       │                 │
- └─────────────────┘       └─────────────────┘       └─────────────────┘
-  Select Role Pill           Enter Credentials         Launch Workspace
-```
-
-1. **Select Role Pill**: Tap either **🎓 Student** or **🏪 Merchant** at the top selector bar on the login screen.
-2. **Enter Credentials**: Fill in the corresponding email and password (`FoodHero123!`), or your own registered credentials.
-3. **Tap Login**: Click the **Login** button. The app queries Supabase GoTrue Auth, downloads your profile from `public.profiles`, and routes to the appropriate role workspace ([`StudentHomeActivity`](file:///d:/UTAR/Group13-FoodHero/MAD_Group13_FoodHero/app/src/main/java/com/uccd3223/group13/foodhero/ui/StudentHomeActivity.java) or [`MerchantHomeActivity`](file:///d:/UTAR/Group13-FoodHero/MAD_Group13_FoodHero/app/src/main/java/com/uccd3223/group13/foodhero/ui/MerchantHomeActivity.java)).
-
-> [!TIP]
-> **No Email Verification Barrier**: Pre-seeded accounts and all newly registered accounts are auto-confirmed in Supabase GoTrue Auth. No email confirmation link or OTP is required.
-
----
-
-### 🔄 Create Your Own Accounts (Instant Self-Registration)
-
-You can create brand new Student or Merchant accounts directly within the app:
-1. Tap **"Don't have an account? Register"** on the login screen.
-2. Select **🎓 Student** (enter Name, Student ID, Faculty, Email, Password) or **🏪 Merchant** (enter Name, Business Name, Campus Location, Stall Details, Email, Password).
-3. Tap **Register**.
-4. The database trigger automatically creates your profile in `public.profiles` and outlet in `public.merchants` with clean, zero initial stats. All subsequent actions immediately update Supabase in real-time.
-
-
----
-
-## 🗄️ Database Setup (CLI & Dashboard)
-
-The database runs on **Supabase (PostgreSQL 15+)** with **Row Level Security (RLS)** and automatic cascading lifecycle deletion.
-
-### Schema Blueprint
-
-```
-auth.users (Supabase Managed GoTrue Auth)
-  │
-  ▼ [ON DELETE CASCADE]
-public.profiles (Student / Merchant Profile & Impact Stats)
-  │
-  ├──► public.user_locations (Campus Geofencing State)
-  │
-  ├──► public.merchants (Campus Outlet Registry)
-  │      │
-  │      ▼ [ON DELETE CASCADE]
-  │    public.listings (Surplus Mystery Bags & Inventory)
-  │      │
-  │      ▼ [ON DELETE CASCADE]
-  ├────► public.orders (Reservations & QR Token Redemptions)
-  │      │
-  │      ├──► public.reviews (Star Ratings & Aggregate Rollup)
-  │      └──► public.reward_redemptions (Eco Discount Ledger)
-  │
-  └──► public.notifications (In-App Realtime Notification Stream)
-```
-
-### Applying the Schema:
-1. Open [`supabase/schema.sql`](supabase/schema.sql).
-2. Go to **[Supabase Dashboard SQL Editor](https://supabase.com/dashboard/project/qouifvxsnevpqzafkdbf/sql/new)**.
-3. Paste the entire file and click **Run** to set up tables, RLS policies, triggers, and UTAR Kampar campus boundary landmarks.
-4. The schema is **100% idempotent**—you can re-run it anytime to reset data safely.
-
----
-
-## 🏗️ System Architecture
-
-FoodHero follows modern Android architecture using the **Repository Pattern** and offline-first caching:
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                           UI LAYER                               │
-│  - Activities (Auth, StudentHome, MerchantHome, OrderVerify)     │
-│  - Fragments (Explore, Map, ActiveOrders, Profile, Dashboard)   │
-│  - Material Design 3 Components & Edge-to-Edge System Insets     │
-└─────────────────────────────────▲────────────────────────────────┘
-                                  │ LiveData / Callbacks
-┌─────────────────────────────────┴────────────────────────────────┐
-│                       REPOSITORY LAYER                           │
-│  - AuthRepository: Supabase Auth GoTrue + Local Token Management │
-│  - ListingRepository: Network-first + Room cache fallbacks       │
-│  - OrderRepository: Atomic reservation & QR verification         │
-│  - NotificationRepository: Realtime WebSocket subscriptions      │
-└─────────────────▲──────────────────────────────▲─────────────────┘
-                  │ Local Room Cache             │ PostgREST / Realtime
-┌─────────────────┴──────────────┐ ┌─────────────┴─────────────────┐
-│         LOCAL STORAGE          │ │        SUPABASE CLOUD         │
-│  - FoodHeroDatabase (Room)     │ │  - PostgREST RESTful APIs     │
-│  - Encrypted SharedPrefs       │ │  - Supabase Realtime (WS)     │
-│  - Offline DashboardCacheDao   │ │  - Supabase Storage Bucket    │
-└────────────────────────────────┘ └───────────────────────────────┘
-```
-
----
-
-## 🚀 Interactive Feature Walkthrough
-
-### 🎓 Student User Journey
-1. **Launch & Log In**: Open the app, select the **🎓 Student** pill, enter `student@foodhero.my` / `FoodHero123!`, and tap **Login**.
-2. **Explore Feed**: View active surplus mystery bags sorted by distance and price (≤ RM10).
-3. **Interactive Map**: Open the **Map Tab** to see the UTAR Kampar campus boundary and walk routes to **Student Pavilion I** or **Pavilion II**.
-4. **Reserve Meal**: Tap **Rescue Meal**, complete the DuitNow QR simulation, and confirm your reservation.
-5. **Redeem with QR**: Open **Active Orders** to display your time-sensitive single-use cryptographic QR code.
-
-### 🏪 Merchant User Journey
-1. **Switch Account**: From the Student profile screen, tap **Logout**. On the login screen, select the **🏪 Merchant** pill, enter `merchant@foodhero.my` / `FoodHero123!`, and tap **Login**.
-2. **Merchant Dashboard**: View real-time surplus bags remaining, orders awaiting pickup, and total revenue recovered.
-3. **Publish Listing**: Tap **+ New Listing**, enter the meal title, set discounted price (≤ RM10), select pickup window, and publish.
-4. **Scan & Verify**: Tap **Scan QR** to open the integrated **ZXing Camera Scanner**. Scan the student's order QR code to verify and instantly complete the transaction.
-
----
-
-## 🧪 CLI Diagnostics & Testing
-
-Use these terminal commands to verify your setup before launching:
-
-<details>
-<summary><b>1. Test Supabase Auth & API Connectivity</b></summary>
-
-```powershell
-# PowerShell: Test Supabase PostgREST connectivity
-$apiKey = (Get-Content secrets.properties | Where-Object { $_ -like "SUPABASE_ANON_KEY=*" }).Split("=")[1].Trim()
-$url = (Get-Content secrets.properties | Where-Object { $_ -like "SUPABASE_URL=*" }).Split("=")[1].Trim()
-
-Invoke-RestMethod -Uri "$url/rest/v1/listings?select=id,title,discounted_price&status=eq.active" -Headers @{ apikey = $apiKey } | Format-Table
-```
 </details>
 
 <details>
-<summary><b>2. Stream Live Android Logs Filtered by FoodHero</b></summary>
+<summary><strong>🔁 Dual-role accounts</strong></summary>
 
-```bash
-# Stream logcat messages strictly from FoodHero
-adb logcat -v time -s "AuthRepository" "ListingRepository" "SupabaseClient" "FoodHero"
-```
+- One Supabase Auth user can hold both Student and Merchant roles.
+- The last-used role controls routing after login.
+- Both profile screens provide **Switch Role**.
+- A Student can add Merchant access through merchant onboarding.
+- A personal-email Merchant can add Student access by verifying a secondary institutional email with a hashed, expiring code.
+
 </details>
 
-<details>
-<summary><b>3. Clear App Storage & Reset Session via CLI</b></summary>
+## 🧭 How FoodHero works
 
-```bash
-# Clear app cache and preferences for clean re-test
-adb shell pm clear com.uccd3223.group13.foodhero
+```mermaid
+flowchart LR
+    A[Verified student] --> B[Campus listings]
+    B --> C[Select quantity]
+    C --> D[AWAITING_PAYMENT]
+    D --> E[Pay with merchant DuitNow QR]
+    E --> F[Upload private receipt]
+    F --> G[PENDING_VERIFICATION]
+    G -->|Approved| H[READY_FOR_PICKUP]
+    G -->|Rejected with reason| I[PAYMENT_REJECTED]
+    H --> J[Scan QR or enter code]
+    J --> K[COMPLETED]
+    D -->|Timer elapsed| L[EXPIRED]
+    D -->|Student cancels| M[CANCELLED]
+    H -->|Pickup deadline elapsed| N[NO_SHOW]
 ```
-</details>
 
----
+### Order rules at a glance
 
-## 📁 Repository Structure
+| State | What the user sees | What may happen next |
+|---|---|---|
+| `AWAITING_PAYMENT` | DuitNow QR, reference, amount, countdown | Receipt upload, cancellation, or expiry |
+| `PENDING_VERIFICATION` | Receipt is under merchant review | Approval or rejection |
+| `READY_FOR_PICKUP` | Pickup QR and fallback code | Completion or no-show |
+| `PAYMENT_REJECTED` | Merchant reason and released stock | Terminal |
+| `COMPLETED` | Successful rescue and updated impact | Terminal |
+| `CANCELLED` | Unpaid reservation cancelled | Terminal |
+| `EXPIRED` | Payment window elapsed | Terminal |
+| `NO_SHOW` | Paid order missed its pickup deadline | Terminal; no stock restoration |
 
+Stock is restored exactly once for eligible rejection, cancellation, and payment-expiry transitions. It is not restored for `NO_SHOW`. Impact and merchant revenue update only on the first valid transition to `COMPLETED`.
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart TB
+    UI[Android Activities, Fragments and XML] --> REPO[Java repositories]
+    REPO --> AUTH[Supabase Auth]
+    REPO --> API[PostgREST and guarded PostgreSQL RPCs]
+    REPO --> STORE[Supabase Storage]
+    REPO --> LIVE[Supabase Realtime]
+    REPO --> ROOM[Room read cache]
+    UI --> MAPS[Google Maps and device location]
+
+    API --> RLS[Row-level security]
+    API --> DATA[(PostgreSQL)]
+    STORE --> BUCKETS[Listing images · Receipts · DuitNow QRs]
 ```
+
+The Android client never directly assigns trusted roles, affiliations, merchant approval, stock, revenue, impact totals, or terminal order states. Those decisions live in guarded database functions, triggers, constraints, grants, and RLS policies.
+
+### Important backend operations
+
+| Operation | Responsibility |
+|---|---|
+| `lookup_institution_domain` | Exact normalized institution matching |
+| `switch_active_role` | Validated dual-role routing |
+| `complete_merchant_registration` | Atomic onboarding and approval |
+| `reserve_listing` | Campus validation, stock lock, order creation, expiry |
+| `submit_payment_receipt` | Validated receipt transition |
+| `decide_payment_receipt` | Merchant-only approval or rejection |
+| `complete_pickup` | Merchant-only, single-use token consumption |
+| `mark_no_show` | Idempotent missed-pickup transition |
+| `reconcile_due_orders` | Server-authoritative expiry reconciliation |
+
+## 🧰 Technology
+
+| Layer | Tools |
+|---|---|
+| Mobile | Native Android, Java 11, XML, Material Components, AndroidX |
+| Backend | Supabase Auth, PostgreSQL, PostgREST, Realtime, Edge Functions |
+| Security | RLS, guarded RPCs, private Storage policies, expiring hashed codes |
+| Networking | Retrofit 2, OkHttp, Gson |
+| Local data | Room and encrypted preferences when supported |
+| Media | Glide, Android MediaStore, Sharesheet |
+| QR | ZXing and JourneyApps ZXing Embedded |
+| Location | Google Maps SDK and Play Services Location |
+| Background | WorkManager |
+| Verification | JUnit, Mockito, AndroidX Test, Espresso, Android lint |
+
+## 🗂️ Repository map
+
+```text
 MAD_Group13_FoodHero/
 ├── app/
-│   ├── src/main/
-│   │   ├── java/com/uccd3223/group13/foodhero/
-│   │   │   ├── data/
-│   │   │   │   ├── local/          # Room DB, DAOs, Entities, Cache
-│   │   │   │   ├── model/          # Domain Models (Listing, Order, Profile, etc.)
-│   │   │   │   ├── remote/         # Retrofit Services, Supabase REST & WebSocket
-│   │   │   │   ├── repository/     # Auth, Listing, Order, Notification Repositories
-│   │   │   │   └── session/        # Encrypted SessionManager
-│   │   │   ├── ui/                 # Activities, Fragments, Adapters, ViewHolders
-│   │   │   └── util/               # SystemBarUtils, GeoUtils, QRGenerator
-│   │   └── res/                    # Layouts, Drawables, Values, Navigation
-│   └── build.gradle
+│   ├── src/main/java/.../foodhero/
+│   │   ├── data/
+│   │   │   ├── local/          # Room database and cache
+│   │   │   ├── model/          # Domain contracts
+│   │   │   ├── remote/         # Auth, REST, Storage and Realtime
+│   │   │   ├── repository/     # Application operations
+│   │   │   └── session/        # Authenticated local session
+│   │   ├── ui/                 # Activities, Fragments and adapters
+│   │   └── util/               # QR, routing, workers and formatting
+│   ├── src/main/res/            # Layouts, themes, menus and drawables
+│   └── src/test/                # Local unit tests
 ├── supabase/
-│   ├── schema.sql                  # Single Master PostgreSQL Schema, Triggers & Campus Boundaries
-│   └── supabase_setup_guide.md     # In-depth architectural documentation
-├── secrets.properties.example      # Secrets template
-├── build.gradle
+│   ├── functions/
+│   │   └── request-institution-verification/
+│   ├── schema.sql               # Consolidated backend contract
+│   └── supabase_setup_guide.md
+├── SPRINT_PLAN.md
+├── secrets.properties.example
 └── README.md
 ```
 
+## 🚀 Quick start
+
+### Prerequisites
+
+- Android Studio with Android SDK 36 support.
+- JDK 17 or Android Studio's bundled runtime for Gradle.
+- Android API 28+ emulator or physical device.
+- A dedicated **development** Supabase project.
+- Google Maps SDK and the required OAuth configuration.
+- Two physical phones for final Student ↔ Merchant acceptance testing.
+
+### 1. Clone and configure
+
+```bash
+git clone <repository-url>
+cd MAD_Group13_FoodHero
+```
+
+Create the untracked secrets file:
+
+```powershell
+Copy-Item secrets.properties.example secrets.properties
+```
+
+```properties
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_ANON_KEY=YOUR_PUBLISHABLE_OR_LEGACY_ANON_KEY
+MAPS_API_KEY=YOUR_RESTRICTED_ANDROID_MAPS_KEY
+GOOGLE_WEB_CLIENT_ID=YOUR_GOOGLE_WEB_CLIENT_ID
+```
+
+> [!CAUTION]
+> Never put `SUPABASE_SERVICE_ROLE_KEY` in the Android project, APK, screenshots, resources, or Git history.
+
+### 2. Build
+
+```powershell
+.\gradlew.bat assembleDebug
+```
+
+macOS/Linux:
+
+```bash
+./gradlew assembleDebug
+```
+
+The APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
+
+## ⚡ Supabase setup
+
+1. Create or select the exact development/demo project.
+2. Review and apply [`supabase/schema.sql`](supabase/schema.sql).
+3. Require email confirmation in Supabase Auth.
+4. Add the mobile redirect `foodhero://auth-callback`.
+5. Configure Google as an identity provider if Google login is used.
+6. Deploy `request-institution-verification` with JWT verification enabled.
+7. Configure these Edge Function secrets:
+
+   ```text
+   RESEND_API_KEY
+   VERIFICATION_FROM_EMAIL
+   ```
+
+8. Confirm Realtime publication for the required order, listing, and notification tables.
+9. Run RLS tests with anonymous, Student, Merchant, dual-role, and cross-campus actors.
+
+The institutional registry uses exact case-insensitive matching on the text after `@`. Deceptive suffixes such as `student.utar.edu.my.attacker.com` must fail.
+
+### Storage buckets
+
+| Bucket | Access | Content |
+|---|---|---|
+| `listing-images` | Public read, merchant-controlled write | Food listing photos |
+| `payment-receipts` | Private | Student receipt evidence |
+| `merchant-payment-qrs` | Private | Actual merchant DuitNow QR images |
+
+External listing images remain an optional HTTPS alternative; they do not replace Supabase Storage.
+
+## ✅ Quality gates
+
+Run the local verification suite:
+
+```powershell
+.\gradlew.bat testDebugUnitTest assembleDebug lintDebug
+git diff --check
+```
+
+Current local result: **unit tests, debug assembly, Android lint, and diff validation pass**.
+
+<details>
+<summary><strong>What still requires a real environment?</strong></summary>
+
+- Schema execution and database-advisor results for the target Supabase project.
+- RLS isolation across independent Student and Merchant accounts.
+- Concurrent reservation and one-time stock restoration.
+- Resend email delivery, cooldown, expiry, and retry limits.
+- Real DuitNow app handoff and receipt review.
+- Camera scan, manual pickup code, replay denial, and wrong-merchant denial.
+- Maps, location, notification, Gallery, and Sharesheet permissions.
+- Compact screens, keyboard safety, TalkBack, and 200% font scale.
+- Process recreation and intermittent-connectivity behavior.
+
+A successful Gradle build proves local compilation; it does not prove live Supabase or physical-device behavior.
+
+</details>
+
+## 🔐 Security promises
+
+- Institutional eligibility is assigned server-side.
+- Shared domains use the `member` affiliation where Student/Staff cannot be inferred safely.
+- All commerce mutations use guarded PostgreSQL functions.
+- Payment receipts are never public catalogue assets.
+- Pickup tokens are opaque, high-entropy, single-use values.
+- Unknown order statuses fail closed instead of becoming successful states.
+- RLS prevents cross-account and cross-campus access.
+- Storage paths are scoped to authenticated owners and order participants.
+- The service-role key remains server-side only.
+
+## 🧹 Safe demo reset
+
+The reset is deliberately separate from app startup, APK installation, and schema deployment.
+
+Before deleting anything:
+
+- Confirm the exact development/demo Supabase project ID.
+- Capture screenshots, videos, logs, and acceptance results.
+- Delete user-generated rows in foreign-key-safe order.
+- Remove listing photos, receipts, and merchant DuitNow QR objects.
+- Revoke sessions and remove test Auth users through authorized tooling.
+- Preserve institutions, domains, campuses, service areas, landmarks, buckets, RLS, functions, triggers, and migrations.
+- Repeat empty-state and fresh-registration checks afterward.
+
+> [!WARNING]
+> Never run the reset against production or before acceptance evidence has been captured.
+
+## 🩺 Troubleshooting
+
+<details>
+<summary><strong>Gradle reports missing configuration</strong></summary>
+
+Confirm `secrets.properties` exists at the repository root and contains all four required values. Do not solve this by committing placeholder secrets.
+
+</details>
+
+<details>
+<summary><strong>Google Sign-In returns error 10</strong></summary>
+
+Verify the package name, signing SHA fingerprint, Android OAuth client, web client ID, and Supabase Google-provider configuration.
+
+</details>
+
+<details>
+<summary><strong>The map is blank</strong></summary>
+
+Confirm Maps SDK for Android is enabled and the API key restriction includes `com.uccd3223.group13.foodhero` and the current signing certificate.
+
+</details>
+
+<details>
+<summary><strong>Supabase returns 401 or 403</strong></summary>
+
+Check session expiry, project URL/key, email confirmation, profile creation, role membership, and RLS. Never bypass the problem by weakening RLS or embedding a service-role key.
+
+</details>
+
+<details>
+<summary><strong>A merchant cannot open a receipt</strong></summary>
+
+Confirm the receipt object exists, the order contains the correct Storage path, the access token is current, and the signed-in user owns the associated merchant record.
+
+</details>
+
+## 🤝 Contributing
+
+1. Pull the latest shared branch and preserve unrelated contributor changes.
+2. Create one focused branch for one logical change.
+3. Keep Java 11 and XML compatibility.
+4. Never commit passwords, tokens, receipts, private QRs, or local secret files.
+5. Add tests for changed business rules.
+6. Run all [quality gates](#-quality-gates).
+7. Document schema, Storage, Auth, or Dashboard configuration changes.
+8. Attach physical-device evidence for UI, maps, permissions, payments, and camera work.
+9. Request review before merging security policies or shared schema changes.
+
+Suggested commit style:
+
+```text
+feat: add campus-isolated merchant onboarding
+fix: restore rejected-order stock exactly once
+docs: refresh Supabase acceptance checklist
+```
+
+## 📚 Project documents
+
+- [Implementation sprint plan](SPRINT_PLAN.md)
+- [Supabase schema](supabase/schema.sql)
+- [Supabase setup guide](supabase/supabase_setup_guide.md)
+
+## 🎓 Academic declaration
+
+FoodHero was developed by **Group 13** for the **UCCD3223 Mobile Applications Development** course at Universiti Tunku Abdul Rahman. Contributors are responsible for ensuring that submitted code, reports, screenshots, demonstrations, and Git history accurately represent their own work and verified results.
+
+Unless the repository owner adds an explicit license file, this README does not grant an open-source license.
+
 ---
 
-## 👥 Project Team (Group 13 - UCCD3223)
+<div align="center">
 
-| Name | Student ID | Role | Core Contributions |
-|---|---|---|---|
-| **Chai Boon Hong** | `22ACB01234` | Lead Developer | System Architecture, Database Schema, Supabase Auth/REST, Student Workflows, Google Maps Routing Engine, QR Engine |
-| **Fong Chee Hou** | `22ACB05678` | Developer | Merchant UI Workflows, Listing Management, ZXing Camera Scanner Integration, Quality Assurance |
+### Small rescue. Shared impact. Better campus. 🌏
 
----
+Made with care by FoodHero Group 13.
 
-## 📄 License & Academic Declaration
-Developed as part of the **UCCD3223 Mobile Applications Development** curriculum at **Universiti Tunku Abdul Rahman (UTAR)**. All rights reserved.
+</div>

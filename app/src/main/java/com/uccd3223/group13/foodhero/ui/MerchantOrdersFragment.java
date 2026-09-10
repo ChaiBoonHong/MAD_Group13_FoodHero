@@ -18,6 +18,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.model.GlideUrl;
+import com.bumptech.glide.load.model.LazyHeaders;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.tabs.TabLayout;
@@ -154,7 +156,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
             if (selectedTabIndex == 0) {
                 filtered.add(o);
             } else if (selectedTabIndex == 1) {
-                if (o.getStatus() == OrderStatus.RESERVED || o.getStatus() == OrderStatus.PENDING_VERIFICATION || o.getStatus() == OrderStatus.AWAITING_PAYMENT) {
+                if (o.getStatus() == OrderStatus.READY_FOR_PICKUP || o.getStatus() == OrderStatus.PENDING_VERIFICATION || o.getStatus() == OrderStatus.AWAITING_PAYMENT) {
                     filtered.add(o);
                 }
             } else if (selectedTabIndex == 2) {
@@ -162,7 +164,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
                     filtered.add(o);
                 }
             } else {
-                if (o.getStatus() == OrderStatus.CANCELLED || o.getStatus() == OrderStatus.EXPIRED || o.getStatus() == OrderStatus.REJECTED) {
+                if (o.getStatus() == OrderStatus.CANCELLED || o.getStatus() == OrderStatus.EXPIRED || o.getStatus() == OrderStatus.PAYMENT_REJECTED || o.getStatus() == OrderStatus.NO_SHOW) {
                     filtered.add(o);
                 }
             }
@@ -183,7 +185,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
     public void onOrderClick(Order order) {
         if (order.getStatus() == OrderStatus.PENDING_VERIFICATION) {
             onReviewReceiptClick(order);
-        } else if (order.getStatus() == OrderStatus.RESERVED) {
+        } else if (order.getStatus() == OrderStatus.READY_FOR_PICKUP) {
             onCompletePickupClick(order);
         }
     }
@@ -220,8 +222,16 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
         ivReceipt.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
         if (order.getPaymentReceiptUrl() != null && !order.getPaymentReceiptUrl().isEmpty()) {
+            String receiptValue = order.getPaymentReceiptUrl();
+            String receiptUrl = receiptValue.startsWith("https://")
+                ? receiptValue
+                : com.uccd3223.group13.foodhero.data.remote.SupabaseConfig.getPaymentReceiptUrl(receiptValue);
+            GlideUrl authorizedReceipt = new GlideUrl(receiptUrl, new LazyHeaders.Builder()
+                .addHeader("Authorization", "Bearer " + sessionManager.getAccessToken())
+                .addHeader("apikey", com.uccd3223.group13.foodhero.data.remote.SupabaseConfig.SUPABASE_ANON_KEY)
+                .build());
             Glide.with(requireContext())
-                .load(order.getPaymentReceiptUrl())
+                .load(authorizedReceipt)
                 .placeholder(R.drawable.ic_foodhero_logo)
                 .error(R.drawable.ic_foodhero_logo)
                 .centerCrop()
@@ -235,7 +245,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
             .setTitle("Verify Payment Receipt")
             .setView(dialogLayout)
             .setPositiveButton("Approve & Confirm", (d, w) -> {
-                foodHeroRepo.verifyPaymentReceipt(order.getId(), true, new ResultCallback<Order>() {
+                foodHeroRepo.verifyPaymentReceipt(order.getId(), true, null, new ResultCallback<Order>() {
                     @Override
                     public void onSuccess(Order o) {
                         Toast.makeText(requireContext(), "✓ Order #" + order.getOrderCode() + " approved! Ready for pickup.", Toast.LENGTH_SHORT).show();
@@ -248,22 +258,47 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
                     }
                 });
             })
-            .setNegativeButton("Reject Slip", (d, w) -> {
-                foodHeroRepo.verifyPaymentReceipt(order.getId(), false, new ResultCallback<Order>() {
+            .setNegativeButton("Reject Slip", (d, w) -> showRejectionReasonDialog(order))
+            .setNeutralButton("Cancel", null)
+            .show();
+    }
+
+    private void showRejectionReasonDialog(Order order) {
+        final EditText reasonInput = new EditText(requireContext());
+        reasonInput.setHint("Reason shown to the student");
+        reasonInput.setMinLines(2);
+        int padding = (int) (24 * getResources().getDisplayMetrics().density);
+        reasonInput.setPadding(padding, padding / 2, padding, 0);
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Reject payment receipt")
+            .setMessage("A clear reason is required. Stock will be restored exactly once.")
+            .setView(reasonInput)
+            .setPositiveButton("Reject", null)
+            .setNegativeButton("Cancel", null)
+            .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String reason = reasonInput.getText().toString().trim();
+            if (reason.length() < 3) {
+                reasonInput.setError("Enter a rejection reason");
+                return;
+            }
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            foodHeroRepo.verifyPaymentReceipt(order.getId(), false, reason, new ResultCallback<Order>() {
                     @Override
                     public void onSuccess(Order o) {
                         Toast.makeText(requireContext(), "Order #" + order.getOrderCode() + " receipt rejected.", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
                         loadOrders();
                     }
 
                     @Override
                     public void onError(DataError error) {
+                        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setEnabled(true);
                         Toast.makeText(requireContext(), "Failed to reject: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
-            })
-            .setNeutralButton("Cancel", null)
-            .show();
+        }));
+        dialog.show();
     }
 
     @Override

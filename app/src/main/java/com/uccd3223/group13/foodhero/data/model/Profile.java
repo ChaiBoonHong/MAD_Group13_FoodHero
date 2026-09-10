@@ -22,6 +22,24 @@ public class Profile implements Serializable {
     @SerializedName("faculty")
     private String faculty;
 
+    @SerializedName("institution_code")
+    private String institutionCode;
+
+    @SerializedName("institution_name")
+    private String institutionName;
+
+    @SerializedName("institution_affiliation")
+    private String institutionAffiliation;
+
+    @SerializedName("email_verified_at")
+    private String emailVerifiedAt;
+
+    @SerializedName("campus_id")
+    private String campusId;
+
+    @SerializedName("last_active_role")
+    private UserRole lastActiveRole;
+
     @SerializedName("eco_points")
     private int ecoPoints;
 
@@ -91,6 +109,15 @@ public class Profile implements Serializable {
     public void setFaculty(String faculty) {
         this.faculty = faculty;
     }
+
+    public String getInstitutionCode() { return institutionCode; }
+    public String getInstitutionName() { return institutionName; }
+    public String getInstitutionAffiliation() { return institutionAffiliation; }
+    public boolean isEmailVerified() { return emailVerifiedAt != null && !emailVerifiedAt.trim().isEmpty(); }
+    public String getCampusId() { return campusId; }
+    public void setCampusId(String campusId) { this.campusId = campusId; }
+    public UserRole getLastActiveRole() { return lastActiveRole != null ? lastActiveRole : getRole(); }
+    public void setLastActiveRole(UserRole lastActiveRole) { this.lastActiveRole = lastActiveRole; }
 
     public int getEcoPoints() {
         return ecoPoints;

@@ -73,13 +73,19 @@ public class MerchantOrderAdapter extends RecyclerView.Adapter<MerchantOrderAdap
 
         // Status Styling and Action Button Visibility
         OrderStatus status = order.getStatus();
-        if (status == OrderStatus.PENDING_VERIFICATION) {
+        if (status == null) {
+            holder.tvStatus.setText("UNKNOWN");
+            holder.tvStatus.getBackground().setTint(ContextCompat.getColor(context, R.color.colorError));
+            holder.btnReviewReceipt.setVisibility(View.GONE);
+            holder.btnCompletePickup.setVisibility(View.GONE);
+            holder.tvCompletedStamp.setVisibility(View.GONE);
+        } else if (status == OrderStatus.PENDING_VERIFICATION) {
             holder.tvStatus.setText("SLIP PENDING");
             holder.tvStatus.getBackground().setTint(ContextCompat.getColor(context, R.color.colorWarning));
             holder.btnReviewReceipt.setVisibility(View.VISIBLE);
             holder.btnCompletePickup.setVisibility(View.GONE);
             holder.tvCompletedStamp.setVisibility(View.GONE);
-        } else if (status == OrderStatus.RESERVED) {
+        } else if (status == OrderStatus.READY_FOR_PICKUP) {
             holder.tvStatus.setText("READY FOR PICKUP");
             holder.tvStatus.getBackground().setTint(ContextCompat.getColor(context, R.color.colorPrimary));
             holder.btnReviewReceipt.setVisibility(View.GONE);
@@ -91,7 +97,7 @@ public class MerchantOrderAdapter extends RecyclerView.Adapter<MerchantOrderAdap
             holder.btnReviewReceipt.setVisibility(View.GONE);
             holder.btnCompletePickup.setVisibility(View.GONE);
             holder.tvCompletedStamp.setVisibility(View.VISIBLE);
-        } else if (status == OrderStatus.CANCELLED || status == OrderStatus.EXPIRED || status == OrderStatus.REJECTED) {
+        } else if (status == OrderStatus.CANCELLED || status == OrderStatus.EXPIRED || status == OrderStatus.PAYMENT_REJECTED || status == OrderStatus.NO_SHOW) {
             holder.tvStatus.setText(status.getValue().toUpperCase());
             holder.tvStatus.getBackground().setTint(ContextCompat.getColor(context, R.color.colorError));
             holder.btnReviewReceipt.setVisibility(View.GONE);

@@ -64,7 +64,8 @@ public class ReviewActivity extends AppCompatActivity {
         tvItemTitle.setText(title);
 
         String merchant = (order.getMerchant() != null) ? order.getMerchant().getBusinessName() : "Campus Merchant";
-        String loc = (order.getMerchant() != null) ? order.getMerchant().getCampusLocation() : "UTAR Kampar";
+        String loc = (order.getMerchant() != null && order.getMerchant().getCampusLocation() != null)
+            ? order.getMerchant().getCampusLocation() : "Campus location unavailable";
         tvMerchantName.setText(String.format("%s • %s", merchant, loc));
     }
 

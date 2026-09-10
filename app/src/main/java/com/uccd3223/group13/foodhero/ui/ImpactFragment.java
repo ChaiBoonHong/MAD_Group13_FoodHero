@@ -19,6 +19,7 @@ import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.ImpactSummary;
 import com.uccd3223.group13.foodhero.data.model.Profile;
+import com.uccd3223.group13.foodhero.data.model.UserRole;
 import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
 import com.uccd3223.group13.foodhero.ui.adapter.BadgeAdapter;
@@ -33,7 +34,7 @@ public class ImpactFragment extends Fragment {
     private TextView tvStudentName, tvStudentMeta, tvLevelBadge, tvMetricMeals, tvMetricMoney, tvMetricCo2, tvPointsBalance, tvTreeProgressText;
     private ProgressBar progressTreeGrowth;
     private RecyclerView rvBadges, rvLeaderboard;
-    private MaterialButton btnLogout;
+    private MaterialButton btnLogout, btnSwitchToMerchant;
 
     private BadgeAdapter badgeAdapter;
     private LeaderboardAdapter leaderboardAdapter;
@@ -70,6 +71,7 @@ public class ImpactFragment extends Fragment {
         rvBadges = view.findViewById(R.id.rv_badges);
         rvLeaderboard = view.findViewById(R.id.rv_leaderboard);
         btnLogout = view.findViewById(R.id.btn_logout);
+        btnSwitchToMerchant = view.findViewById(R.id.btn_switch_to_merchant);
     }
 
     private void setupRecyclerViews() {
@@ -83,6 +85,7 @@ public class ImpactFragment extends Fragment {
     }
 
     private void setupListeners() {
+        btnSwitchToMerchant.setOnClickListener(v -> switchRole(UserRole.MERCHANT, MerchantHomeActivity.class));
         btnLogout.setOnClickListener(v -> {
             authRepo.logout(new ResultCallback<Void>() {
                 @Override
@@ -103,13 +106,31 @@ public class ImpactFragment extends Fragment {
         });
     }
 
+    private void switchRole(UserRole role, Class<?> destination) {
+        btnSwitchToMerchant.setEnabled(false);
+        authRepo.switchActiveRole(role, new ResultCallback<Profile>() {
+            @Override public void onSuccess(Profile result) {
+                if (!isAdded()) return;
+                Intent intent = new Intent(requireContext(), destination);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            }
+            @Override public void onError(DataError error) {
+                if (!isAdded()) return;
+                btnSwitchToMerchant.setEnabled(true);
+                Toast.makeText(requireContext(), "Complete your merchant details to add Merchant access.", Toast.LENGTH_LONG).show();
+                startActivity(new Intent(requireContext(), MerchantOnboardingActivity.class));
+            }
+        });
+    }
+
     private void loadImpactData() {
         Profile profile = authRepo.getCurrentProfile();
         if (profile != null) {
-            String name = profile.getFullName() != null ? profile.getFullName() : "Student Hero";
+            String name = profile.getFullName() != null ? profile.getFullName() : "Student";
             tvStudentName.setText(name);
             String studentId = profile.getStudentId() != null ? profile.getStudentId() : "Student";
-            String faculty = profile.getFaculty() != null ? profile.getFaculty() : "UTAR Kampar";
+            String faculty = profile.getFaculty() != null ? profile.getFaculty() : "Institutional member";
             tvStudentMeta.setText(String.format("%s • %s", studentId, faculty));
         }
 

@@ -31,6 +31,21 @@ public class Merchant implements Serializable {
     @SerializedName("total_reviews")
     private int totalReviews;
 
+    @SerializedName("status")
+    private String status;
+
+    @SerializedName("rejection_reason")
+    private String rejectionReason;
+
+    @SerializedName("campus_id")
+    private String campusId;
+
+    @SerializedName("duitnow_display_name")
+    private String duitNowDisplayName;
+
+    @SerializedName("duitnow_qr_path")
+    private String duitNowQrPath;
+
     public Merchant() {
     }
 
@@ -42,7 +57,7 @@ public class Merchant implements Serializable {
         this.latitude = latitude;
         this.longitude = longitude;
         this.closingTime = "18:00";
-        this.rating = 5.00;
+        this.rating = 0.00;
         this.totalReviews = 0;
     }
 
@@ -117,4 +132,11 @@ public class Merchant implements Serializable {
     public void setTotalReviews(int totalReviews) {
         this.totalReviews = totalReviews;
     }
+
+    public String getStatus() { return status != null ? status : "pending"; }
+    public String getRejectionReason() { return rejectionReason; }
+    public boolean isApproved() { return "approved".equalsIgnoreCase(getStatus()); }
+    public String getCampusId() { return campusId; }
+    public String getDuitNowDisplayName() { return duitNowDisplayName; }
+    public String getDuitNowQrPath() { return duitNowQrPath; }
 }

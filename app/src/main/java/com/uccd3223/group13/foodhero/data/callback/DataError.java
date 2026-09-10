@@ -12,6 +12,7 @@ public class DataError {
     public static final int CODE_SERVER_ERROR = 1009;
     public static final int CODE_UNKNOWN = 1010;
     public static final int CODE_UNAUTHORIZED = 1011;
+    public static final int CODE_VALIDATION_ERROR = 1012;
 
     private final int code;
     private final String message;

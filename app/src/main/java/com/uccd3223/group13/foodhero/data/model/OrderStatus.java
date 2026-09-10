@@ -9,11 +9,11 @@ public enum OrderStatus {
     @SerializedName("pending_verification")
     PENDING_VERIFICATION("pending_verification"),
 
-    @SerializedName("reserved")
-    RESERVED("reserved"),
+    @SerializedName("ready_for_pickup")
+    READY_FOR_PICKUP("ready_for_pickup"),
 
-    @SerializedName("rejected")
-    REJECTED("rejected"),
+    @SerializedName("payment_rejected")
+    PAYMENT_REJECTED("payment_rejected"),
 
     @SerializedName("completed")
     COMPLETED("completed"),
@@ -22,7 +22,10 @@ public enum OrderStatus {
     CANCELLED("cancelled"),
 
     @SerializedName("expired")
-    EXPIRED("expired");
+    EXPIRED("expired"),
+
+    @SerializedName("no_show")
+    NO_SHOW("no_show");
 
     private final String value;
 
@@ -35,6 +38,8 @@ public enum OrderStatus {
     }
 
     public static OrderStatus fromString(String text) {
+        if ("reserved".equalsIgnoreCase(text)) return READY_FOR_PICKUP;
+        if ("rejected".equalsIgnoreCase(text)) return PAYMENT_REJECTED;
         if (text != null) {
             for (OrderStatus status : OrderStatus.values()) {
                 if (status.value.equalsIgnoreCase(text)) {
@@ -42,6 +47,6 @@ public enum OrderStatus {
                 }
             }
         }
-        return RESERVED;
+        return null;
     }
 }

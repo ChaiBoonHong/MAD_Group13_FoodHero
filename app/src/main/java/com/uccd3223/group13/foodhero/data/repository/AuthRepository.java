@@ -7,9 +7,12 @@ import com.google.gson.Gson;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
+import com.uccd3223.group13.foodhero.data.model.Campus;
 import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.model.Profile;
 import com.uccd3223.group13.foodhero.data.model.UserRole;
+import com.uccd3223.group13.foodhero.data.model.UserRoleRecord;
+import com.uccd3223.group13.foodhero.data.model.InstitutionMatch;
 import com.uccd3223.group13.foodhero.data.remote.AuthIdTokenRequest;
 import com.uccd3223.group13.foodhero.data.remote.AuthRequest;
 import com.uccd3223.group13.foodhero.data.remote.AuthResponse;
@@ -27,6 +30,7 @@ import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import com.google.gson.JsonObject;
 
 public class AuthRepository {
     private static volatile AuthRepository INSTANCE;
@@ -94,15 +98,25 @@ public class AuthRepository {
     ) {
         executor.execute(() -> {
             try {
+                String normalizedEmail = email == null ? "" : email.trim().toLowerCase(java.util.Locale.US);
+                if (role == UserRole.STUDENT) {
+                    JsonObject lookup = new JsonObject();
+                    lookup.addProperty("p_email", normalizedEmail);
+                    Response<List<InstitutionMatch>> match = restClient.lookupInstitution(SupabaseConfig.SUPABASE_ANON_KEY, lookup).execute();
+                    if (!match.isSuccessful() || match.body() == null || match.body().isEmpty()) {
+                        postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "Use a supported institutional email address for Student registration."));
+                        return;
+                    }
+                }
                 java.util.Map<String, Object> metaData = new java.util.HashMap<>();
-                metaData.put("role", role != null ? role.name().toLowerCase() : "student");
+                metaData.put("requested_role", role != null ? role.name().toLowerCase() : "student");
                 metaData.put("full_name", fullName);
                 if (studentId != null && !studentId.isEmpty()) metaData.put("student_id", studentId);
                 if (faculty != null && !faculty.isEmpty()) metaData.put("faculty", faculty);
                 if (businessName != null && !businessName.isEmpty()) metaData.put("business_name", businessName);
                 if (campusLocation != null && !campusLocation.isEmpty()) metaData.put("campus_location", campusLocation);
 
-                AuthRequest req = new AuthRequest(email, password, metaData);
+                AuthRequest req = new AuthRequest(normalizedEmail, password, metaData);
                 Response<AuthResponse> resp = authService.signUp(SupabaseConfig.SUPABASE_ANON_KEY, req).execute();
 
                 if (!resp.isSuccessful() || resp.body() == null || resp.body().getUser() == null) {
@@ -123,22 +137,20 @@ public class AuthRepository {
                 }
 
                 String userId = resp.body().getUser().getId();
-                String accessToken = resp.body().getAccessToken() != null ? resp.body().getAccessToken() : SupabaseConfig.SUPABASE_ANON_KEY;
+                String accessToken = resp.body().getAccessToken();
                 String refreshToken = resp.body().getRefreshToken() != null ? resp.body().getRefreshToken() : "";
-
-                // Upsert Profile in database
                 Profile profile = new Profile(userId, email, role, fullName);
                 profile.setStudentId(studentId);
                 profile.setFaculty(faculty);
-
-                String bearer = "Bearer " + accessToken;
-                restClient.upsertProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, profile).execute();
-
-                if (role == UserRole.MERCHANT) {
-                    ensureMerchantLoaded(userId, bearer, businessName, campusLocation);
+                if (accessToken != null && !accessToken.isEmpty() && resp.body().getUser().isEmailConfirmed()) {
+                    String bearer = "Bearer " + accessToken;
+                    Response<List<Profile>> verifiedProfile = restClient.getProfile(
+                        SupabaseConfig.SUPABASE_ANON_KEY, bearer, "eq." + userId).execute();
+                    if (verifiedProfile.isSuccessful() && verifiedProfile.body() != null && !verifiedProfile.body().isEmpty()) {
+                        profile = verifiedProfile.body().get(0);
+                        sessionManager.saveSession(accessToken, refreshToken, profile);
+                    }
                 }
-
-                sessionManager.saveSession(accessToken, refreshToken, profile);
                 postSuccess(callback, profile);
 
             } catch (Exception e) {
@@ -175,6 +187,12 @@ public class AuthRepository {
                 String refreshToken = resp.body().getRefreshToken();
                 String bearer = "Bearer " + accessToken;
 
+                if (!resp.body().getUser().isEmailConfirmed()) {
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED,
+                        "Confirm your institutional email before signing in."));
+                    return;
+                }
+
                 // Fetch Profile from database
                 Response<List<Profile>> profileResp = restClient.getProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, "eq." + userId).execute();
 
@@ -182,9 +200,9 @@ public class AuthRepository {
                 if (profileResp.isSuccessful() && profileResp.body() != null && !profileResp.body().isEmpty()) {
                     profile = profileResp.body().get(0);
                 } else {
-                    // Fallback profile if profile row is pending trigger
-                    UserRole fallbackRole = (email != null && email.toLowerCase().contains("merchant")) ? UserRole.MERCHANT : UserRole.STUDENT;
-                    profile = new Profile(userId, email, fallbackRole, email != null && email.contains("@") ? email.split("@")[0] : "User");
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED,
+                        "Your trusted FoodHero profile is not ready. Please contact support."));
+                    return;
                 }
 
                 // If merchant, load or initialize their merchant outlet record
@@ -224,19 +242,15 @@ public class AuthRepository {
                 String refreshToken = resp.body().getRefreshToken() != null ? resp.body().getRefreshToken() : "";
                 String bearer = "Bearer " + accessToken;
 
-                // Check or upsert profile in Supabase
+                // The auth trigger is the only authority that may create roles/profiles.
                 Response<List<Profile>> profileResp = restClient.getProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, "eq." + userId).execute();
                 Profile profile;
                 if (profileResp.isSuccessful() && profileResp.body() != null && !profileResp.body().isEmpty()) {
                     profile = profileResp.body().get(0);
                 } else {
-                    String name = (email != null && email.contains("@")) ? email.split("@")[0] : "Eco Hero";
-                    profile = new Profile(userId, email, role != null ? role : UserRole.STUDENT, name);
-                    try {
-                        restClient.upsertProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, profile).execute();
-                    } catch (Exception e) {
-                        android.util.Log.w("AuthRepository", "Profile upsert note: " + e.getMessage());
-                    }
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED,
+                        "This Google account is not eligible for a trusted FoodHero profile."));
+                    return;
                 }
 
                 if (profile.getRole() == UserRole.MERCHANT) {
@@ -269,11 +283,9 @@ public class AuthRepository {
                 if (profileResp.isSuccessful() && profileResp.body() != null && !profileResp.body().isEmpty()) {
                     profile = profileResp.body().get(0);
                 } else {
-                    String name = (email != null && email.contains("@")) ? email.split("@")[0] : "FoodHero User";
-                    profile = new Profile(userId, email, role != null ? role : UserRole.STUDENT, name);
-                    try {
-                        restClient.upsertProfile(SupabaseConfig.SUPABASE_ANON_KEY, bearer, profile).execute();
-                    } catch (Exception ignored) {}
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED,
+                        "This account does not have a trusted FoodHero profile."));
+                    return;
                 }
 
                 if (profile.getRole() == UserRole.MERCHANT) {
@@ -294,40 +306,8 @@ public class AuthRepository {
             if (mResp.isSuccessful() && mResp.body() != null && !mResp.body().isEmpty()) {
                 Merchant m = mResp.body().get(0);
                 sessionManager.saveMerchantInfo(m.getId(), m.getBusinessName(), m.getCampusLocation());
-            } else {
-                String bName = (defaultName != null && !defaultName.trim().isEmpty()) ? defaultName.trim() : "Merchant Outlet";
-                String cLoc = (defaultLoc != null && !defaultLoc.trim().isEmpty()) ? defaultLoc.trim() : "UTAR Kampar Campus";
-                double lat = 4.336214;
-                double lng = 101.142111;
-
-                try {
-                    Response<List<CampusLandmark>> lmResp = restClient.getCampusLandmarks(SupabaseConfig.SUPABASE_ANON_KEY, bearer).execute();
-                    if (lmResp.isSuccessful() && lmResp.body() != null) {
-                        for (CampusLandmark lm : lmResp.body()) {
-                            if (cLoc.contains(lm.getName())) {
-                                lat = lm.getLatitude();
-                                lng = lm.getLongitude();
-                                break;
-                            }
-                        }
-                    }
-                } catch (Exception ignored) {}
-
-                String mId = UUID.randomUUID().toString();
-                Merchant m = new Merchant(mId, userId, bName, cLoc, lat, lng);
-                Response<List<Merchant>> createResp = restClient.createMerchant(SupabaseConfig.SUPABASE_ANON_KEY, bearer, m).execute();
-                if (createResp.isSuccessful() && createResp.body() != null && !createResp.body().isEmpty()) {
-                    Merchant created = createResp.body().get(0);
-                    sessionManager.saveMerchantInfo(created.getId(), created.getBusinessName(), created.getCampusLocation());
-                } else {
-                    sessionManager.saveMerchantInfo(mId, bName, cLoc);
-                }
             }
-        } catch (Exception e) {
-            if (sessionManager.getMerchantId() == null) {
-                sessionManager.saveMerchantInfo(userId, defaultName != null ? defaultName : "Merchant Outlet", defaultLoc != null ? defaultLoc : "UTAR Kampar Campus");
-            }
-        }
+        } catch (Exception ignored) {}
     }
 
     public void restoreSession(ResultCallback<Profile> callback) {
@@ -404,6 +384,152 @@ public class AuthRepository {
             }
             sessionManager.clearSession();
             postSuccess(callback, null);
+        });
+    }
+
+    public void getAvailableRoles(ResultCallback<List<UserRoleRecord>> callback) {
+        executor.execute(() -> {
+            try {
+                String userId = sessionManager.getUserId();
+                if (userId == null) throw new IllegalStateException("No signed-in user");
+                Response<List<UserRoleRecord>> response = restClient.getAvailableRoles(
+                    SupabaseConfig.SUPABASE_ANON_KEY, "Bearer " + sessionManager.getAccessToken(), "eq." + userId).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Unable to load account roles."));
+                    return;
+                }
+                postSuccess(callback, response.body());
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to load roles: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void switchActiveRole(UserRole role, ResultCallback<Profile> callback) {
+        executor.execute(() -> {
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("p_role", role.name().toLowerCase());
+                Response<Profile> response = restClient.switchActiveRole(
+                    SupabaseConfig.SUPABASE_ANON_KEY, "Bearer " + sessionManager.getAccessToken(), body).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "This role is not available for your account."));
+                    return;
+                }
+                Profile updated = response.body();
+                updated.setRole(role);
+                updated.setLastActiveRole(role);
+                sessionManager.updateProfile(updated);
+                postSuccess(callback, updated);
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to switch role: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void getInstitutionsAndCampuses(ResultCallback<List<Campus>> callback) {
+        executor.execute(() -> {
+            try {
+                Response<List<Campus>> response = restClient.getCampuses(SupabaseConfig.SUPABASE_ANON_KEY,
+                    "Bearer " + sessionManager.getAccessToken(), "eq.true", "institution_code.asc,name.asc").execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Unable to load campuses."));
+                    return;
+                }
+                postSuccess(callback, response.body());
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to load campuses: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void requestInstitutionalEmailVerification(String email, ResultCallback<Void> callback) {
+        executor.execute(() -> {
+            try {
+                String normalized = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
+                if (!normalized.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+                    postError(callback, new DataError(DataError.CODE_VALIDATION_ERROR, "Enter a valid institutional email."));
+                    return;
+                }
+                JsonObject body = new JsonObject();
+                body.addProperty("email", normalized);
+                Response<ResponseBody> response = restClient.requestInstitutionVerification(
+                    SupabaseConfig.SUPABASE_ANON_KEY, "Bearer " + sessionManager.getAccessToken(), body).execute();
+                if (!response.isSuccessful()) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR,
+                        response.code() == 429 ? "Please wait before requesting another code." : "Unable to send the verification code."));
+                    return;
+                }
+                postSuccess(callback, null);
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to request verification: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void confirmInstitutionalEmailVerification(String email, String code, ResultCallback<Profile> callback) {
+        executor.execute(() -> {
+            try {
+                String normalized = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
+                String normalizedCode = code == null ? "" : code.trim();
+                if (!normalizedCode.matches("\\d{6}")) {
+                    postError(callback, new DataError(DataError.CODE_VALIDATION_ERROR, "Enter the 6-digit verification code."));
+                    return;
+                }
+                JsonObject body = new JsonObject();
+                body.addProperty("p_email", normalized);
+                body.addProperty("p_code", normalizedCode);
+                Response<Profile> response = restClient.confirmInstitutionVerification(
+                    SupabaseConfig.SUPABASE_ANON_KEY, "Bearer " + sessionManager.getAccessToken(), body).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "The verification code is invalid or expired."));
+                    return;
+                }
+                Profile profile = response.body();
+                profile.setRole(UserRole.STUDENT);
+                profile.setLastActiveRole(UserRole.STUDENT);
+                sessionManager.updateProfile(profile);
+                postSuccess(callback, profile);
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to confirm verification: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void completeMerchantRegistration(String businessName, String description, String phone,
+            String duitNowName, String qrPath, Campus campus, String location, double latitude, double longitude,
+            ResultCallback<Merchant> callback) {
+        executor.execute(() -> {
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("p_business_name", businessName);
+                body.addProperty("p_stall_description", description);
+                body.addProperty("p_contact_phone", phone);
+                body.addProperty("p_duitnow_display_name", duitNowName);
+                body.addProperty("p_duitnow_qr_path", qrPath);
+                body.addProperty("p_campus_id", campus.getId());
+                body.addProperty("p_campus_location", location);
+                body.addProperty("p_latitude", latitude);
+                body.addProperty("p_longitude", longitude);
+                Response<Merchant> response = restClient.completeMerchantRegistration(
+                    SupabaseConfig.SUPABASE_ANON_KEY, "Bearer " + sessionManager.getAccessToken(), body).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Merchant registration was not accepted."));
+                    return;
+                }
+                Merchant merchant = response.body();
+                sessionManager.saveMerchantInfo(merchant.getId(), merchant.getBusinessName(), merchant.getCampusLocation());
+                Profile profile = sessionManager.getProfile();
+                if (profile != null) {
+                    profile.setRole(UserRole.MERCHANT);
+                    profile.setLastActiveRole(UserRole.MERCHANT);
+                    profile.setCampusId(campus.getId());
+                    sessionManager.updateProfile(profile);
+                }
+                postSuccess(callback, merchant);
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to complete merchant registration: " + e.getMessage(), e));
+            }
         });
     }
 

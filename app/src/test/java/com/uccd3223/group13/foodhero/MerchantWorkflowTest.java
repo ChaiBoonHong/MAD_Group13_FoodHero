@@ -82,7 +82,7 @@ public class MerchantWorkflowTest {
     @Test
     public void testMerchantOrderQueueFiltering() {
         Order reservedOrder = new Order();
-        reservedOrder.setStatus(OrderStatus.RESERVED);
+        reservedOrder.setStatus(OrderStatus.READY_FOR_PICKUP);
 
         Order pendingVerificationOrder = new Order();
         pendingVerificationOrder.setStatus(OrderStatus.PENDING_VERIFICATION);
@@ -95,9 +95,9 @@ public class MerchantWorkflowTest {
 
         // Tab 1: Reserved / Ready / Slip Pending
         assertTrue("Reserved order belongs to Active Tab",
-            reservedOrder.getStatus() == OrderStatus.RESERVED || reservedOrder.getStatus() == OrderStatus.PENDING_VERIFICATION);
+            reservedOrder.getStatus() == OrderStatus.READY_FOR_PICKUP || reservedOrder.getStatus() == OrderStatus.PENDING_VERIFICATION);
         assertTrue("Pending receipt order belongs to Active Tab",
-            pendingVerificationOrder.getStatus() == OrderStatus.RESERVED || pendingVerificationOrder.getStatus() == OrderStatus.PENDING_VERIFICATION);
+            pendingVerificationOrder.getStatus() == OrderStatus.READY_FOR_PICKUP || pendingVerificationOrder.getStatus() == OrderStatus.PENDING_VERIFICATION);
 
         // Tab 2: Completed
         assertTrue("Completed order belongs to Completed Tab", completedOrder.getStatus() == OrderStatus.COMPLETED);

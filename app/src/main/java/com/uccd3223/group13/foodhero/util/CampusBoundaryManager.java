@@ -1,54 +1,12 @@
 package com.uccd3223.group13.foodhero.util;
 
-import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
 import com.uccd3223.group13.foodhero.data.model.GeoPoint;
 import com.uccd3223.group13.foodhero.data.model.RouteResult;
-import com.uccd3223.group13.foodhero.data.model.ServiceArea;
 import com.uccd3223.group13.foodhero.data.model.TravelMode;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class CampusBoundaryManager {
-    public static final double CAMPUS_CENTER_LAT = 4.336214;
-    public static final double CAMPUS_CENTER_LNG = 101.142111;
-
-    // Authoritative UTAR Kampar Campus Polygon Perimeter
-    private static final List<GeoPoint> CAMPUS_POLYGON = Arrays.asList(
-        new GeoPoint(4.344500, 101.135000),
-        new GeoPoint(4.344500, 101.150000),
-        new GeoPoint(4.330000, 101.150000),
-        new GeoPoint(4.327000, 101.143000),
-        new GeoPoint(4.330000, 101.135000)
-    );
-
-    // Approved UTAR Kampar Entrances (Exact Geodetic Coordinates)
-    private static final List<CampusLandmark> ENTRANCES = Arrays.asList(
-        new CampusLandmark("ent_east", "East Gate (Main Entrance)", "entrance", 4.337324, 101.145255),
-        new CampusLandmark("ent_west", "West Gate (Sports Complex)", "entrance", 4.334848, 101.135104),
-        new CampusLandmark("ent_north", "North Gate", "entrance", 4.341796, 101.137832)
-    );
-
-    /**
-     * Ray-casting algorithm to determine if point is within UTAR Kampar polygon.
-     */
-    public static boolean isInsideCampus(double lat, double lng) {
-        int i, j;
-        boolean inside = false;
-        int nvert = CAMPUS_POLYGON.size();
-        for (i = 0, j = nvert - 1; i < nvert; j = i++) {
-            double vertXi = CAMPUS_POLYGON.get(i).getLongitude();
-            double vertYi = CAMPUS_POLYGON.get(i).getLatitude();
-            double vertXj = CAMPUS_POLYGON.get(j).getLongitude();
-            double vertYj = CAMPUS_POLYGON.get(j).getLatitude();
-
-            if (((vertYi > lat) != (vertYj > lat)) &&
-                (lng < (vertXj - vertXi) * (lat - vertYi) / (vertYj - vertYi) + vertXi)) {
-                inside = !inside;
-            }
-        }
-        return inside;
-    }
 
     /**
      * Haversine formula to compute great-circle distance in meters between two coordinates.
@@ -64,43 +22,11 @@ public class CampusBoundaryManager {
         return R * c;
     }
 
-    /**
-     * Find nearest approved entrance when student is outside campus.
-     */
-    public static CampusLandmark findNearestEntrance(double userLat, double userLng) {
-        CampusLandmark nearest = ENTRANCES.get(0);
-        double minDistance = Double.MAX_VALUE;
-
-        for (CampusLandmark entrance : ENTRANCES) {
-            double dist = calculateDistanceMeters(userLat, userLng, entrance.getLatitude(), entrance.getLongitude());
-            if (dist < minDistance) {
-                minDistance = dist;
-                nearest = entrance;
-            }
-        }
-        return nearest;
-    }
-
-    /**
-     * Calculate campus route, enforcing on-campus restrictions and fallback entrance snapping.
-     */
+    /** Estimates a route from real caller and listing coordinates without a campus-specific fallback. */
     public static RouteResult calculateCampusRoute(double userLat, double userLng, double destLat, double destLng, TravelMode mode) {
         RouteResult result = new RouteResult();
         result.setTravelMode(mode);
-
-        boolean userInside = isInsideCampus(userLat, userLng);
-        double startLat = userLat;
-        double startLng = userLng;
-
-        if (!userInside) {
-            CampusLandmark entrance = findNearestEntrance(userLat, userLng);
-            startLat = entrance.getLatitude();
-            startLng = entrance.getLongitude();
-            result.setFallbackEntrance(true);
-            result.setEntranceName(entrance.getName());
-        }
-
-        double distanceMeters = calculateDistanceMeters(startLat, startLng, destLat, destLng);
+        double distanceMeters = calculateDistanceMeters(userLat, userLng, destLat, destLng);
         // Add 15% path tortuosity factor for real campus walkway turns
         distanceMeters = distanceMeters * 1.15;
         result.setDistanceMeters(distanceMeters);
@@ -112,21 +38,12 @@ public class CampusBoundaryManager {
 
         // Generate route waypoints (intermediate campus paths)
         List<GeoPoint> waypoints = new ArrayList<>();
-        waypoints.add(new GeoPoint(startLat, startLng));
-        waypoints.add(new GeoPoint((startLat * 2 + destLat) / 3, (startLng * 2 + destLng) / 3));
-        waypoints.add(new GeoPoint((startLat + destLat * 2) / 3, (startLng + destLng * 2) / 3));
+        waypoints.add(new GeoPoint(userLat, userLng));
+        waypoints.add(new GeoPoint((userLat * 2 + destLat) / 3, (userLng * 2 + destLng) / 3));
+        waypoints.add(new GeoPoint((userLat + destLat * 2) / 3, (userLng + destLng * 2) / 3));
         waypoints.add(new GeoPoint(destLat, destLng));
         result.setPoints(waypoints);
 
         return result;
-    }
-
-    public static ServiceArea getUtarKamparServiceArea() {
-        ServiceArea area = new ServiceArea();
-        area.setName("UTAR Kampar Campus");
-        area.setCenterLatitude(CAMPUS_CENTER_LAT);
-        area.setCenterLongitude(CAMPUS_CENTER_LNG);
-        area.setPolygonCoordinates(CAMPUS_POLYGON);
-        return area;
     }
 }

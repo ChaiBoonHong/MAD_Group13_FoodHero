@@ -50,7 +50,8 @@ public class ReservationConfirmationActivity extends AppCompatActivity {
         tvItemTitle.setText(String.format(Locale.US, "%s (x%d)", title, order.getQuantity()));
 
         String merchant = (order.getMerchant() != null) ? order.getMerchant().getBusinessName() : "Campus Merchant";
-        String loc = (order.getMerchant() != null) ? order.getMerchant().getCampusLocation() : "UTAR Kampar";
+        String loc = (order.getMerchant() != null && order.getMerchant().getCampusLocation() != null)
+            ? order.getMerchant().getCampusLocation() : "Campus location unavailable";
         tvMerchant.setText(String.format("%s • %s", merchant, loc));
 
         tvPickupWindow.setText(String.format("Pickup: %s - %s Today", order.getPickupStart(), order.getPickupEnd()));

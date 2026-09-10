@@ -16,6 +16,7 @@ import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.FoodHeroNotification;
 import com.uccd3223.group13.foodhero.data.model.UserRole;
+import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.remote.SupabaseRealtimeClient;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
@@ -31,6 +32,7 @@ public class MerchantHomeActivity extends AppCompatActivity {
     private TextView tvBadgeCount;
     private SupabaseRealtimeClient realtimeClient;
     private int unreadCount = 0;
+    private Merchant merchantAccount;
 
     private final Fragment dashboardFragment = new MerchantDashboardFragment();
     private final Fragment listingsFragment = new MerchantListingsFragment();
@@ -48,6 +50,7 @@ public class MerchantHomeActivity extends AppCompatActivity {
 
         initViews();
         setupNavigation();
+        loadMerchantApproval();
         setupRealtimeNotifications();
         scheduleBackgroundNotificationWorker();
     }
@@ -114,10 +117,12 @@ public class MerchantHomeActivity extends AppCompatActivity {
                 activeFragment = dashboardFragment;
                 return true;
             } else if (itemId == R.id.nav_listings) {
+                if (!canUseCommerce()) return false;
                 getSupportFragmentManager().beginTransaction().hide(activeFragment).show(listingsFragment).commit();
                 activeFragment = listingsFragment;
                 return true;
             } else if (itemId == R.id.nav_merchant_orders) {
+                if (!canUseCommerce()) return false;
                 getSupportFragmentManager().beginTransaction().hide(activeFragment).show(ordersFragment).commit();
                 activeFragment = ordersFragment;
                 return true;
@@ -128,6 +133,31 @@ public class MerchantHomeActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
+
+    private void loadMerchantApproval() {
+        FoodHeroRepository.getInstance(this).getMerchantProfile(
+            SessionManager.getInstance(this).getMerchantId(), new ResultCallback<Merchant>() {
+                @Override public void onSuccess(Merchant result) { merchantAccount = result; }
+                @Override public void onError(DataError error) {
+                    merchantAccount = null;
+                    if (error.getCode() == DataError.CODE_NOT_FOUND && !isFinishing()) {
+                        Intent intent = new Intent(MerchantHomeActivity.this, MerchantOnboardingActivity.class);
+                        startActivity(intent);
+                        finish();
+                    }
+                }
+            });
+    }
+
+    private boolean canUseCommerce() {
+        if (merchantAccount != null && merchantAccount.isApproved()) return true;
+        String status = merchantAccount != null ? merchantAccount.getStatus() : "pending";
+        String reason = merchantAccount != null ? merchantAccount.getRejectionReason() : null;
+        String message = "Merchant application is " + status + ". Listings and orders unlock after approval.";
+        if (reason != null && !reason.trim().isEmpty()) message += " Reason: " + reason;
+        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show();
+        return false;
     }
 
     public void switchToOrdersTab() {

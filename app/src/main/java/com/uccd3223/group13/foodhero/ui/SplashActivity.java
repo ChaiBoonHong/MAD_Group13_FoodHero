@@ -35,7 +35,7 @@ public class SplashActivity extends AppCompatActivity {
         authRepo.restoreSession(new ResultCallback<Profile>() {
             @Override
             public void onSuccess(Profile profile) {
-                if (profile != null && profile.getRole() == UserRole.MERCHANT) {
+                if (profile != null && profile.getLastActiveRole() == UserRole.MERCHANT) {
                     navigateToMerchantHome();
                 } else {
                     navigateToStudentHome();
@@ -47,7 +47,7 @@ public class SplashActivity extends AppCompatActivity {
                 // If offline but profile exists, route based on cached role
                 Profile cached = authRepo.getCurrentProfile();
                 if (cached != null) {
-                    if (cached.getRole() == UserRole.MERCHANT) {
+                    if (cached.getLastActiveRole() == UserRole.MERCHANT) {
                         navigateToMerchantHome();
                     } else {
                         navigateToStudentHome();

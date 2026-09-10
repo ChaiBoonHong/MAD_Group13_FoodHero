@@ -22,8 +22,6 @@ public class ServiceArea implements Serializable {
     private List<GeoPoint> polygonCoordinates;
 
     public ServiceArea() {
-        this.centerLatitude = 4.336214;
-        this.centerLongitude = 101.142111;
         this.polygonCoordinates = new ArrayList<>();
     }
 

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_merchant_onboarding"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:fillViewport="true" android:background="@color/colorBackground">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="24dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Complete Merchant Setup" android:textSize="26sp" android:textStyle="bold"
+            android:textColor="@color/colorTextPrimary" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="Your verified account is ready. Add real payment and pickup details before publishing food."
+            android:textColor="@color/colorTextSecondary" />
+        <EditText android:id="@+id/et_onboarding_business" android:layout_width="match_parent" android:layout_height="56dp"
+            android:layout_marginTop="16dp" android:hint="Business name" />
+        <EditText android:id="@+id/et_onboarding_description" android:layout_width="match_parent" android:layout_height="80dp"
+            android:hint="Stall description" android:gravity="top" />
+        <EditText android:id="@+id/et_onboarding_phone" android:layout_width="match_parent" android:layout_height="56dp"
+            android:hint="Contact phone" android:inputType="phone" />
+        <EditText android:id="@+id/et_onboarding_duitnow_name" android:layout_width="match_parent" android:layout_height="56dp"
+            android:hint="DuitNow account/display name" />
+        <Spinner android:id="@+id/spinner_onboarding_campus" android:layout_width="match_parent" android:layout_height="56dp" />
+        <Button android:id="@+id/btn_choose_duitnow_qr" android:layout_width="match_parent" android:layout_height="48dp"
+            android:text="Choose DuitNow QR Image" />
+        <ImageView android:id="@+id/iv_onboarding_qr" android:layout_width="160dp" android:layout_height="160dp"
+            android:layout_gravity="center_horizontal" android:layout_marginTop="8dp" android:contentDescription="Selected DuitNow QR"
+            android:src="@drawable/ic_qr_code" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp"
+            android:text="Tap the map to pin the exact merchant pickup location." android:textColor="@color/colorTextPrimary" />
+        <com.google.android.gms.maps.MapView android:id="@+id/map_onboarding_location"
+            android:layout_width="match_parent" android:layout_height="280dp" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/tv_onboarding_pin" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="No location pinned" android:textColor="@color/colorTextSecondary" />
+        <CheckBox android:id="@+id/check_onboarding_terms" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:text="I confirm these business, payment, food-safety and pickup details are accurate." />
+        <ProgressBar android:id="@+id/progress_onboarding" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal" android:visibility="gone" />
+        <Button android:id="@+id/btn_complete_onboarding" android:layout_width="match_parent" android:layout_height="52dp"
+            android:layout_marginTop="16dp" android:text="Activate Merchant Account" />
+    </LinearLayout>
+</ScrollView>

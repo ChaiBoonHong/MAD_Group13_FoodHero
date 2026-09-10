@@ -16,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -91,6 +92,12 @@ public class AddEditListingActivity extends AppCompatActivity {
         initViews();
         setupPhotoPicker();
         setupListeners();
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBackNavigation();
+            }
+        });
         loadCampusLandmarks();
 
         if (existingListingId != null && !existingListingId.isEmpty()) {
@@ -298,15 +305,11 @@ public class AddEditListingActivity extends AppCompatActivity {
                 @Override
                 public void onError(DataError error) {
                     progressPhotoUpload.setVisibility(View.GONE);
-                    // Fallback to local preview for demo smoothness
-                    resolvedImageUrl = uri.toString();
-                    resolvedImageSource = ImageSource.STORAGE;
-                    isExternalPhoto = false;
-                    hasUnsavedEdits = true;
-
                     ivPhotoPreview.setImageURI(uri);
-                    tvPhotoSourceLabel.setText("Source: Local Storage (Demo Cached)");
-                    Toast.makeText(AddEditListingActivity.this, "Uploaded photo applied.", Toast.LENGTH_SHORT).show();
+                    resolvedImageUrl = null;
+                    resolvedImageSource = ImageSource.NONE;
+                    tvPhotoSourceLabel.setText("Upload failed — photo is not saved");
+                    Toast.makeText(AddEditListingActivity.this, "Image upload failed: " + error.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         } catch (Exception e) {
@@ -669,8 +672,4 @@ public class AddEditListingActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        handleBackNavigation();
-    }
 }

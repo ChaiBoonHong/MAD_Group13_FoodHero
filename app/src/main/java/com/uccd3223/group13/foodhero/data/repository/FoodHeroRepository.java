@@ -218,43 +218,20 @@ public class FoodHeroRepository {
                     postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "Please sign in to reserve surplus meals."));
                     return;
                 }
-                double totalOriginal = listing.getOriginalPrice() * quantity;
-                double totalDiscounted = listing.getDiscountedPrice() * quantity;
-
-                int pointsUsed = 0;
-                double rewardDiscount = 0.0;
-                Profile profile = sessionManager.getProfile();
-                if (useRewardPoints && profile != null && profile.getEcoPoints() >= 100) {
-                    pointsUsed = 100;
-                    rewardDiscount = Math.min(5.00, totalDiscounted);
+                JsonObject request = new JsonObject();
+                request.addProperty("p_listing_id", listing.getId());
+                request.addProperty("p_quantity", quantity);
+                request.addProperty("p_use_reward_points", useRewardPoints);
+                Response<Order> response = restClient.reserveListing(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), request).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR,
+                        "Reservation was not created: " + response.message()));
+                    return;
                 }
-
-                double finalPaidPrice = Math.max(0.00, totalDiscounted - rewardDiscount);
-                String orderCode = "FH-" + String.format(Locale.US, "%06d", new Random().nextInt(999999));
-                String pickupToken = "FH-TOKEN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.US);
-
-                Order order = new Order();
-                order.setId(UUID.randomUUID().toString());
-                order.setOrderCode(orderCode);
-                order.setStudentId(studentId);
-                order.setListingId(listing.getId());
-                order.setMerchantId(listing.getMerchantId());
-                order.setQuantity(quantity);
-                order.setTotalOriginalPrice(totalOriginal);
-                order.setTotalDiscountedPrice(totalDiscounted);
-                order.setRewardPointsUsed(pointsUsed);
-                order.setRewardDiscountAmount(rewardDiscount);
-                order.setFinalPaidPrice(finalPaidPrice);
-                order.setPickupStart(listing.getPickupStart());
-                order.setPickupEnd(listing.getPickupEnd());
-                order.setPickupToken(pickupToken);
-                order.setStatus(OrderStatus.AWAITING_PAYMENT);
-                order.setPaymentExpiresAt(System.currentTimeMillis() + (10 * 60 * 1000));
-                order.setPaymentMethod("DUITNOW_QR");
-                order.setPaymentReference(orderCode);
+                Order order = response.body();
                 order.setListing(listing);
                 order.setMerchant(listing.getMerchant());
-                order.setCreatedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
 
                 cachedOrders.add(0, order);
 
@@ -266,25 +243,6 @@ public class FoodHeroRepository {
                         .build();
                     WorkManager.getInstance(appContext).enqueue(expireRequest);
                 } catch (Exception ignored) {}
-
-                try {
-                    Order orderPayload = copyOrderForUpload(order);
-                    Response<List<Order>> resp = restClient.createOrder(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), orderPayload).execute();
-                    if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                        Order remoteOrder = resp.body().get(0);
-                        remoteOrder.setListing(listing);
-                        remoteOrder.setMerchant(listing.getMerchant());
-                        order = remoteOrder;
-                    }
-                } catch (Exception ignored) {
-                    // Handled gracefully in offline/fallback mode
-                }
-
-                // Update local profile points cache
-                if (profile != null && pointsUsed > 0) {
-                    profile.setEcoPoints(profile.getEcoPoints() - pointsUsed);
-                    sessionManager.updateProfile(profile);
-                }
 
                 postSuccess(callback, order);
             } catch (Exception e) {
@@ -298,6 +256,7 @@ public class FoodHeroRepository {
             String studentId = sessionManager.getUserId();
             if (studentId != null) {
                 try {
+                    restClient.reconcileDueOrders(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), new JsonObject()).execute();
                     Response<List<Order>> resp = restClient.getStudentOrders(
                         SupabaseConfig.SUPABASE_ANON_KEY,
                         getBearer(),
@@ -447,10 +406,10 @@ public class FoodHeroRepository {
                 if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
                     postSuccess(callback, resp.body().get(0));
                 } else {
-                    postSuccess(callback, CampusBoundaryManager.getUtarKamparServiceArea());
+                    postError(callback, new DataError(DataError.CODE_NOT_FOUND, "No service area is configured for this campus."));
                 }
             } catch (Exception e) {
-                postSuccess(callback, CampusBoundaryManager.getUtarKamparServiceArea());
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to load the campus service area: " + e.getMessage(), e));
             }
         });
     }
@@ -493,121 +452,72 @@ public class FoodHeroRepository {
         });
     }
 
-    public void submitPaymentReceipt(String orderId, String receiptUrl, ResultCallback<Order> callback) {
+    public void submitPaymentReceipt(String orderId, String receiptPath, ResultCallback<Order> callback) {
         executor.execute(() -> {
             try {
                 JsonObject body = new JsonObject();
-                body.addProperty("status", "pending_verification");
-                body.addProperty("payment_receipt_url", receiptUrl);
-                RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"), body.toString());
-                restClient.updateOrderStatus(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + orderId, reqBody).execute();
-            } catch (Exception ignored) {}
-
-            Order found = null;
-            for (Order o : cachedOrders) {
-                if (o.getId() != null && o.getId().equals(orderId)) {
-                    found = o;
-                    break;
+                body.addProperty("p_order_id", orderId);
+                body.addProperty("p_storage_path", receiptPath);
+                Response<Order> response = restClient.submitPaymentReceipt(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), body).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not accept the payment receipt."));
+                    return;
                 }
-            }
-            if (found != null) {
-                found.setPaymentReceiptUrl(receiptUrl);
-                found.setStatus(OrderStatus.PENDING_VERIFICATION);
-
-                // Create notification for MERCHANT
-                FoodHeroNotification n = new FoodHeroNotification();
-                n.setId(UUID.randomUUID().toString());
-                n.setRecipientRole(UserRole.MERCHANT);
-                n.setRecipientId(found.getMerchantId());
-                n.setRelatedOrderId(found.getId());
-                n.setEventType(NotificationType.PAYMENT_SUBMITTED);
-                n.setTitle("New Payment Slip Uploaded");
-                n.setMessage(String.format(Locale.US, "Order #%s (RM %.2f) payment receipt submitted. Tap to verify.",
-                    found.getOrderCode(), found.getFinalPaidPrice()));
-                n.setCreatedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
-                cachedNotifications.add(0, n);
-
-                try {
-                    restClient.createNotification(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), n).execute();
-                } catch (Exception ignored) {}
-
-                postSuccess(callback, found);
-            } else {
-                postError(callback, new DataError(DataError.CODE_NOT_FOUND, "Order not found"));
+                Order updated = response.body();
+                updated.setPaymentReceiptUrl(SupabaseConfig.getPaymentReceiptUrl(receiptPath));
+                replaceCachedOrder(updated);
+                postSuccess(callback, updated);
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Could not submit receipt: " + e.getMessage(), e));
             }
         });
     }
 
-    public void verifyPaymentReceipt(String orderId, boolean approved, ResultCallback<Order> callback) {
+    public void verifyPaymentReceipt(String orderId, boolean approved, String rejectionReason, ResultCallback<Order> callback) {
         executor.execute(() -> {
-            String newStatus = approved ? "reserved" : "rejected";
             try {
                 JsonObject body = new JsonObject();
-                body.addProperty("status", newStatus);
-                RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"), body.toString());
-                restClient.updateOrderStatus(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + orderId, reqBody).execute();
-            } catch (Exception ignored) {}
-
-            Order found = null;
-            for (Order o : cachedOrders) {
-                if (o.getId() != null && o.getId().equals(orderId)) {
-                    found = o;
-                    break;
+                body.addProperty("p_order_id", orderId);
+                body.addProperty("p_approved", approved);
+                if (rejectionReason == null) body.add("p_rejection_reason", com.google.gson.JsonNull.INSTANCE);
+                else body.addProperty("p_rejection_reason", rejectionReason);
+                Response<Order> response = restClient.decidePaymentReceipt(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), body).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Receipt decision was rejected by Supabase."));
+                    return;
                 }
-            }
-            if (found != null) {
-                FoodHeroNotification n = new FoodHeroNotification();
-                n.setId(UUID.randomUUID().toString());
-                n.setRecipientRole(UserRole.STUDENT);
-                n.setRecipientId(found.getStudentId());
-                n.setRelatedOrderId(found.getId());
-                n.setCreatedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
-
-                if (approved) {
-                    found.setStatus(OrderStatus.RESERVED);
-                    n.setEventType(NotificationType.PAYMENT_VERIFIED);
-                    n.setTitle("Payment Verified! Order Confirmed");
-                    n.setMessage(String.format(Locale.US, "Order #%s payment has been verified. Your Pickup QR token is ready!",
-                        found.getOrderCode()));
-                } else {
-                    found.setStatus(OrderStatus.REJECTED);
-                    n.setEventType(NotificationType.PAYMENT_REJECTED);
-                    n.setTitle("Payment Verification Failed");
-                    n.setMessage(String.format(Locale.US, "Receipt for Order #%s could not be verified. Please re-upload.",
-                        found.getOrderCode()));
-                }
-                cachedNotifications.add(0, n);
-
-                try {
-                    restClient.createNotification(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), n).execute();
-                } catch (Exception ignored) {}
-
-                postSuccess(callback, found);
-            } else {
-                postError(callback, new DataError(DataError.CODE_NOT_FOUND, "Order not found"));
+                replaceCachedOrder(response.body());
+                postSuccess(callback, response.body());
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Could not decide receipt: " + e.getMessage(), e));
             }
         });
+    }
+
+    private void replaceCachedOrder(Order updated) {
+        for (int i = 0; i < cachedOrders.size(); i++) {
+            if (updated.getId() != null && updated.getId().equals(cachedOrders.get(i).getId())) {
+                cachedOrders.set(i, updated);
+                return;
+            }
+        }
+        cachedOrders.add(0, updated);
     }
 
     public void checkAndExpireOrder(String orderId) {
-        for (Order o : cachedOrders) {
-            if (o.getId() != null && o.getId().equals(orderId)) {
-                if (o.getStatus() == OrderStatus.AWAITING_PAYMENT && System.currentTimeMillis() > o.getPaymentExpiresAt()) {
-                    o.setStatus(OrderStatus.EXPIRED);
-                    FoodHeroNotification n = new FoodHeroNotification();
-                    n.setId("notif-" + UUID.randomUUID().toString().substring(0, 8));
-                    n.setRecipientRole(UserRole.STUDENT);
-                    n.setRecipientId(o.getStudentId());
-                    n.setRelatedOrderId(o.getId());
-                    n.setEventType(NotificationType.ORDER_EXPIRED);
-                    n.setTitle("Order Expired (Payment Timeout)");
-                    n.setMessage(String.format(Locale.US, "Order #%s was cancelled because receipt was not uploaded within 10 minutes.", o.getOrderCode()));
-                    n.setCreatedAt("Just now");
-                    cachedNotifications.add(0, n);
-                }
-                break;
+        executor.execute(() -> {
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("p_order_id", orderId);
+                Response<Order> response = restClient.expireUnpaidOrder(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), body).execute();
+                if (response.isSuccessful() && response.body() != null) replaceCachedOrder(response.body());
+            } catch (Exception ignored) {
+                // WorkManager will retry on its next scheduled/application refresh opportunity.
             }
-        }
+        });
     }
 
     public void cancelExpiredOrder(String orderId, ResultCallback<Void> callback) {
@@ -619,6 +529,8 @@ public class FoodHeroRepository {
 
     public void getMerchantOrders(String merchantId, ResultCallback<List<Order>> callback) {
         executor.execute(() -> {
+            try { restClient.reconcileDueOrders(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), new JsonObject()).execute(); }
+            catch (Exception ignored) {}
             String resolvedId = merchantId;
             if (resolvedId == null || resolvedId.isEmpty()) {
                 resolvedId = sessionManager.getMerchantId();
@@ -655,10 +567,14 @@ public class FoodHeroRepository {
                 JsonObject body = new JsonObject();
                 body.addProperty("is_read", true);
                 RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"), body.toString());
-                restClient.markNotificationRead(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + notificationId, reqBody).execute();
+                Response<List<FoodHeroNotification>> response = restClient.markNotificationRead(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + notificationId, reqBody).execute();
+                if (!response.isSuccessful()) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not update the notification."));
+                    return;
+                }
                 postSuccess(callback, null);
             } catch (Exception e) {
-                postSuccess(callback, null);
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to update notification: " + e.getMessage(), e));
             }
         });
     }
@@ -807,9 +723,9 @@ public class FoodHeroRepository {
                         return;
                     }
                 }
-                postSuccess(callback, new ArrayList<>());
+                postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Unable to load merchant listings from Supabase."));
             } catch (Exception e) {
-                postSuccess(callback, new ArrayList<>());
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to load merchant listings: " + e.getMessage(), e));
             }
         });
     }
@@ -823,16 +739,11 @@ public class FoodHeroRepository {
                     return;
                 }
 
-                // Validate UTAR Kampar campus boundary
-                if (!CampusBoundaryManager.isInsideCampus(listing.getLatitude(), listing.getLongitude())) {
-                    postError(callback, new DataError(DataError.CODE_OUTSIDE_CAMPUS, "Pickup location must be within UTAR Kampar Campus boundary."));
-                    return;
-                }
-
                 if (listing.getMerchantId() == null || listing.getMerchantId().isEmpty()) {
                     String mId = sessionManager.getMerchantId();
                     if (mId == null || mId.isEmpty()) {
-                        mId = sessionManager.getUserId();
+                        postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "Complete merchant onboarding before publishing."));
+                        return;
                     }
                     listing.setMerchantId(mId);
                 }
@@ -850,19 +761,15 @@ public class FoodHeroRepository {
                 Merchant cachedM = listing.getMerchant();
                 listing.setMerchant(null); // Strip nested join object for PostgREST
 
-                try {
-                    Response<List<Listing>> resp = restClient.createListing(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), listing).execute();
-                    if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                        Listing created = resp.body().get(0);
-                        created.setMerchant(cachedM);
-                        postSuccess(callback, created);
-                        return;
-                    }
-                } catch (Exception ignored) {
-                }
-
+                Response<List<Listing>> resp = restClient.createListing(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), listing).execute();
                 listing.setMerchant(cachedM);
-                postSuccess(callback, listing);
+                if (!resp.isSuccessful() || resp.body() == null || resp.body().isEmpty()) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not create the listing."));
+                    return;
+                }
+                Listing created = resp.body().get(0);
+                created.setMerchant(cachedM);
+                postSuccess(callback, created);
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to create listing: " + e.getMessage(), e));
             }
@@ -880,19 +787,15 @@ public class FoodHeroRepository {
                 Merchant cachedM = listing.getMerchant();
                 listing.setMerchant(null); // Strip nested join object for PostgREST
 
-                try {
-                    Response<List<Listing>> resp = restClient.updateListing(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + listing.getId(), listing).execute();
-                    if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                        Listing updated = resp.body().get(0);
-                        updated.setMerchant(cachedM);
-                        postSuccess(callback, updated);
-                        return;
-                    }
-                } catch (Exception ignored) {
-                }
-
+                Response<List<Listing>> resp = restClient.updateListing(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + listing.getId(), listing).execute();
                 listing.setMerchant(cachedM);
-                postSuccess(callback, listing);
+                if (!resp.isSuccessful() || resp.body() == null || resp.body().isEmpty()) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not update the listing."));
+                    return;
+                }
+                Listing updated = resp.body().get(0);
+                updated.setMerchant(cachedM);
+                postSuccess(callback, updated);
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to update listing: " + e.getMessage(), e));
             }
@@ -904,10 +807,14 @@ public class FoodHeroRepository {
             try {
                 Listing patch = new Listing();
                 patch.setStatus(ListingStatus.EXPIRED);
-                restClient.updateListing(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + listingId, patch).execute();
+                Response<List<Listing>> response = restClient.updateListing(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + listingId, patch).execute();
+                if (!response.isSuccessful()) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not deactivate the listing."));
+                    return;
+                }
                 postSuccess(callback, null);
             } catch (Exception e) {
-                postSuccess(callback, null);
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to deactivate listing: " + e.getMessage(), e));
             }
         });
     }
@@ -989,24 +896,22 @@ public class FoodHeroRepository {
                     return;
                 }
 
-                if (matchedOrder.getStatus() == OrderStatus.CANCELLED || matchedOrder.getStatus() == OrderStatus.EXPIRED || matchedOrder.getStatus() == OrderStatus.REJECTED) {
+                if (matchedOrder.getStatus() == OrderStatus.CANCELLED || matchedOrder.getStatus() == OrderStatus.EXPIRED || matchedOrder.getStatus() == OrderStatus.PAYMENT_REJECTED || matchedOrder.getStatus() == OrderStatus.NO_SHOW) {
                     postSuccess(callback, new OrderVerificationResult(false, "Order status is " + matchedOrder.getStatus().getValue() + ".", matchedOrder));
                     return;
                 }
 
-                // Update to completed in Supabase
-                matchedOrder.setStatus(OrderStatus.COMPLETED);
-                matchedOrder.setCompletedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
-
-                try {
-                    JsonObject body = new JsonObject();
-                    body.addProperty("status", "completed");
-                    body.addProperty("completed_at", matchedOrder.getCompletedAt());
-                    RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"), body.toString());
-                    restClient.updateOrderStatus(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + matchedOrder.getId(), reqBody).execute();
-                } catch (Exception ignored) {}
-
-                postSuccess(callback, new OrderVerificationResult(true, "Pickup verified successfully! 10 Eco-Points awarded to student.", matchedOrder));
+                JsonObject body = new JsonObject();
+                body.addProperty("p_token", tokenPart);
+                Response<Order> completion = restClient.completePickup(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), body).execute();
+                if (!completion.isSuccessful() || completion.body() == null) {
+                    postSuccess(callback, new OrderVerificationResult(false,
+                        "Invalid, expired, used, or unauthorized pickup token.", matchedOrder));
+                    return;
+                }
+                replaceCachedOrder(completion.body());
+                postSuccess(callback, new OrderVerificationResult(true, "Pickup verified successfully! Eco-Points awarded once.", completion.body()));
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Verification failed: " + e.getMessage(), e));
             }
@@ -1044,16 +949,9 @@ public class FoodHeroRepository {
                     }
                 }
 
-                // Fallback to local session
-                String bName = sessionManager.getBusinessName() != null ? sessionManager.getBusinessName() : "Merchant Outlet";
-                String cLoc = sessionManager.getCampusLocation() != null ? sessionManager.getCampusLocation() : "Block C - Student Pavilion I";
-                Merchant localFallback = new Merchant(resolvedId, sessionManager.getUserId(), bName, cLoc, 4.337243, 101.142379);
-                postSuccess(callback, localFallback);
+                postError(callback, new DataError(DataError.CODE_NOT_FOUND, "Merchant onboarding is incomplete."));
             } catch (Exception e) {
-                String bName = sessionManager.getBusinessName() != null ? sessionManager.getBusinessName() : "Merchant Outlet";
-                String cLoc = sessionManager.getCampusLocation() != null ? sessionManager.getCampusLocation() : "Block C - Student Pavilion I";
-                Merchant localFallback = new Merchant(sessionManager.getMerchantId(), sessionManager.getUserId(), bName, cLoc, 4.337243, 101.142379);
-                postSuccess(callback, localFallback);
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to load merchant profile: " + e.getMessage(), e));
             }
         });
     }
@@ -1089,13 +987,7 @@ public class FoodHeroRepository {
                     Merchant updated = resp.body().get(0);
                     sessionManager.saveMerchantInfo(updated.getId(), updated.getBusinessName(), updated.getCampusLocation());
                     postSuccess(callback, updated);
-                } else {
-                    sessionManager.saveMerchantInfo(mId, businessName != null ? businessName : "Merchant", campusLocation != null ? campusLocation : "");
-                    double finalLat = (latitude != 0.0) ? latitude : 4.337243;
-                    double finalLng = (longitude != 0.0) ? longitude : 101.142379;
-                    Merchant m = new Merchant(mId, sessionManager.getUserId(), businessName, campusLocation, finalLat, finalLng);
-                    postSuccess(callback, m);
-                }
+                } else postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not update the merchant profile."));
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to update profile: " + e.getMessage(), e));
             }
@@ -1143,9 +1035,9 @@ public class FoodHeroRepository {
                         return;
                     }
                 }
-                postSuccess(callback, new ArrayList<>());
+                postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Unable to load merchant reviews from Supabase."));
             } catch (Exception e) {
-                postSuccess(callback, new ArrayList<>());
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to load merchant reviews: " + e.getMessage(), e));
             }
         });
     }
@@ -1153,7 +1045,12 @@ public class FoodHeroRepository {
     public void uploadListingImage(byte[] imageBytes, String fileName, ResultCallback<String> callback) {
         executor.execute(() -> {
             try {
-                String path = "merchant_" + (sessionManager.getUserId() != null ? sessionManager.getUserId() : "demo") + "/" + System.currentTimeMillis() + "_" + fileName;
+                String userId = sessionManager.getUserId();
+                if (userId == null || userId.isEmpty()) {
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "Sign in as a merchant before uploading images."));
+                    return;
+                }
+                String path = userId + "/" + System.currentTimeMillis() + "_" + fileName;
                 RequestBody body = RequestBody.create(MediaType.parse("image/jpeg"), imageBytes);
                 Response<ResponseBody> resp = storageService.uploadFile(
                     SupabaseConfig.SUPABASE_ANON_KEY,
@@ -1191,7 +1088,7 @@ public class FoodHeroRepository {
                 int code = conn.getResponseCode();
                 postSuccess(callback, (code >= 200 && code < 400));
             } catch (Exception e) {
-                postSuccess(callback, urlString != null && urlString.startsWith("https://"));
+                postSuccess(callback, false);
             }
         });
     }
@@ -1205,6 +1102,58 @@ public class FoodHeroRepository {
     private <T> void postError(ResultCallback<T> callback, DataError error) {
         mainHandler.post(() -> {
             if (callback != null) callback.onError(error);
+        });
+    }
+
+    public void uploadPaymentReceipt(String orderId, byte[] imageBytes, String fileName, ResultCallback<String> callback) {
+        executor.execute(() -> {
+            String userId = sessionManager.getUserId();
+            if (userId == null || userId.isEmpty()) {
+                postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "Sign in before uploading a receipt."));
+                return;
+            }
+            try {
+                String path = userId + "/" + orderId + "/" + System.currentTimeMillis() + "_" + fileName;
+                RequestBody body = RequestBody.create(MediaType.parse("image/jpeg"), imageBytes);
+                Response<ResponseBody> response = storageService.uploadFile(
+                    SupabaseConfig.SUPABASE_ANON_KEY,
+                    getBearer(),
+                    "image/jpeg",
+                    SupabaseConfig.STORAGE_BUCKET_PAYMENT_RECEIPTS,
+                    path,
+                    body
+                ).execute();
+                if (!response.isSuccessful()) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Receipt upload failed: " + response.message()));
+                    return;
+                }
+                postSuccess(callback, path);
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Receipt upload error: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void uploadMerchantDuitNowQr(byte[] imageBytes, ResultCallback<String> callback) {
+        executor.execute(() -> {
+            String userId = sessionManager.getUserId();
+            if (userId == null) {
+                postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "Sign in before uploading DuitNow QR."));
+                return;
+            }
+            try {
+                String path = userId + "/duitnow_" + System.currentTimeMillis() + ".jpg";
+                RequestBody body = RequestBody.create(MediaType.parse("image/jpeg"), imageBytes);
+                Response<ResponseBody> response = storageService.uploadFile(SupabaseConfig.SUPABASE_ANON_KEY,
+                    getBearer(), "image/jpeg", SupabaseConfig.STORAGE_BUCKET_MERCHANT_QRS, path, body).execute();
+                if (!response.isSuccessful()) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "DuitNow QR upload failed: " + response.message()));
+                    return;
+                }
+                postSuccess(callback, path);
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "DuitNow QR upload failed: " + e.getMessage(), e));
+            }
         });
     }
 }

@@ -10,6 +10,9 @@ public class Listing implements Serializable {
     @SerializedName("merchant_id")
     private String merchantId;
 
+    @SerializedName("campus_id")
+    private String campusId;
+
     @SerializedName("title")
     private String title;
 
@@ -91,6 +94,9 @@ public class Listing implements Serializable {
     public void setMerchantId(String merchantId) {
         this.merchantId = merchantId;
     }
+
+    public String getCampusId() { return campusId; }
+    public void setCampusId(String campusId) { this.campusId = campusId; }
 
     public String getTitle() {
         return title;
