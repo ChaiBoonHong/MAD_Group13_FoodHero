@@ -1160,6 +1160,33 @@ BEGIN
     ON CONFLICT(user_id) DO UPDATE SET institutional_email=EXCLUDED.institutional_email,code_hash=EXCLUDED.code_hash,
         expires_at=EXCLUDED.expires_at,resend_after=EXCLUDED.resend_after,failed_attempts=0,created_at=NOW();
 END; $$;
+
+-- Make access intent explicit for every RLS table.
+
+DROP POLICY IF EXISTS "Block direct student allowlist access" ON public.student_allowlist;
+CREATE POLICY "Block direct student allowlist access" ON public.student_allowlist
+FOR ALL TO anon, authenticated USING (FALSE) WITH CHECK (FALSE);
+
+DROP POLICY IF EXISTS "Block direct merchant allowlist access" ON public.merchant_allowlist;
+CREATE POLICY "Block direct merchant allowlist access" ON public.merchant_allowlist
+FOR ALL TO anon, authenticated USING (FALSE) WITH CHECK (FALSE);
+
+DROP POLICY IF EXISTS "Students read own reward redemptions" ON public.reward_redemptions;
+CREATE POLICY "Students read own reward redemptions" ON public.reward_redemptions
+FOR SELECT TO authenticated USING (student_id = (SELECT auth.uid()));
+
+DROP POLICY IF EXISTS "Users read own location" ON public.user_locations;
+CREATE POLICY "Users read own location" ON public.user_locations FOR SELECT TO authenticated
+USING (student_id = (SELECT auth.uid()));
+DROP POLICY IF EXISTS "Users insert own location" ON public.user_locations;
+CREATE POLICY "Users insert own location" ON public.user_locations FOR INSERT TO authenticated
+WITH CHECK (student_id = (SELECT auth.uid()));
+DROP POLICY IF EXISTS "Users update own location" ON public.user_locations;
+CREATE POLICY "Users update own location" ON public.user_locations FOR UPDATE TO authenticated
+USING (student_id = (SELECT auth.uid())) WITH CHECK (student_id = (SELECT auth.uid()));
+DROP POLICY IF EXISTS "Users delete own location" ON public.user_locations;
+CREATE POLICY "Users delete own location" ON public.user_locations FOR DELETE TO authenticated
+USING (student_id = (SELECT auth.uid()));
 REVOKE ALL ON FUNCTION public.issue_institution_verification(UUID,TEXT,TEXT) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.issue_institution_verification(UUID,TEXT,TEXT) TO service_role;
 
@@ -1656,3 +1683,23 @@ BEGIN
     END IF;
     RETURN NEW;
 END; $$;
+
+-- This must remain last: CREATE OR REPLACE can otherwise reset function settings.
+DO $post_schema_function_security$
+DECLARE function_name TEXT;
+BEGIN
+    FOREACH function_name IN ARRAY ARRAY[
+        'process_order_completion', 'process_order_reservation',
+        'process_order_status_change', 'process_review_submission'
+    ] LOOP
+        IF to_regprocedure(format('public.%I()', function_name)) IS NOT NULL THEN
+            EXECUTE format('ALTER FUNCTION public.%I() SET search_path = public, pg_temp', function_name);
+        END IF;
+    END LOOP;
+    FOREACH function_name IN ARRAY ARRAY['handle_new_user', 'rls_auto_enable'] LOOP
+        IF to_regprocedure(format('public.%I()', function_name)) IS NOT NULL THEN
+            EXECUTE format('REVOKE ALL ON FUNCTION public.%I() FROM PUBLIC, anon, authenticated', function_name);
+        END IF;
+    END LOOP;
+END;
+$post_schema_function_security$;

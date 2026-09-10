@@ -29,7 +29,6 @@ import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
 import com.uccd3223.group13.foodhero.ui.adapter.ReviewAdapter;
-import com.uccd3223.group13.foodhero.util.CampusBoundaryManager;
 import java.util.ArrayList;
 import java.util.List;
 

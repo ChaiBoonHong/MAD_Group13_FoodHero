@@ -29,10 +29,10 @@ import com.uccd3223.group13.foodhero.data.model.ServiceArea;
 import com.uccd3223.group13.foodhero.data.model.TravelMode;
 import com.uccd3223.group13.foodhero.data.model.UserRole;
 import com.uccd3223.group13.foodhero.data.remote.SupabaseConfig;
+import com.uccd3223.group13.foodhero.data.remote.GoogleRoutesClient;
 import com.uccd3223.group13.foodhero.data.remote.SupabaseRestClient;
 import com.uccd3223.group13.foodhero.data.remote.SupabaseStorageService;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
-import com.uccd3223.group13.foodhero.util.CampusBoundaryManager;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -414,10 +414,12 @@ public class FoodHeroRepository {
     public void calculateRoute(double userLat, double userLng, double destLat, double destLng, TravelMode mode, ResultCallback<RouteResult> callback) {
         executor.execute(() -> {
             try {
-                RouteResult result = CampusBoundaryManager.calculateCampusRoute(userLat, userLng, destLat, destLng, mode);
+                RouteResult result = new GoogleRoutesClient(getBearer()).computeRoute(
+                    userLat, userLng, destLat, destLng, mode);
                 postSuccess(callback, result);
             } catch (Exception e) {
-                postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Route calculation failed: " + e.getMessage(), e));
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR,
+                    "Google route could not be loaded: " + e.getMessage(), e));
             }
         });
     }

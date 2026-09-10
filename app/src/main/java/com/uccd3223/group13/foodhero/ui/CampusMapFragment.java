@@ -241,7 +241,11 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
             }
 
             @Override
-            public void onError(DataError error) {}
+            public void onError(DataError error) {
+                if (!isAdded()) return;
+                tvEntranceFallbackWarning.setVisibility(View.VISIBLE);
+                tvEntranceFallbackWarning.setText("Campus listings could not be loaded. Try again when connected.");
+            }
         });
     }
 
@@ -299,16 +303,18 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
                     : (selectedTravelMode == TravelMode.SHUTTLE) ? "shuttle" : "walk";
                 tvRouteDistanceEta.setText(String.format("%s • ~%d mins %s", distStr, route.getDurationMinutes(), modeLabel));
 
-                if (route.isFallbackEntrance()) {
-                    tvEntranceFallbackWarning.setVisibility(View.VISIBLE);
-                    tvEntranceFallbackWarning.setText("Outside campus: Route starting from " + route.getEntranceName());
-                } else {
-                    tvEntranceFallbackWarning.setVisibility(View.GONE);
-                }
+                tvEntranceFallbackWarning.setVisibility(View.GONE);
             }
 
             @Override
-            public void onError(DataError error) {}
+            public void onError(DataError error) {
+                if (!isAdded()) return;
+                cardRouteInfo.setVisibility(View.VISIBLE);
+                tvEntranceFallbackWarning.setVisibility(View.VISIBLE);
+                tvEntranceFallbackWarning.setText(error == null
+                    ? "Google route is unavailable. Check your connection and try again."
+                    : error.getMessage());
+            }
         });
     }
 

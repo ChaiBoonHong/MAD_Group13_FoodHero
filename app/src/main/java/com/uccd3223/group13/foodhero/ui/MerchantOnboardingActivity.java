@@ -7,9 +7,16 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.*;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.tasks.CancellationTokenSource;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.*;
 import com.uccd3223.group13.foodhero.R;
@@ -26,6 +33,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private TextView pinLabel;
     private CheckBox terms;
     private Button complete;
+    private Button locateMe;
     private ProgressBar progress;
     private MapView mapView;
     private GoogleMap map;
@@ -36,6 +44,8 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private AuthRepository auth;
     private FoodHeroRepository food;
     private ActivityResultLauncher<String> picker;
+    private ActivityResultLauncher<String> locationPermission;
+    private FusedLocationProviderClient locationClient;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -46,9 +56,16 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         campusSpinner=findViewById(R.id.spinner_onboarding_campus); qrPreview=findViewById(R.id.iv_onboarding_qr);
         pinLabel=findViewById(R.id.tv_onboarding_pin); terms=findViewById(R.id.check_onboarding_terms);
         complete=findViewById(R.id.btn_complete_onboarding); progress=findViewById(R.id.progress_onboarding);
+        locateMe=findViewById(R.id.btn_onboarding_locate_me);
         mapView=findViewById(R.id.map_onboarding_location); mapView.onCreate(state); mapView.getMapAsync(this);
+        locationClient=LocationServices.getFusedLocationProviderClient(this);
+        locationPermission=registerForActivityResult(new ActivityResultContracts.RequestPermission(),granted->{
+            if(granted)locateCurrentPosition();
+            else{pinLabel.setText("Location permission denied. Tap the map to pin your stall manually.");locateMe.setEnabled(true);}
+        });
         picker=registerForActivityResult(new ActivityResultContracts.GetContent(),uri->{ if(uri!=null){qrUri=uri;qrPreview.setImageURI(uri);} });
         findViewById(R.id.btn_choose_duitnow_qr).setOnClickListener(v->picker.launch("image/*"));
+        locateMe.setOnClickListener(v->requestCurrentPosition());
         complete.setOnClickListener(v->submit());
         loadCampuses();
     }
@@ -73,11 +90,49 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     }
 
     @Override public void onMapReady(GoogleMap googleMap){
-        map=googleMap; map.getUiSettings().setZoomControlsEnabled(true);
-        map.setOnMapClickListener(point->{pinnedLat=point.latitude;pinnedLng=point.longitude;if(marker!=null)marker.remove();
-            marker=map.addMarker(new MarkerOptions().position(point).title("Merchant pickup"));
-            pinLabel.setText(String.format(Locale.US,"Pinned: %.6f, %.6f",pinnedLat,pinnedLng));});
+        map=googleMap;
+        locateMe.setEnabled(true);
+        map.getUiSettings().setZoomControlsEnabled(true);
+        map.getUiSettings().setZoomGesturesEnabled(true);
+        map.getUiSettings().setScrollGesturesEnabled(true);
+        map.getUiSettings().setCompassEnabled(true);
+        map.setOnMapClickListener(this::setMerchantPin);
+        map.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener(){
+            @Override public void onMarkerDragStart(Marker dragged){}
+            @Override public void onMarkerDrag(Marker dragged){}
+            @Override public void onMarkerDragEnd(Marker dragged){setMerchantPin(dragged.getPosition());}
+        });
         if(!campuses.isEmpty())centerCampus(campusSpinner.getSelectedItemPosition());
+    }
+
+    private void setMerchantPin(LatLng point){
+        pinnedLat=point.latitude;pinnedLng=point.longitude;
+        if(marker!=null)marker.remove();
+        marker=map.addMarker(new MarkerOptions().position(point).title("Merchant pickup location").draggable(true));
+        if(marker!=null)marker.showInfoWindow();
+        pinLabel.setText(String.format(Locale.US,"Pickup pin: %.6f, %.6f — drag the pin to refine it",pinnedLat,pinnedLng));
+    }
+
+    private void requestCurrentPosition(){
+        if(ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED){
+            locateCurrentPosition();
+        }else locationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+    }
+
+    private void locateCurrentPosition(){
+        if(map==null||ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;
+        locateMe.setEnabled(false);pinLabel.setText("Finding your current location…");
+        try{map.setMyLocationEnabled(true);}catch(SecurityException ignored){}
+        CancellationTokenSource source=new CancellationTokenSource();
+        locationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY,source.getToken())
+            .addOnSuccessListener(location->{
+                locateMe.setEnabled(true);
+                if(location==null){pinLabel.setText("Current location unavailable. Turn on Location, or tap the map manually.");return;}
+                LatLng current=new LatLng(location.getLatitude(),location.getLongitude());
+                setMerchantPin(current);
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(current,18f));
+            })
+            .addOnFailureListener(error->{locateMe.setEnabled(true);pinLabel.setText("Unable to locate you. Check Location and try again, or tap the map.");});
     }
 
     private void submit(){

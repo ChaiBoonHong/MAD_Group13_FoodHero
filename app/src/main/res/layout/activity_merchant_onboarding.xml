@@ -27,8 +27,29 @@
             android:src="@drawable/ic_qr_code" />
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp"
             android:text="Tap the map to pin the exact merchant pickup location." android:textColor="@color/colorTextPrimary" />
-        <com.google.android.gms.maps.MapView android:id="@+id/map_onboarding_location"
-            android:layout_width="match_parent" android:layout_height="280dp" android:layout_marginTop="8dp" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="320dp"
+            android:layout_marginTop="8dp">
+
+            <com.google.android.gms.maps.MapView
+                android:id="@+id/map_onboarding_location"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_onboarding_locate_me"
+                style="@style/Widget.MaterialComponents.Button.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="12dp"
+                android:contentDescription="Locate my current position"
+                android:enabled="false"
+                android:text="Locate me"
+                android:textAllCaps="false"
+                android:drawableStart="@drawable/ic_location" />
+        </FrameLayout>
         <TextView android:id="@+id/tv_onboarding_pin" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="8dp" android:text="No location pinned" android:textColor="@color/colorTextSecondary" />
         <CheckBox android:id="@+id/check_onboarding_terms" android:layout_width="match_parent" android:layout_height="wrap_content"

@@ -34,7 +34,6 @@ import android.widget.ArrayAdapter;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
-import com.uccd3223.group13.foodhero.util.CampusBoundaryManager;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -68,6 +68,8 @@ Set secrets without putting their values in source control:
 ```powershell
 supabase secrets set RESEND_API_KEY=YOUR_KEY VERIFICATION_FROM_EMAIL=YOUR_VERIFIED_SENDER
 supabase functions deploy request-institution-verification
+supabase secrets set GOOGLE_ROUTES_API_KEY=YOUR_ROUTES_API_ONLY_KEY
+supabase functions deploy google-routes
 ```
 
 Confirm that the sender domain is verified in the selected email provider and
@@ -76,22 +78,15 @@ API key or a Supabase service-role key.
 
 ## Campus boundary evidence
 
-Run the reproducible research collector:
+Runtime maps and directions use only Google Maps SDK for Android and Google
+Routes API. The API key must enable both products and be restricted to this
+Android application where supported. Routes API results provide real route
+distance, duration, and geometry; the app must not construct estimated paths.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/research-campus-boundaries.ps1
-```
-
-It writes `supabase/campus-boundary-research.json`. Each record separates:
-
-- the official university page used to identify the intended campus; and
-- the OpenStreetMap object used as candidate machine-readable geometry.
-
-OpenStreetMap geometry is community-maintained ODbL data, not an official
-university boundary. Import only candidates whose name, position, outline, and
-official campus address have been visually reviewed. Records marked
-`unresolved_no_polygon` must remain blocked; do not silently replace them with
-the provisional 5 km radius.
+Google Maps Platform route results are not an authoritative campus property
+boundary dataset. Campus boundaries must therefore be entered from a reviewed
+institutional campus plan or another explicitly approved authoritative source.
+Do not silently replace a missing polygon with the provisional 5 km radius.
 
 The database boundary gate passes only when all 35 active campuses have a
 reviewed polygon (at least three coordinate points) or the product owner has

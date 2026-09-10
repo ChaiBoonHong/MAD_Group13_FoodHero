@@ -38,7 +38,6 @@ import com.uccd3223.group13.foodhero.data.model.ListingStatus;
 import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
-import com.uccd3223.group13.foodhero.util.CampusBoundaryManager;
 import com.uccd3223.group13.foodhero.util.SystemBarUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;

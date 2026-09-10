@@ -4,28 +4,22 @@ import com.google.gson.annotations.SerializedName;
 
 public enum TravelMode {
     @SerializedName("walking")
-    WALKING("walking", 4.5), // km/h
+    WALKING("walking"),
 
     @SerializedName("cycling")
-    CYCLING("cycling", 15.0),
+    CYCLING("cycling"),
 
     @SerializedName("shuttle")
-    SHUTTLE("shuttle", 25.0);
+    SHUTTLE("shuttle");
 
     private final String value;
-    private final double avgSpeedKmh;
 
-    TravelMode(String value, double avgSpeedKmh) {
+    TravelMode(String value) {
         this.value = value;
-        this.avgSpeedKmh = avgSpeedKmh;
     }
 
     public String getValue() {
         return value;
-    }
-
-    public double getAvgSpeedKmh() {
-        return avgSpeedKmh;
     }
 
     public static TravelMode fromString(String text) {

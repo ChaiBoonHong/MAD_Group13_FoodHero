@@ -21,12 +21,6 @@ public class RouteResult implements Serializable {
     @SerializedName("points")
     private List<GeoPoint> points;
 
-    @SerializedName("is_fallback_entrance")
-    private boolean isFallbackEntrance;
-
-    @SerializedName("entrance_name")
-    private String entranceName;
-
     public RouteResult() {
         this.points = new ArrayList<>();
         this.travelMode = TravelMode.WALKING;
@@ -80,19 +74,4 @@ public class RouteResult implements Serializable {
         this.points = points;
     }
 
-    public boolean isFallbackEntrance() {
-        return isFallbackEntrance;
-    }
-
-    public void setFallbackEntrance(boolean fallbackEntrance) {
-        isFallbackEntrance = fallbackEntrance;
-    }
-
-    public String getEntranceName() {
-        return entranceName;
-    }
-
-    public void setEntranceName(String entranceName) {
-        this.entranceName = entranceName;
-    }
 }
