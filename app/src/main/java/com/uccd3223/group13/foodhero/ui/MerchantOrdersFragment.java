@@ -226,9 +226,11 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
 
         ImageView ivReceipt = new ImageView(requireContext());
         LinearLayout.LayoutParams imgLp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 400);
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        ivReceipt.setAdjustViewBounds(true);
+        ivReceipt.setMaxHeight(1200);
         ivReceipt.setLayoutParams(imgLp);
-        ivReceipt.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        ivReceipt.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
         if (order.getPaymentReceiptUrl() != null && !order.getPaymentReceiptUrl().isEmpty()) {
             String receiptValue = order.getPaymentReceiptUrl();
@@ -243,7 +245,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
                 .load(authorizedReceipt)
                 .placeholder(R.drawable.ic_foodhero_logo)
                 .error(R.drawable.ic_foodhero_logo)
-                .centerCrop()
+                .fitCenter()
                 .into(ivReceipt);
         } else {
             ivReceipt.setImageResource(R.drawable.ic_foodhero_logo);

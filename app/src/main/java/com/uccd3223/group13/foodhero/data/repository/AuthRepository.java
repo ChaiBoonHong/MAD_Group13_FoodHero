@@ -539,7 +539,30 @@ public class AuthRepository {
                 Response<Merchant> response = restClient.completeMerchantRegistration(
                     SupabaseConfig.SUPABASE_ANON_KEY, "Bearer " + sessionManager.getAccessToken(), body).execute();
                 if (!response.isSuccessful() || response.body() == null) {
-                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Merchant registration was not accepted."));
+                    String errorMsg = "Merchant registration was not accepted.";
+                    if (response.errorBody() != null) {
+                        try {
+                            String errStr = response.errorBody().string();
+                            android.util.Log.e("AuthRepository", "completeMerchantRegistration failed (" + response.code() + "): " + errStr);
+                            com.google.gson.JsonObject errObj = new Gson().fromJson(errStr, com.google.gson.JsonObject.class);
+                            if (errObj != null) {
+                                if (errObj.has("message") && !errObj.get("message").isJsonNull()) {
+                                    errorMsg = errObj.get("message").getAsString();
+                                } else if (errObj.has("msg") && !errObj.get("msg").isJsonNull()) {
+                                    errorMsg = errObj.get("msg").getAsString();
+                                } else if (errObj.has("error_description") && !errObj.get("error_description").isJsonNull()) {
+                                    errorMsg = errObj.get("error_description").getAsString();
+                                } else if (errObj.has("hint") && !errObj.get("hint").isJsonNull()) {
+                                    errorMsg = errObj.get("hint").getAsString();
+                                }
+                            } else if (!errStr.trim().isEmpty()) {
+                                errorMsg = errStr;
+                            }
+                        } catch (Exception e) {
+                            android.util.Log.e("AuthRepository", "Error parsing errorBody", e);
+                        }
+                    }
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, errorMsg));
                     return;
                 }
                 Merchant merchant = response.body();

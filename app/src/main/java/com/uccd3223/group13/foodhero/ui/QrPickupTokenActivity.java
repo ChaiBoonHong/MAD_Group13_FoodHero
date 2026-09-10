@@ -65,13 +65,23 @@ public class QrPickupTokenActivity extends AppCompatActivity {
         tvMerchantLocation.setText(String.format("%s • %s", merchant, loc));
 
         tvPickupWindow.setText(String.format("Pickup Window: %s - %s Today", order.getPickupStart(), order.getPickupEnd()));
-        tvManualCode.setText(String.format("Manual Pickup Code: %s", order.getPickupToken()));
 
-        // Generate high-contrast QR Bitmap
-        String qrPayload = order.getOrderCode() + ":" + order.getPickupToken();
-        Bitmap qrBitmap = QrCodeGenerator.generateQrBitmap(qrPayload, 512, 512);
-        if (qrBitmap != null) {
-            ivQrCode.setImageBitmap(qrBitmap);
+        if (order.getStatus() == com.uccd3223.group13.foodhero.data.model.OrderStatus.PENDING_VERIFICATION) {
+            tvManualCode.setText("Payment verification pending...");
+            ivQrCode.setImageResource(R.drawable.ic_clock); // or any placeholder
+            ivQrCode.setAlpha(0.5f);
+        } else if (order.getPickupToken() != null && !order.getPickupToken().isEmpty()) {
+            tvManualCode.setText(String.format("Manual Pickup Code: %s", order.getPickupToken()));
+            // Generate high-contrast QR Bitmap
+            String qrPayload = order.getOrderCode() + ":" + order.getPickupToken();
+            Bitmap qrBitmap = QrCodeGenerator.generateQrBitmap(qrPayload, 512, 512);
+            if (qrBitmap != null) {
+                ivQrCode.setImageBitmap(qrBitmap);
+                ivQrCode.setAlpha(1.0f);
+            }
+        } else {
+            tvManualCode.setText("Token unavailable");
+            ivQrCode.setAlpha(0.3f);
         }
     }
 }

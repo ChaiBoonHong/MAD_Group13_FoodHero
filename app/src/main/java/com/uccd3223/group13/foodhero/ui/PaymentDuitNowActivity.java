@@ -373,6 +373,7 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
                 btnSubmitReceipt.setEnabled(true);
                 btnSubmitReceipt.setText("Submit Receipt for Verification");
                 Toast.makeText(PaymentDuitNowActivity.this, "Submission failed: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                startPaymentCountdown();
             }
         });
     }

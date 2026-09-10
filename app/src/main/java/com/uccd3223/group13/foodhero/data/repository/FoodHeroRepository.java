@@ -367,7 +367,9 @@ public class FoodHeroRepository {
                 }
                 Review review = new Review(orderId, listingId, studentId, merchantId, rating, comment);
                 review.setId(UUID.randomUUID().toString());
-                review.setCreatedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US);
+                sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                review.setCreatedAt(sdf.format(new java.util.Date()));
 
                 Response<List<Review>> resp = restClient.submitReview(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), review).execute();
                 if (!resp.isSuccessful() || resp.body() == null || resp.body().isEmpty()) {
