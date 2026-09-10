@@ -152,23 +152,6 @@ public interface SupabaseRestClient {
         @Query("owner_id") String ownerQuery
     );
 
-    @Headers({"Content-Type: application/json", "Prefer: return=representation"})
-    @POST("/rest/v1/merchants")
-    Call<List<Merchant>> createMerchant(
-        @Header("apikey") String apiKey,
-        @Header("Authorization") String bearer,
-        @Body Merchant merchant
-    );
-
-    @Headers({"Content-Type: application/json", "Prefer: return=representation"})
-    @PATCH("/rest/v1/merchants")
-    Call<List<Merchant>> updateMerchant(
-        @Header("apikey") String apiKey,
-        @Header("Authorization") String bearer,
-        @Query("id") String idQuery,
-        @Body RequestBody body
-    );
-
     // --- LISTINGS ---
     @GET("/rest/v1/listings?select=*,merchants(*)")
     Call<List<Listing>> getActiveListings(

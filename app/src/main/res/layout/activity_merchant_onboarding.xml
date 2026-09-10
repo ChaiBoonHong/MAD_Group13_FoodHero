@@ -17,6 +17,7 @@
         android:paddingBottom="12dp">
 
         <TextView
+            android:id="@+id/tv_onboarding_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/roboto_slab"

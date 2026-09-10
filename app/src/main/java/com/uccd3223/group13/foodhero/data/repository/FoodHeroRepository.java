@@ -1036,44 +1036,6 @@ public class FoodHeroRepository {
         });
     }
 
-    public void updateMerchantProfile(String businessName, String campusLocation, String closingTime, ResultCallback<Merchant> callback) {
-        updateMerchantProfile(businessName, campusLocation, 0.0, 0.0, closingTime, callback);
-    }
-
-    public void updateMerchantProfile(String businessName, String campusLocation, double latitude, double longitude, String closingTime, ResultCallback<Merchant> callback) {
-        executor.execute(() -> {
-            try {
-                String mId = sessionManager.getMerchantId();
-                if (mId == null || mId.isEmpty()) {
-                    mId = sessionManager.getUserId();
-                }
-                JsonObject body = new JsonObject();
-                if (businessName != null && !businessName.trim().isEmpty()) {
-                    body.addProperty("business_name", businessName.trim());
-                }
-                if (campusLocation != null && !campusLocation.trim().isEmpty()) {
-                    body.addProperty("campus_location", campusLocation.trim());
-                }
-                if (latitude != 0.0 && longitude != 0.0) {
-                    body.addProperty("latitude", latitude);
-                    body.addProperty("longitude", longitude);
-                }
-                if (closingTime != null && !closingTime.trim().isEmpty()) {
-                    body.addProperty("closing_time", closingTime.trim());
-                }
-                RequestBody reqBody = RequestBody.create(MediaType.parse("application/json"), body.toString());
-                Response<List<Merchant>> resp = restClient.updateMerchant(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + mId, reqBody).execute();
-                if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                    Merchant updated = resp.body().get(0);
-                    sessionManager.saveMerchantInfo(updated.getId(), updated.getBusinessName(), updated.getCampusLocation());
-                    postSuccess(callback, updated);
-                } else postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not update the merchant profile."));
-            } catch (Exception e) {
-                postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to update profile: " + e.getMessage(), e));
-            }
-        });
-    }
-
     private Order copyOrderForUpload(Order src) {
         Order copy = new Order();
         copy.setId(src.getId());

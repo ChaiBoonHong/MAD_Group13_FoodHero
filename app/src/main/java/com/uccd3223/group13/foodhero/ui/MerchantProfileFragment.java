@@ -5,10 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -17,11 +14,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.uccd3223.group13.foodhero.R;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
-import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
 import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.model.Review;
 import com.uccd3223.group13.foodhero.data.model.Profile;
@@ -31,7 +26,6 @@ import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
 import com.uccd3223.group13.foodhero.data.session.SessionManager;
 import com.uccd3223.group13.foodhero.ui.adapter.ReviewAdapter;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MerchantProfileFragment extends Fragment {
@@ -213,128 +207,9 @@ public class MerchantProfileFragment extends Fragment {
     }
 
     private void showEditProfileDialog() {
-        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_edit_merchant_profile, null);
-        EditText etBusiness = dialogView.findViewById(R.id.et_edit_business_name);
-        EditText etHours = dialogView.findViewById(R.id.et_edit_hours);
-        MaterialAutoCompleteTextView actvLandmark = dialogView.findViewById(R.id.actv_landmark_dropdown);
-        EditText etStall = dialogView.findViewById(R.id.et_edit_stall_no);
-
-        etBusiness.setText(tvBusinessName.getText());
-        etHours.setText(tvOperatingHours.getText());
-
-        final String currentLoc = tvLocation.getText().toString().trim();
-
-        // Query Supabase for real campus landmarks
-        foodHeroRepo.getCampusLandmarks(new ResultCallback<List<CampusLandmark>>() {
-            @Override
-            public void onSuccess(List<CampusLandmark> landmarks) {
-                if (!isAdded()) return;
-                displayEditDialogWithLandmarks(dialogView, etBusiness, etHours, actvLandmark, etStall, landmarks, currentLoc);
-            }
-
-            @Override
-            public void onError(DataError error) {
-                if (!isAdded()) return;
-                displayEditDialogWithLandmarks(dialogView, etBusiness, etHours, actvLandmark, etStall, new ArrayList<>(), currentLoc);
-            }
-        });
-    }
-
-    private void displayEditDialogWithLandmarks(
-        View dialogView,
-        EditText etBusiness,
-        EditText etHours,
-        MaterialAutoCompleteTextView actvLandmark,
-        EditText etStall,
-        List<CampusLandmark> landmarks,
-        String currentLoc
-    ) {
-        if (landmarks == null) {
-            landmarks = new ArrayList<>();
-        }
-
-        List<String> names = new ArrayList<>();
-        CampusLandmark preselectedLandmark = null;
-        String detectedStall = "";
-
-        for (CampusLandmark lm : landmarks) {
-            names.add(lm.getName());
-            if (currentLoc.contains(lm.getName())) {
-                preselectedLandmark = lm;
-                String remainder = currentLoc.replace(lm.getName(), "").trim();
-                if (remainder.startsWith(",")) remainder = remainder.substring(1).trim();
-                if (!remainder.isEmpty()) detectedStall = remainder;
-            }
-        }
-
-        if (preselectedLandmark == null && !landmarks.isEmpty()) {
-            preselectedLandmark = landmarks.get(0);
-        }
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, names);
-        actvLandmark.setAdapter(adapter);
-
-        if (preselectedLandmark != null) {
-            actvLandmark.setText(preselectedLandmark.getName(), false);
-        }
-        if (!detectedStall.isEmpty()) {
-            etStall.setText(detectedStall);
-        }
-
-        final List<CampusLandmark> finalLandmarks = landmarks;
-
-        new MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.btn_edit_hours)
-            .setView(dialogView)
-            .setPositiveButton("Save", (d, w) -> {
-                String newBiz = etBusiness.getText().toString().trim();
-                String newHours = etHours.getText().toString().trim();
-                String selectedLandmarkName = actvLandmark.getText().toString().trim();
-                String newStall = etStall.getText().toString().trim();
-
-                CampusLandmark matchedLandmark = null;
-                for (CampusLandmark lm : finalLandmarks) {
-                    if (lm.getName().equalsIgnoreCase(selectedLandmarkName)) {
-                        matchedLandmark = lm;
-                        break;
-                    }
-                }
-
-                if (matchedLandmark == null) {
-                    Toast.makeText(requireContext(), "Select a valid campus landmark.", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                double lat = matchedLandmark.getLatitude();
-                double lng = matchedLandmark.getLongitude();
-
-                String finalLocation;
-                if (!newStall.isEmpty()) {
-                    finalLocation = selectedLandmarkName + ", " + newStall;
-                } else {
-                    finalLocation = selectedLandmarkName;
-                }
-
-                foodHeroRepo.updateMerchantProfile(newBiz, finalLocation, lat, lng, newHours, new ResultCallback<Merchant>() {
-                    @Override
-                    public void onSuccess(Merchant result) {
-                        if (isAdded()) {
-                            if (!newBiz.isEmpty()) tvBusinessName.setText(newBiz);
-                            if (!newHours.isEmpty()) tvOperatingHours.setText(newHours);
-                            if (!finalLocation.isEmpty()) tvLocation.setText(finalLocation);
-                            Snackbar.make(requireView(), "Business information updated", Snackbar.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onError(DataError error) {
-                        if (isAdded()) {
-                            Snackbar.make(requireView(), error.getMessage(), Snackbar.LENGTH_LONG).show();
-                        }
-                    }
-                });
-            })
-            .setNegativeButton("Cancel", null)
-            .show();
+        Intent intent = new Intent(requireContext(), MerchantOnboardingActivity.class);
+        intent.putExtra(MerchantOnboardingActivity.EXTRA_EDIT_MODE, true);
+        startActivity(intent);
     }
 
     private void showLogoutConfirmationDialog() {

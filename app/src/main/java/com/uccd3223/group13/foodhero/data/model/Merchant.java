@@ -46,6 +46,12 @@ public class Merchant implements Serializable {
     @SerializedName("duitnow_qr_path")
     private String duitNowQrPath;
 
+    @SerializedName("stall_description")
+    private String stallDescription;
+
+    @SerializedName("contact_phone")
+    private String contactPhone;
+
     public Merchant() {
     }
 
@@ -139,4 +145,6 @@ public class Merchant implements Serializable {
     public String getCampusId() { return campusId; }
     public String getDuitNowDisplayName() { return duitNowDisplayName; }
     public String getDuitNowQrPath() { return duitNowQrPath; }
+    public String getStallDescription() { return stallDescription; }
+    public String getContactPhone() { return contactPhone; }
 }

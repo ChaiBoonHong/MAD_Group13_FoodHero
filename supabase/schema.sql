@@ -1483,6 +1483,11 @@ EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range THEN RE
 END; $$;
 REVOKE ALL ON FUNCTION public.campus_contains_point(UUID,DOUBLE PRECISION,DOUBLE PRECISION) FROM PUBLIC,anon,authenticated;
 
+-- Merchant profile/setup changes must use complete_merchant_registration so a
+-- campus, coordinate or private QR path cannot bypass server validation.
+REVOKE UPDATE ON public.merchants FROM authenticated;
+DROP POLICY IF EXISTS "Merchants can update own record" ON public.merchants;
+
 CREATE OR REPLACE FUNCTION public.complete_merchant_registration(
     p_business_name TEXT, p_stall_description TEXT, p_contact_phone TEXT,
     p_duitnow_display_name TEXT, p_duitnow_qr_path TEXT, p_campus_id UUID,

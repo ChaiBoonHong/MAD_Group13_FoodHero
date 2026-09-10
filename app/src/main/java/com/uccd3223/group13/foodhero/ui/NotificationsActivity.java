@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.snackbar.Snackbar;
 import com.uccd3223.group13.foodhero.R;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
@@ -100,7 +101,16 @@ public class NotificationsActivity extends AppCompatActivity implements Notifica
                 public void onSuccess(Void result) {}
 
                 @Override
-                public void onError(DataError error) {}
+                public void onError(DataError error) {
+                    // The optimistic update was not confirmed by Supabase.
+                    notification.setRead(false);
+                    adapter.notifyDataSetChanged();
+                    Snackbar.make(rvNotifications,
+                        error == null ? "Couldn’t mark notification as read" : error.getMessage(),
+                        Snackbar.LENGTH_LONG)
+                        .setAction("Retry", v -> onNotificationClick(notification))
+                        .show();
+                }
             });
         }
         Toast.makeText(this, notification.getTitle(), Toast.LENGTH_SHORT).show();

@@ -27,7 +27,15 @@ Deno.serve(async (request) => {
     body: JSON.stringify({ from, to: [email], subject: "FoodHero institutional verification code",
       text: `Your FoodHero verification code is ${code}. It expires in 10 minutes.` }),
   });
-  if (!sent.ok) return json({ error: "Verification email could not be delivered" }, 502);
+  if (!sent.ok) {
+    // The code was never delivered, so it must not consume the resend window or
+    // leave a stale challenge that the user cannot complete.
+    await admin
+      .from("institution_verification_challenges")
+      .delete()
+      .eq("user_id", user.id);
+    return json({ error: "Verification email could not be delivered" }, 502);
+  }
   return json({ delivered: true }, 200);
 });
 

@@ -13,6 +13,9 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.model.GlideUrl;
+import com.bumptech.glide.load.model.LazyHeaders;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -50,6 +53,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class MerchantOnboardingActivity extends AppCompatActivity implements OnMapReadyCallback {
+    public static final String EXTRA_EDIT_MODE = "edit_merchant_profile";
     private static final long MAX_QR_BYTES = 5L * 1024L * 1024L;
     private static final String STATE_STEP = "merchant_step";
     private static final String STATE_QR = "merchant_qr";
@@ -62,7 +66,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private TextInputLayout businessLayout, descriptionLayout, phoneLayout, duitNowLayout, campusLayout;
     private MaterialAutoCompleteTextView campusDropdown;
     private ImageView qrPreview;
-    private TextView qrStatus, pinLabel, review, stepLabel;
+    private TextView qrStatus, pinLabel, review, stepLabel, title;
     private CheckBox terms;
     private MaterialButton primary, back, chooseQr, removeQr, locateMe;
     private ProgressBar loading;
@@ -79,6 +83,8 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private int selectedCampus = -1;
     private int currentStep = 1;
     private boolean submitting;
+    private boolean editMode;
+    private Merchant existingMerchant;
     private AuthRepository auth;
     private FoodHeroRepository food;
     private ActivityResultLauncher<String> picker;
@@ -91,6 +97,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         SystemBarUtils.applySafeInsets(this, root);
         auth = AuthRepository.getInstance(this);
         food = FoodHeroRepository.getInstance(this);
+        editMode = getIntent().getBooleanExtra(EXTRA_EDIT_MODE, false);
         bindViews();
         restoreState(state);
         mapView.onCreate(state);
@@ -100,6 +107,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         setupActions();
         renderStep(false);
         loadCampuses();
+        if (editMode && state == null) loadExistingMerchant();
         MotionUtils.enter(root);
     }
 
@@ -119,6 +127,8 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         pinLabel = findViewById(R.id.tv_onboarding_pin);
         review = findViewById(R.id.tv_onboarding_review);
         stepLabel = findViewById(R.id.tv_onboarding_step);
+        title = findViewById(R.id.tv_onboarding_title);
+        title.setText(editMode ? "Edit Merchant Profile" : "Complete Merchant Setup");
         terms = findViewById(R.id.check_onboarding_terms);
         primary = findViewById(R.id.btn_complete_onboarding);
         back = findViewById(R.id.btn_onboarding_back);
@@ -160,7 +170,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
 
     private void setupActions() {
         chooseQr.setOnClickListener(v -> { MotionUtils.press(v); picker.launch("image/*"); });
-        removeQr.setOnClickListener(v -> { qrUri = null; uploadedQrPath = null; renderQr(); });
+        removeQr.setOnClickListener(v -> { qrUri = null; uploadedQrPath = null; qrPreview.setImageDrawable(null); renderQr(); });
         locateMe.setOnClickListener(v -> requestCurrentPosition());
         back.setOnClickListener(v -> { if (!submitting && currentStep > 1) { currentStep--; renderStep(true); } });
         primary.setOnClickListener(v -> {
@@ -199,6 +209,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
                 } else {
                     primary.setEnabled(!submitting);
                 }
+                applyExistingCampus();
             }
             @Override public void onError(DataError error) {
                 campusLayout.setEnabled(true);
@@ -220,7 +231,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private boolean validatePayment() {
         duitNowLayout.setError(null);
         if (text(duitNowName).length() < 2) { duitNowLayout.setError("Enter the DuitNow display name."); return false; }
-        if (qrUri == null) { showError("Choose the real DuitNow QR image used by this merchant."); return false; }
+        if (qrUri == null && uploadedQrPath == null) { showError("Choose the real DuitNow QR image used by this merchant."); return false; }
         return true;
     }
 
@@ -237,18 +248,21 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         stepProgress.setProgressCompat(currentStep, animate && MotionUtils.enabled());
         stepLabel.setText(currentStep == 1 ? "Step 1 of 3 · Business details"
             : currentStep == 2 ? "Step 2 of 3 · DuitNow payment" : "Step 3 of 3 · Pickup and review");
-        primary.setText(currentStep == 3 ? "Activate Merchant Account" : "Continue");
+        primary.setText(currentStep == 3 ? (editMode ? "Save Merchant Profile" : "Activate Merchant Account") : "Continue");
         back.setVisibility(currentStep == 1 ? View.INVISIBLE : View.VISIBLE);
         if (currentStep == 3) updateReview();
     }
 
     private void renderQr() {
-        boolean selected = qrUri != null;
+        boolean selected = qrUri != null || uploadedQrPath != null;
         qrPreview.setVisibility(selected ? View.VISIBLE : View.GONE);
         removeQr.setVisibility(selected ? View.VISIBLE : View.GONE);
         chooseQr.setText(selected ? "Replace QR" : "Choose QR");
-        qrStatus.setText(selected ? "QR selected and ready to upload" : "No QR selected\nJPEG, PNG or WebP · maximum 5 MB");
-        if (selected) qrPreview.setImageURI(qrUri); else qrPreview.setImageDrawable(null);
+        qrStatus.setText(qrUri != null ? "New QR selected and ready to upload"
+            : uploadedQrPath != null ? "Current secure DuitNow QR · choose Replace QR to change it"
+            : "No QR selected\nJPEG, PNG or WebP · maximum 5 MB");
+        if (qrUri != null) qrPreview.setImageURI(qrUri);
+        else if (!selected) qrPreview.setImageDrawable(null);
     }
 
     private void centerCampus(int position) {
@@ -346,7 +360,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         auth.addMerchantRole(text(business), text(description), text(phone), text(duitNowName), path,
             campus, location, pinnedLat, pinnedLng, new ResultCallback<Merchant>() {
                 @Override public void onSuccess(Merchant merchant) {
-                    primary.setText("Merchant account activated");
+                    primary.setText(editMode ? "Merchant profile updated" : "Merchant account activated");
                     MotionUtils.success(primary, () -> {
                         Intent intent = new Intent(MerchantOnboardingActivity.this, MerchantHomeActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -362,7 +376,50 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         loading.setVisibility(active ? View.VISIBLE : View.GONE);
         primary.setEnabled(!active);
         back.setEnabled(!active);
-        primary.setText(active ? "Activating…" : currentStep == 3 ? "Activate Merchant Account" : "Continue");
+        primary.setText(active ? (editMode ? "Saving…" : "Activating…")
+            : currentStep == 3 ? (editMode ? "Save Merchant Profile" : "Activate Merchant Account") : "Continue");
+    }
+
+    private void loadExistingMerchant() {
+        food.getMerchantProfile(null, new ResultCallback<Merchant>() {
+            @Override public void onSuccess(Merchant merchant) {
+                if (isFinishing() || merchant == null) return;
+                existingMerchant = merchant;
+                business.setText(merchant.getBusinessName());
+                description.setText(merchant.getStallDescription());
+                phone.setText(merchant.getContactPhone());
+                duitNowName.setText(merchant.getDuitNowDisplayName());
+                uploadedQrPath = merchant.getDuitNowQrPath();
+                pinnedLat = merchant.getLatitude();
+                pinnedLng = merchant.getLongitude();
+                if (uploadedQrPath != null) {
+                    String url = com.uccd3223.group13.foodhero.data.remote.SupabaseConfig.getMerchantQrUrl(uploadedQrPath);
+                    GlideUrl authorized = new GlideUrl(url, new LazyHeaders.Builder()
+                        .addHeader("Authorization", "Bearer " + com.uccd3223.group13.foodhero.data.session.SessionManager.getInstance(MerchantOnboardingActivity.this).getAccessToken())
+                        .addHeader("apikey", com.uccd3223.group13.foodhero.data.remote.SupabaseConfig.SUPABASE_ANON_KEY).build());
+                    Glide.with(MerchantOnboardingActivity.this).load(authorized).error(R.drawable.ic_qr_code).into(qrPreview);
+                }
+                renderQr();
+                applyExistingCampus();
+                if (map != null && !Double.isNaN(pinnedLat)) setMerchantPin(new LatLng(pinnedLat, pinnedLng));
+            }
+            @Override public void onError(DataError error) {
+                showError(error == null ? "Merchant information could not be loaded." : error.getMessage());
+            }
+        });
+    }
+
+    private void applyExistingCampus() {
+        if (existingMerchant == null || campuses.isEmpty() || selectedCampus >= 0) return;
+        for (int i = 0; i < campuses.size(); i++) {
+            if (campuses.get(i).getId().equals(existingMerchant.getCampusId())) {
+                selectedCampus = i;
+                campusDropdown.setText(campuses.get(i).getInstitutionCode() + " — " + campuses.get(i).getName(), false);
+                if (map != null && Double.isNaN(pinnedLat)) centerCampus(i);
+                updateReview();
+                return;
+            }
+        }
     }
 
     private void showError(String message) {
