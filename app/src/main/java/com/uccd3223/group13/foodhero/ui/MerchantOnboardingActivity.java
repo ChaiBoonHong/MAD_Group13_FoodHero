@@ -56,6 +56,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private static final String STATE_CAMPUS = "merchant_campus";
     private static final String STATE_LAT = "merchant_lat";
     private static final String STATE_LNG = "merchant_lng";
+    private static final String STATE_UPLOADED_QR = "merchant_uploaded_qr";
 
     private EditText business, description, phone, duitNowName;
     private TextInputLayout businessLayout, descriptionLayout, phoneLayout, duitNowLayout, campusLayout;
@@ -73,6 +74,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private FusedLocationProviderClient locationClient;
     private final List<Campus> campuses = new ArrayList<>();
     private Uri qrUri;
+    private String uploadedQrPath;
     private double pinnedLat = Double.NaN, pinnedLng = Double.NaN;
     private int selectedCampus = -1;
     private int currentStep = 1;
@@ -141,6 +143,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
                     throw new IOException("Choose a JPEG, PNG or WebP image.");
                 if (size > MAX_QR_BYTES) throw new IOException("The QR image must be 5 MB or smaller.");
                 qrUri = uri;
+                uploadedQrPath = null;
                 renderQr();
             } catch (Exception error) {
                 showError(error.getMessage());
@@ -157,7 +160,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
 
     private void setupActions() {
         chooseQr.setOnClickListener(v -> { MotionUtils.press(v); picker.launch("image/*"); });
-        removeQr.setOnClickListener(v -> { qrUri = null; renderQr(); });
+        removeQr.setOnClickListener(v -> { qrUri = null; uploadedQrPath = null; renderQr(); });
         locateMe.setOnClickListener(v -> requestCurrentPosition());
         back.setOnClickListener(v -> { if (!submitting && currentStep > 1) { currentStep--; renderStep(true); } });
         primary.setOnClickListener(v -> {
@@ -319,13 +322,20 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         if (Double.isNaN(pinnedLat)) { showError("Place the exact pickup pin on the map."); return; }
         if (!terms.isChecked()) { terms.setError("Confirm the details before activation."); return; }
         setLoading(true);
+        if (uploadedQrPath != null) {
+            finishRegistration(campuses.get(selectedCampus), uploadedQrPath);
+            return;
+        }
         try (InputStream input = getContentResolver().openInputStream(qrUri)) {
             Bitmap bitmap = BitmapFactory.decodeStream(input);
             if (bitmap == null) throw new IOException("The selected QR image can no longer be read.");
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 90, output);
             food.uploadMerchantDuitNowQr(output.toByteArray(), new ResultCallback<String>() {
-                @Override public void onSuccess(String path) { finishRegistration(campuses.get(selectedCampus), path); }
+                @Override public void onSuccess(String path) {
+                    uploadedQrPath = path;
+                    finishRegistration(campuses.get(selectedCampus), path);
+                }
                 @Override public void onError(DataError error) { setLoading(false); showError(error.getMessage()); }
             });
         } catch (Exception error) { setLoading(false); showError("Unable to read QR: " + error.getMessage()); }
@@ -368,6 +378,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         pinnedLat = state.getDouble(STATE_LAT, Double.NaN);
         pinnedLng = state.getDouble(STATE_LNG, Double.NaN);
         String uri = state.getString(STATE_QR);
+        uploadedQrPath = state.getString(STATE_UPLOADED_QR);
         if (uri != null) { qrUri = Uri.parse(uri); renderQr(); }
     }
 
@@ -377,6 +388,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         out.putDouble(STATE_LAT, pinnedLat);
         out.putDouble(STATE_LNG, pinnedLng);
         if (qrUri != null) out.putString(STATE_QR, qrUri.toString());
+        if (uploadedQrPath != null) out.putString(STATE_UPLOADED_QR, uploadedQrPath);
         mapView.onSaveInstanceState(out);
         super.onSaveInstanceState(out);
     }

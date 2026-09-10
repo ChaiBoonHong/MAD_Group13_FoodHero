@@ -38,6 +38,8 @@ import java.util.concurrent.TimeUnit;
 
 public class PaymentDuitNowActivity extends AppCompatActivity {
     public static final String EXTRA_ORDER = "extra_order";
+    private static final String STATE_RECEIPT_URI = "payment_receipt_uri";
+    private static final String STATE_UPLOADED_PATH = "payment_uploaded_path";
 
     private Order order;
     private FoodHeroRepository foodHeroRepo;
@@ -57,6 +59,7 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
     private MaterialButton btnSubmitReceipt, btnSaveQr, btnShareQr, btnCancelOrder;
 
     private Uri selectedReceiptUri = null;
+    private String uploadedReceiptPath;
     private ActivityResultLauncher<String> imagePickerLauncher;
 
     @Override
@@ -77,6 +80,14 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
 
         initViews();
         setupImagePicker();
+        if (savedInstanceState != null) {
+            String receiptUri = savedInstanceState.getString(STATE_RECEIPT_URI);
+            uploadedReceiptPath = savedInstanceState.getString(STATE_UPLOADED_PATH);
+            if (receiptUri != null) {
+                selectedReceiptUri = Uri.parse(receiptUri);
+                displayReceiptPreview(selectedReceiptUri);
+            }
+        }
         bindOrderData();
         startPaymentCountdown();
     }
@@ -120,6 +131,7 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
             uri -> {
                 if (uri != null) {
                     selectedReceiptUri = uri;
+                    uploadedReceiptPath = null;
                     displayReceiptPreview(uri);
                 }
             }
@@ -187,8 +199,16 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
     private void startPaymentCountdown() {
         long expiresAt = order.getPaymentExpiresAt();
         if (expiresAt <= 0) {
-            expiresAt = System.currentTimeMillis() + (10 * 60 * 1000);
-            order.setPaymentExpiresAt(expiresAt);
+            btnSubmitReceipt.setEnabled(false);
+            btnCancelOrder.setEnabled(false);
+            tvTimerCountdown.setText("Unavailable");
+            new MaterialAlertDialogBuilder(this)
+                .setTitle("Payment deadline unavailable")
+                .setMessage("FoodHero could not verify the server-issued payment deadline. Return to Orders and retry; no local deadline was created.")
+                .setCancelable(false)
+                .setPositiveButton("View Orders", (dialog, which) -> finish())
+                .show();
+            return;
         }
 
         long remainingMillis = expiresAt - System.currentTimeMillis();
@@ -293,6 +313,11 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
         btnSubmitReceipt.setEnabled(false);
         btnSubmitReceipt.setText("Uploading...");
 
+        if (uploadedReceiptPath != null) {
+            submitUploadedReceipt(uploadedReceiptPath);
+            return;
+        }
+
         try (InputStream input = getContentResolver().openInputStream(selectedReceiptUri)) {
             Bitmap bitmap = BitmapFactory.decodeStream(input);
             if (bitmap == null) throw new IllegalArgumentException("Selected file is not a readable image.");
@@ -301,6 +326,7 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
             foodHeroRepo.uploadPaymentReceipt(order.getId(), output.toByteArray(), "receipt.jpg", new ResultCallback<String>() {
                 @Override
                 public void onSuccess(String receiptUrl) {
+                    uploadedReceiptPath = receiptUrl;
                     submitUploadedReceipt(receiptUrl);
                 }
 
@@ -349,6 +375,13 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
                 Toast.makeText(PaymentDuitNowActivity.this, "Submission failed: " + error.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if (selectedReceiptUri != null) outState.putString(STATE_RECEIPT_URI, selectedReceiptUri.toString());
+        if (uploadedReceiptPath != null) outState.putString(STATE_UPLOADED_PATH, uploadedReceiptPath);
+        super.onSaveInstanceState(outState);
     }
 
     @Override

@@ -1,9 +1,17 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+
 const GOOGLE_ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
 const FIELD_MASK = "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline";
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return response({ error: "Method not allowed" }, 405);
-  if (!request.headers.get("Authorization")) return response({ error: "Authentication required" }, 401);
+  const token = request.headers.get("Authorization") ?? "";
+  const url = Deno.env.get("SUPABASE_URL");
+  const anon = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!url || !anon) return response({ error: "Route service is not configured" }, 503);
+  const userClient = createClient(url, anon, { global: { headers: { Authorization: token } } });
+  const { data: { user } } = await userClient.auth.getUser();
+  if (!user) return response({ error: "Authentication required" }, 401);
 
   const apiKey = Deno.env.get("GOOGLE_ROUTES_API_KEY");
   if (!apiKey) return response({ error: "Route service is not configured" }, 503);

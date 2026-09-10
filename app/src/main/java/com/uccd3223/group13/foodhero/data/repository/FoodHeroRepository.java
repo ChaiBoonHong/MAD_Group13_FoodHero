@@ -963,6 +963,14 @@ public class FoodHeroRepository {
                     return;
                 }
 
+                // Manual entry commonly supplies the human-readable order code.
+                // Resolve its opaque token from the merchant-authorized order row;
+                // the completion RPC still performs the final ownership/status check.
+                if (!raw.contains(":") && matchedOrder.getPickupToken() != null
+                        && !matchedOrder.getPickupToken().trim().isEmpty()) {
+                    tokenPart = matchedOrder.getPickupToken().trim();
+                }
+
                 if (matchedOrder.getStatus() == OrderStatus.COMPLETED) {
                     postSuccess(callback, new OrderVerificationResult(false, "Order has already been picked up and completed.", matchedOrder));
                     return;

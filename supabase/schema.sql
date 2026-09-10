@@ -592,12 +592,14 @@ CREATE POLICY "Public read active listings" ON public.listings FOR SELECT USING 
 DROP POLICY IF EXISTS "Public insert listings" ON public.listings;
 DROP POLICY IF EXISTS "Merchants can manage own listings" ON public.listings;
 DROP POLICY IF EXISTS "Merchants can insert own listings" ON public.listings;
+DROP POLICY IF EXISTS "Approved merchants insert own listings" ON public.listings;
 CREATE POLICY "Merchants can insert own listings" ON public.listings FOR INSERT TO authenticated WITH CHECK (
     EXISTS (SELECT 1 FROM public.merchants m WHERE m.id = merchant_id AND m.owner_id = auth.uid())
 );
 
 DROP POLICY IF EXISTS "Public update listings" ON public.listings;
 DROP POLICY IF EXISTS "Merchants can update own listings" ON public.listings;
+DROP POLICY IF EXISTS "Approved merchants update own listings" ON public.listings;
 CREATE POLICY "Merchants can update own listings" ON public.listings FOR UPDATE TO authenticated USING (
     EXISTS (SELECT 1 FROM public.merchants m WHERE m.id = merchant_id AND m.owner_id = auth.uid())
 ) WITH CHECK (
@@ -638,8 +640,20 @@ CREATE POLICY "Public read reviews" ON public.reviews FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Public insert reviews" ON public.reviews;
 DROP POLICY IF EXISTS "Students can insert reviews" ON public.reviews;
+DROP POLICY IF EXISTS "Students can insert review for own order" ON public.reviews;
 DROP POLICY IF EXISTS "Students insert own reviews" ON public.reviews;
-CREATE POLICY "Students insert own reviews" ON public.reviews FOR INSERT TO authenticated WITH CHECK (student_id = auth.uid());
+CREATE POLICY "Students insert own reviews" ON public.reviews FOR INSERT TO authenticated WITH CHECK (
+    student_id = (SELECT auth.uid()) AND EXISTS (
+      SELECT 1 FROM public.orders o WHERE o.id=order_id AND o.student_id=(SELECT auth.uid())
+        AND o.status='completed' AND o.merchant_id=reviews.merchant_id AND o.listing_id=reviews.listing_id));
+
+CREATE INDEX IF NOT EXISTS idx_notifications_related_listing ON public.notifications(related_listing_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_related_order ON public.notifications(related_order_id);
+CREATE INDEX IF NOT EXISTS idx_orders_listing ON public.orders(listing_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_listing ON public.reviews(listing_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_student ON public.reviews(student_id);
+CREATE INDEX IF NOT EXISTS idx_reward_redemptions_order ON public.reward_redemptions(order_id);
+CREATE INDEX IF NOT EXISTS idx_reward_redemptions_student ON public.reward_redemptions(student_id);
 
 -- Notifications
 DROP POLICY IF EXISTS "Public read notifications" ON public.notifications;
@@ -686,6 +700,7 @@ CREATE POLICY "Users delete own listing images" ON storage.objects FOR DELETE TO
 USING (bucket_id = 'listing-images' AND owner_id = auth.uid()::text);
 
 DROP POLICY IF EXISTS "Authenticated read payment receipts" ON storage.objects;
+DROP POLICY IF EXISTS "Order participants read payment receipts" ON storage.objects;
 CREATE POLICY "Authenticated read payment receipts" ON storage.objects FOR SELECT TO authenticated
 USING (bucket_id = 'payment-receipts');
 DROP POLICY IF EXISTS "Students upload own payment receipts" ON storage.objects;
@@ -897,6 +912,9 @@ DECLARE result public.orders%ROWTYPE;
 BEGIN
     IF p_storage_path IS NULL OR p_storage_path !~ ('^' || auth.uid()::text || '/' || p_order_id::text || '/') THEN
         RAISE EXCEPTION 'Invalid receipt path';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id='payment-receipts' AND name=p_storage_path) THEN
+        RAISE EXCEPTION 'Uploaded receipt was not found';
     END IF;
     UPDATE public.orders SET status='pending_verification', receipt_storage_path=p_storage_path,
         payment_receipt_url=p_storage_path, receipt_submitted_at=NOW()
@@ -1347,6 +1365,27 @@ ON CONFLICT (domain) DO UPDATE SET institution_code=EXCLUDED.institution_code,in
 UPDATE public.institution_email_domains SET institution_code='UTP', institution_name='Universiti Teknologi PETRONAS', affiliation_type='member' WHERE domain='utp.edu.my';
 UPDATE public.institution_email_domains SET institution_code='UNM', institution_name='University of Nottingham Malaysia', affiliation_type='member' WHERE domain='nottingham.edu.my';
 
+-- Reconcile confirmed legacy Student accounts after the complete domain and
+-- campus registry has been seeded. This prevents a valid existing Student
+-- from retaining a NULL campus merely because the legacy profile predated it.
+UPDATE public.profiles p SET
+  campus_id=c.id,institution_code=d.institution_code,institution_name=d.institution_name,
+  institution_affiliation=d.affiliation_type,email_verified_at=u.email_confirmed_at,updated_at=NOW()
+FROM auth.users u
+JOIN public.institution_email_domains d ON d.domain=lower(split_part(u.email,'@',2)) AND d.is_active
+JOIN public.campuses c ON c.institution_code=d.institution_code AND c.is_main AND c.is_active
+WHERE p.id=u.id AND u.email_confirmed_at IS NOT NULL
+  AND EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=p.id AND r.role='student');
+
+INSERT INTO public.student_affiliations(user_id,institutional_email,institution_code,campus_id,affiliation_type,verified_at)
+SELECT p.id,lower(u.email),p.institution_code,p.campus_id,p.institution_affiliation,u.email_confirmed_at
+FROM public.profiles p JOIN auth.users u ON u.id=p.id
+WHERE p.campus_id IS NOT NULL AND p.institution_code IS NOT NULL AND u.email_confirmed_at IS NOT NULL
+  AND EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=p.id AND r.role='student')
+ON CONFLICT(user_id) DO UPDATE SET institutional_email=EXCLUDED.institutional_email,
+  institution_code=EXCLUDED.institution_code,campus_id=EXCLUDED.campus_id,
+  affiliation_type=EXCLUDED.affiliation_type,verified_at=EXCLUDED.verified_at;
+
 CREATE INDEX IF NOT EXISTS idx_profiles_campus ON public.profiles(campus_id);
 CREATE INDEX IF NOT EXISTS idx_merchants_campus ON public.merchants(campus_id);
 CREATE INDEX IF NOT EXISTS idx_listings_campus_status ON public.listings(campus_id,status);
@@ -1421,6 +1460,29 @@ BEGIN
     RETURN NEW;
 END; $$;
 
+CREATE OR REPLACE FUNCTION public.campus_contains_point(p_campus_id UUID,p_latitude DOUBLE PRECISION,p_longitude DOUBLE PRECISION)
+RETURNS BOOLEAN LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public AS $$
+DECLARE boundary JSONB; vertex_count INT; i INT; j INT; inside BOOLEAN:=FALSE;
+        xi DOUBLE PRECISION; yi DOUBLE PRECISION; xj DOUBLE PRECISION; yj DOUBLE PRECISION;
+BEGIN
+    IF p_latitude NOT BETWEEN -90 AND 90 OR p_longitude NOT BETWEEN -180 AND 180 THEN RETURN FALSE; END IF;
+    SELECT boundary_coordinates INTO boundary FROM public.campuses WHERE id=p_campus_id AND is_active;
+    IF boundary IS NULL OR jsonb_typeof(boundary)<>'array' THEN RETURN FALSE; END IF;
+    vertex_count:=jsonb_array_length(boundary);
+    IF vertex_count<3 THEN RETURN FALSE; END IF;
+    j:=vertex_count-1;
+    FOR i IN 0..vertex_count-1 LOOP
+        xi:=(boundary->i->>'longitude')::DOUBLE PRECISION; yi:=(boundary->i->>'latitude')::DOUBLE PRECISION;
+        xj:=(boundary->j->>'longitude')::DOUBLE PRECISION; yj:=(boundary->j->>'latitude')::DOUBLE PRECISION;
+        IF ((yi>p_latitude)<>(yj>p_latitude)) AND
+           (p_longitude < (xj-xi)*(p_latitude-yi)/NULLIF(yj-yi,0)+xi) THEN inside:=NOT inside; END IF;
+        j:=i;
+    END LOOP;
+    RETURN inside;
+EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range THEN RETURN FALSE;
+END; $$;
+REVOKE ALL ON FUNCTION public.campus_contains_point(UUID,DOUBLE PRECISION,DOUBLE PRECISION) FROM PUBLIC,anon,authenticated;
+
 CREATE OR REPLACE FUNCTION public.complete_merchant_registration(
     p_business_name TEXT, p_stall_description TEXT, p_contact_phone TEXT,
     p_duitnow_display_name TEXT, p_duitnow_qr_path TEXT, p_campus_id UUID,
@@ -1431,7 +1493,8 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id=auth.uid() AND email_confirmed_at IS NOT NULL) THEN
         RAISE EXCEPTION 'Verified email required';
     END IF;
-    IF length(trim(COALESCE(p_business_name,'')))<2 OR length(trim(COALESCE(p_contact_phone,'')))<7
+    IF length(trim(COALESCE(p_business_name,'')))<2 OR length(trim(COALESCE(p_stall_description,'')))<10
+       OR length(trim(COALESCE(p_contact_phone,'')))<7
        OR length(trim(COALESCE(p_duitnow_display_name,'')))<2 OR p_duitnow_qr_path IS NULL
        OR p_campus_id IS NULL OR length(trim(COALESCE(p_campus_location,'')))<2 THEN
         RAISE EXCEPTION 'Complete merchant information is required';
@@ -1439,12 +1502,13 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM public.campuses WHERE id=p_campus_id AND is_active) THEN
         RAISE EXCEPTION 'Active campus required';
     END IF;
-    IF NOT EXISTS (
-        SELECT 1 FROM public.campuses c WHERE c.id=p_campus_id AND
-        (6371*2*asin(sqrt(power(sin(radians(p_latitude-c.latitude)/2),2)+
-         cos(radians(c.latitude))*cos(radians(p_latitude))*power(sin(radians(p_longitude-c.longitude)/2),2))))<=5
-    ) THEN RAISE EXCEPTION 'Merchant pin is outside the campus service boundary'; END IF;
+    IF NOT public.campus_contains_point(p_campus_id,p_latitude,p_longitude) THEN
+        RAISE EXCEPTION 'Merchant pin is outside the configured campus boundary, or that boundary has not been reviewed';
+    END IF;
     IF p_duitnow_qr_path !~ ('^'||auth.uid()::text||'/') THEN RAISE EXCEPTION 'Invalid DuitNow QR path'; END IF;
+    IF NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id='merchant-payment-qrs' AND name=p_duitnow_qr_path) THEN
+        RAISE EXCEPTION 'Uploaded DuitNow QR was not found';
+    END IF;
     INSERT INTO public.user_roles(user_id,role) VALUES(auth.uid(),'merchant') ON CONFLICT DO NOTHING;
     INSERT INTO public.merchants(owner_id,business_name,stall_description,contact_phone,duitnow_display_name,
         duitnow_qr_path,campus_id,campus_location,latitude,longitude,status,terms_accepted_at)
@@ -1602,7 +1666,7 @@ CREATE OR REPLACE FUNCTION public.current_campus_id()
 RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$
     SELECT campus_id FROM public.profiles WHERE id=auth.uid();
 $$;
-REVOKE ALL ON FUNCTION public.current_campus_id() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.current_campus_id() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.current_campus_id() TO authenticated;
 
 DROP POLICY IF EXISTS "Public read active listings" ON public.listings;
@@ -1656,6 +1720,11 @@ GRANT EXECUTE ON FUNCTION public.switch_active_role(user_role) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.complete_merchant_registration(TEXT,TEXT,TEXT,TEXT,TEXT,UUID,TEXT,DOUBLE PRECISION,DOUBLE PRECISION) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.mark_no_show(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.reconcile_due_orders() TO authenticated;
+
+-- Trigger-only functions are never callable through the Data API.
+REVOKE ALL ON FUNCTION public.sync_verified_email() FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.process_order_status_change() FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.enforce_listing_merchant_location() FROM PUBLIC,anon,authenticated;
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
