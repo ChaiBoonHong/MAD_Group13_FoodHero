@@ -290,6 +290,16 @@
                 app:cornerRadius="16dp"
                 android:enabled="false" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_cancel_unpaid_order"
+                style="@style/Widget.FoodHero.Button.Secondary"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="@dimen/spacing_12"
+                android:text="Cancel unpaid order"
+                android:textSize="16sp"
+                app:cornerRadius="16dp" />
+
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

@@ -369,15 +369,12 @@ public class FoodHeroRepository {
                 review.setId(UUID.randomUUID().toString());
                 review.setCreatedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(new Date()));
 
-                try {
-                    Response<List<Review>> resp = restClient.submitReview(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), review).execute();
-                    if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
-                        review = resp.body().get(0);
-                    }
-                } catch (Exception ignored) {
+                Response<List<Review>> resp = restClient.submitReview(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), review).execute();
+                if (!resp.isSuccessful() || resp.body() == null || resp.body().isEmpty()) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not accept the review."));
+                    return;
                 }
-
-                postSuccess(callback, review);
+                postSuccess(callback, resp.body().get(0));
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to submit review: " + e.getMessage(), e));
             }
@@ -520,10 +517,83 @@ public class FoodHeroRepository {
         });
     }
 
-    public void cancelExpiredOrder(String orderId, ResultCallback<Void> callback) {
+    public void expireUnpaidOrder(String orderId, ResultCallback<Order> callback) {
         executor.execute(() -> {
-            checkAndExpireOrder(orderId);
-            postSuccess(callback, null);
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("p_order_id", orderId);
+                Response<Order> response = restClient.expireUnpaidOrder(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), body).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not expire the unpaid order."));
+                    return;
+                }
+                replaceCachedOrder(response.body());
+                postSuccess(callback, response.body());
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to expire order: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void cancelUnpaidOrder(String orderId, ResultCallback<Order> callback) {
+        executor.execute(() -> {
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("p_order_id", orderId);
+                Response<Order> response = restClient.cancelUnpaidOrder(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), body).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "This order can no longer be cancelled."));
+                    return;
+                }
+                replaceCachedOrder(response.body());
+                postSuccess(callback, response.body());
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to cancel order: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void markNoShow(String orderId, ResultCallback<Order> callback) {
+        executor.execute(() -> {
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("p_order_id", orderId);
+                Response<Order> response = restClient.markNoShow(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), body).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED, "Order is not eligible for no-show."));
+                    return;
+                }
+                replaceCachedOrder(response.body());
+                postSuccess(callback, response.body());
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to mark no-show: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void reviewPayment(String orderId, boolean approved, String rejectionReason, ResultCallback<Order> callback) {
+        verifyPaymentReceipt(orderId, approved, rejectionReason, callback);
+    }
+
+    public void completePickup(String token, ResultCallback<Order> callback) {
+        executor.execute(() -> {
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("p_token", token == null ? "" : token.trim());
+                Response<Order> response = restClient.completePickup(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), body).execute();
+                if (!response.isSuccessful() || response.body() == null) {
+                    postError(callback, new DataError(DataError.CODE_INVALID_TOKEN, "Invalid, expired, used, or unauthorized pickup token."));
+                    return;
+                }
+                replaceCachedOrder(response.body());
+                postSuccess(callback, response.body());
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to complete pickup: " + e.getMessage(), e));
+            }
         });
     }
 

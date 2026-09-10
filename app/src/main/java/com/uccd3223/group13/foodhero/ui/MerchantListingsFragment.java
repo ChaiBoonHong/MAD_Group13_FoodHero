@@ -133,7 +133,15 @@ public class MerchantListingsFragment extends Fragment implements MerchantListin
             public void onError(DataError error) {
                 if (!isAdded()) return;
                 swipeRefresh.setRefreshing(false);
-                filterListings();
+                adapter.setItems(new ArrayList<>());
+                layoutEmpty.setVisibility(View.VISIBLE);
+                if (tvEmptyTitle != null) tvEmptyTitle.setText("Couldn’t load listings");
+                if (tvEmptyMsg != null) tvEmptyMsg.setText(error.getMessage());
+                if (btnEmptyAction != null) {
+                    btnEmptyAction.setVisibility(View.VISIBLE);
+                    btnEmptyAction.setText("Retry");
+                    btnEmptyAction.setOnClickListener(v -> loadListings());
+                }
             }
         });
     }
@@ -164,6 +172,11 @@ public class MerchantListingsFragment extends Fragment implements MerchantListin
             layoutEmpty.setVisibility(View.VISIBLE);
             if (tvEmptyTitle != null) tvEmptyTitle.setText(R.string.empty_merchant_listings_title);
             if (tvEmptyMsg != null) tvEmptyMsg.setText(R.string.empty_merchant_listings_msg);
+            if (btnEmptyAction != null) {
+                btnEmptyAction.setVisibility(View.VISIBLE);
+                btnEmptyAction.setText("Add listing");
+                btnEmptyAction.setOnClickListener(v -> startActivity(new Intent(requireContext(), AddEditListingActivity.class)));
+            }
         } else {
             layoutEmpty.setVisibility(View.GONE);
         }

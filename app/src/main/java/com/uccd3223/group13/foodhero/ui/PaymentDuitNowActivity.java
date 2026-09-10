@@ -54,7 +54,7 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
     private LinearLayout layoutReceiptPreview;
     private ImageView ivReceiptThumbnail;
     private ImageView ivDuitNowQr;
-    private MaterialButton btnSubmitReceipt, btnSaveQr, btnShareQr;
+    private MaterialButton btnSubmitReceipt, btnSaveQr, btnShareQr, btnCancelOrder;
 
     private Uri selectedReceiptUri = null;
     private ActivityResultLauncher<String> imagePickerLauncher;
@@ -96,6 +96,7 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
         btnSubmitReceipt = findViewById(R.id.btn_submit_receipt);
         btnSaveQr = findViewById(R.id.btn_save_duitnow_qr);
         btnShareQr = findViewById(R.id.btn_share_duitnow_qr);
+        btnCancelOrder = findViewById(R.id.btn_cancel_unpaid_order);
 
         toolbar.setNavigationOnClickListener(v -> finish());
 
@@ -110,6 +111,7 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
         btnSubmitReceipt.setOnClickListener(v -> submitReceipt());
         btnSaveQr.setOnClickListener(v -> saveOrShareQr(false));
         btnShareQr.setOnClickListener(v -> saveOrShareQr(true));
+        btnCancelOrder.setOnClickListener(v -> confirmCancelOrder());
     }
 
     private void setupImagePicker() {
@@ -219,15 +221,48 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
     private void handleOrderExpired() {
         if (isFinishing() || isDestroyed()) return;
 
-        foodHeroRepo.cancelExpiredOrder(order.getId(), new ResultCallback<Void>() {
+        btnSubmitReceipt.setEnabled(false);
+        btnCancelOrder.setEnabled(false);
+        foodHeroRepo.expireUnpaidOrder(order.getId(), new ResultCallback<Order>() {
             @Override
-            public void onSuccess(Void result) {
+            public void onSuccess(Order result) {
                 showExpiredDialog();
             }
 
             @Override
             public void onError(DataError error) {
-                showExpiredDialog();
+                btnCancelOrder.setEnabled(true);
+                Toast.makeText(PaymentDuitNowActivity.this,
+                    "Could not confirm expiry: " + error.getMessage() + " Retry when connected.", Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void confirmCancelOrder() {
+        new MaterialAlertDialogBuilder(this)
+            .setTitle("Cancel unpaid order?")
+            .setMessage("The reserved stock will be released after Supabase confirms the cancellation.")
+            .setNegativeButton("Keep order", null)
+            .setPositiveButton("Cancel order", (dialog, which) -> cancelOrder())
+            .show();
+    }
+
+    private void cancelOrder() {
+        btnCancelOrder.setEnabled(false);
+        btnSubmitReceipt.setEnabled(false);
+        foodHeroRepo.cancelUnpaidOrder(order.getId(), new ResultCallback<Order>() {
+            @Override public void onSuccess(Order result) {
+                if (countDownTimer != null) countDownTimer.cancel();
+                Toast.makeText(PaymentDuitNowActivity.this, "Order cancelled and stock released.", Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(PaymentDuitNowActivity.this, StudentHomeActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            }
+            @Override public void onError(DataError error) {
+                btnCancelOrder.setEnabled(true);
+                btnSubmitReceipt.setEnabled(selectedReceiptUri != null);
+                Toast.makeText(PaymentDuitNowActivity.this, error.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

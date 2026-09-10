@@ -44,6 +44,10 @@ public interface SupabaseRestClient {
     Call<Order> expireUnpaidOrder(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
 
     @Headers({"Content-Type: application/json"})
+    @POST("/rest/v1/rpc/cancel_unpaid_order")
+    Call<Order> cancelUnpaidOrder(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
+
+    @Headers({"Content-Type: application/json"})
     @POST("/rest/v1/rpc/complete_pickup")
     Call<Order> completePickup(@Header("apikey") String apiKey, @Header("Authorization") String bearer, @Body JsonObject body);
 

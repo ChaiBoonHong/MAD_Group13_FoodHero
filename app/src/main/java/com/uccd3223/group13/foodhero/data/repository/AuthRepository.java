@@ -387,6 +387,16 @@ public class AuthRepository {
         });
     }
 
+    public void registerStudent(String email, String password, String fullName, String studentId,
+            String faculty, ResultCallback<Profile> callback) {
+        register(email, password, UserRole.STUDENT, fullName, studentId, faculty, null, null, callback);
+    }
+
+    public void registerMerchant(String email, String password, String ownerName,
+            ResultCallback<Profile> callback) {
+        register(email, password, UserRole.MERCHANT, ownerName, null, null, null, null, callback);
+    }
+
     public void getAvailableRoles(ResultCallback<List<UserRoleRecord>> callback) {
         executor.execute(() -> {
             try {
@@ -496,6 +506,11 @@ public class AuthRepository {
         });
     }
 
+    public void addStudentRole(String institutionalEmail, String verificationCode,
+            ResultCallback<Profile> callback) {
+        confirmInstitutionalEmailVerification(institutionalEmail, verificationCode, callback);
+    }
+
     public void completeMerchantRegistration(String businessName, String description, String phone,
             String duitNowName, String qrPath, Campus campus, String location, double latitude, double longitude,
             ResultCallback<Merchant> callback) {
@@ -531,6 +546,13 @@ public class AuthRepository {
                 postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to complete merchant registration: " + e.getMessage(), e));
             }
         });
+    }
+
+    public void addMerchantRole(String businessName, String description, String phone,
+            String duitNowName, String qrPath, Campus campus, String location,
+            double latitude, double longitude, ResultCallback<Merchant> callback) {
+        completeMerchantRegistration(businessName, description, phone, duitNowName, qrPath,
+            campus, location, latitude, longitude, callback);
     }
 
     private <T> void postSuccess(ResultCallback<T> callback, T result) {

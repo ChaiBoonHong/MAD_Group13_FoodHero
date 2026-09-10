@@ -109,7 +109,14 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
             @Override
             public void onError(DataError error) {
                 swipeRefresh.setRefreshing(false);
-                filterOrders();
+                adapter.setItems(new ArrayList<>());
+                layoutEmpty.setVisibility(View.VISIBLE);
+                if (tvEmptyTitle != null) tvEmptyTitle.setText("Couldn’t load orders");
+                if (tvEmptyMessage != null) tvEmptyMessage.setText(error.getMessage());
+                if (btnEmptyAction != null) {
+                    btnEmptyAction.setVisibility(View.VISIBLE);
+                    btnEmptyAction.setText("Retry");
+                }
             }
         });
     }
@@ -143,6 +150,7 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
             layoutEmpty.setVisibility(View.VISIBLE);
             if (tvEmptyTitle != null) tvEmptyTitle.setText("No orders in this tab");
             if (tvEmptyMessage != null) tvEmptyMessage.setText("You have no orders currently in this tab.");
+            if (btnEmptyAction != null) btnEmptyAction.setVisibility(View.GONE);
         } else {
             layoutEmpty.setVisibility(View.GONE);
         }

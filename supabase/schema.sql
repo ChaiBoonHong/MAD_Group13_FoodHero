@@ -1326,9 +1326,9 @@ ALTER TABLE public.campuses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.student_affiliations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Active institutions are readable" ON public.institutions;
-CREATE POLICY "Active institutions are readable" ON public.institutions FOR SELECT USING (is_active);
+CREATE POLICY "Active institutions are readable" ON public.institutions FOR SELECT TO authenticated USING (is_active);
 DROP POLICY IF EXISTS "Active campuses are readable" ON public.campuses;
-CREATE POLICY "Active campuses are readable" ON public.campuses FOR SELECT USING (is_active);
+CREATE POLICY "Active campuses are readable" ON public.campuses FOR SELECT TO authenticated USING (is_active);
 DROP POLICY IF EXISTS "Users read own roles" ON public.user_roles;
 CREATE POLICY "Users read own roles" ON public.user_roles FOR SELECT TO authenticated USING (user_id=auth.uid());
 DROP POLICY IF EXISTS "Users read own affiliation" ON public.student_affiliations;
@@ -1489,6 +1489,39 @@ BEGIN
     RETURN result;
 END; $$;
 
+CREATE OR REPLACE FUNCTION public.expire_unpaid_order(p_order_id UUID)
+RETURNS public.orders LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE result public.orders%ROWTYPE;
+BEGIN
+    IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+    UPDATE public.orders SET status='expired'
+    WHERE id=p_order_id AND student_id=auth.uid() AND status='awaiting_payment'
+      AND payment_expires_at<=(extract(epoch FROM clock_timestamp())*1000)::BIGINT
+    RETURNING * INTO result;
+    IF NOT FOUND THEN
+        SELECT * INTO result FROM public.orders
+        WHERE id=p_order_id AND student_id=auth.uid() AND status='expired';
+        IF NOT FOUND THEN RAISE EXCEPTION 'Order is not due for expiry'; END IF;
+    END IF;
+    RETURN result;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.cancel_unpaid_order(p_order_id UUID)
+RETURNS public.orders LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE result public.orders%ROWTYPE;
+BEGIN
+    IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+    UPDATE public.orders SET status='cancelled'
+    WHERE id=p_order_id AND student_id=auth.uid() AND status='awaiting_payment'
+    RETURNING * INTO result;
+    IF NOT FOUND THEN
+        SELECT * INTO result FROM public.orders
+        WHERE id=p_order_id AND student_id=auth.uid() AND status='cancelled';
+        IF NOT FOUND THEN RAISE EXCEPTION 'Only an unpaid order can be cancelled'; END IF;
+    END IF;
+    RETURN result;
+END; $$;
+
 CREATE OR REPLACE FUNCTION public.complete_pickup(p_token TEXT)
 RETURNS public.orders LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE result public.orders%ROWTYPE;
@@ -1561,11 +1594,21 @@ CREATE POLICY "Campus members read reviews" ON public.reviews FOR SELECT TO auth
     EXISTS(SELECT 1 FROM public.merchants m WHERE m.id=merchant_id AND
       (m.owner_id=auth.uid() OR m.campus_id=public.current_campus_id())));
 
+DROP POLICY IF EXISTS "Public read service areas" ON public.service_areas;
+DROP POLICY IF EXISTS "Campus members read service areas" ON public.service_areas;
+CREATE POLICY "Campus members read service areas" ON public.service_areas FOR SELECT TO authenticated USING (
+    campus_id=public.current_campus_id());
+DROP POLICY IF EXISTS "Public read campus landmarks" ON public.campus_landmarks;
+DROP POLICY IF EXISTS "Campus members read landmarks" ON public.campus_landmarks;
+CREATE POLICY "Campus members read landmarks" ON public.campus_landmarks FOR SELECT TO authenticated USING (
+    campus_id=public.current_campus_id());
+
 REVOKE ALL ON FUNCTION public.lookup_institution_domain(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.reserve_listing(UUID,INT,BOOLEAN) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.submit_payment_receipt(UUID,TEXT) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.decide_payment_receipt(UUID,BOOLEAN,TEXT) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.expire_unpaid_order(UUID) FROM PUBLIC,anon;
+REVOKE ALL ON FUNCTION public.cancel_unpaid_order(UUID) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.complete_pickup(TEXT) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.switch_active_role(user_role) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.complete_merchant_registration(TEXT,TEXT,TEXT,TEXT,TEXT,UUID,TEXT,DOUBLE PRECISION,DOUBLE PRECISION) FROM PUBLIC,anon;
@@ -1576,6 +1619,7 @@ GRANT EXECUTE ON FUNCTION public.reserve_listing(UUID,INT,BOOLEAN) TO authentica
 GRANT EXECUTE ON FUNCTION public.submit_payment_receipt(UUID,TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.decide_payment_receipt(UUID,BOOLEAN,TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.expire_unpaid_order(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.cancel_unpaid_order(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.complete_pickup(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.switch_active_role(user_role) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.complete_merchant_registration(TEXT,TEXT,TEXT,TEXT,TEXT,UUID,TEXT,DOUBLE PRECISION,DOUBLE PRECISION) TO authenticated;

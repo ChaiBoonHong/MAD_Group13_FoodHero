@@ -23,6 +23,8 @@ public class NotificationsActivity extends AppCompatActivity implements Notifica
     private NotificationAdapter adapter;
     private RecyclerView rvNotifications;
     private View layoutEmpty;
+    private android.widget.TextView tvEmptyTitle, tvEmptyMsg;
+    private View btnEmptyAction;
     private Toolbar toolbar;
 
     @Override
@@ -53,9 +55,9 @@ public class NotificationsActivity extends AppCompatActivity implements Notifica
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         rvNotifications.setAdapter(adapter);
 
-        android.widget.TextView tvEmptyTitle = layoutEmpty.findViewById(R.id.tv_empty_title);
-        android.widget.TextView tvEmptyMsg = layoutEmpty.findViewById(R.id.tv_empty_message);
-        View btnEmptyAction = layoutEmpty.findViewById(R.id.btn_empty_action);
+        tvEmptyTitle = layoutEmpty.findViewById(R.id.tv_empty_title);
+        tvEmptyMsg = layoutEmpty.findViewById(R.id.tv_empty_message);
+        btnEmptyAction = layoutEmpty.findViewById(R.id.btn_empty_action);
         if (tvEmptyTitle != null) tvEmptyTitle.setText("No Notifications Yet");
         if (tvEmptyMsg != null) tvEmptyMsg.setText("You are all caught up on your campus alerts.");
         if (btnEmptyAction != null) btnEmptyAction.setVisibility(View.GONE);
@@ -67,6 +69,9 @@ public class NotificationsActivity extends AppCompatActivity implements Notifica
             @Override
             public void onSuccess(List<FoodHeroNotification> list) {
                 adapter.setItems(list);
+                if (tvEmptyTitle != null) tvEmptyTitle.setText("No Notifications Yet");
+                if (tvEmptyMsg != null) tvEmptyMsg.setText("You are all caught up on your campus alerts.");
+                if (btnEmptyAction != null) btnEmptyAction.setVisibility(View.GONE);
                 layoutEmpty.setVisibility((list == null || list.isEmpty()) ? View.VISIBLE : View.GONE);
             }
 
@@ -74,6 +79,13 @@ public class NotificationsActivity extends AppCompatActivity implements Notifica
             public void onError(DataError error) {
                 adapter.setItems(new ArrayList<>());
                 layoutEmpty.setVisibility(View.VISIBLE);
+                if (tvEmptyTitle != null) tvEmptyTitle.setText("Couldn’t load notifications");
+                if (tvEmptyMsg != null) tvEmptyMsg.setText(error.getMessage());
+                if (btnEmptyAction != null) {
+                    btnEmptyAction.setVisibility(View.VISIBLE);
+                    if (btnEmptyAction instanceof android.widget.TextView) ((android.widget.TextView) btnEmptyAction).setText("Retry");
+                    btnEmptyAction.setOnClickListener(v -> loadNotifications());
+                }
             }
         });
     }

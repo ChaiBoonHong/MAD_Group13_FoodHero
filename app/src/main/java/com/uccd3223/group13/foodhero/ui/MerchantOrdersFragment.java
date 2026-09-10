@@ -144,7 +144,15 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
             public void onError(DataError error) {
                 if (!isAdded()) return;
                 swipeRefresh.setRefreshing(false);
-                filterOrders();
+                adapter.setItems(new ArrayList<>());
+                layoutEmpty.setVisibility(View.VISIBLE);
+                if (tvEmptyTitle != null) tvEmptyTitle.setText("Couldn’t load orders");
+                if (tvEmptyMessage != null) tvEmptyMessage.setText(error.getMessage());
+                if (btnEmptyAction != null) {
+                    btnEmptyAction.setVisibility(View.VISIBLE);
+                    btnEmptyAction.setText("Retry");
+                    btnEmptyAction.setOnClickListener(v -> loadOrders());
+                }
             }
         });
     }
@@ -176,6 +184,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
             layoutEmpty.setVisibility(View.VISIBLE);
             if (tvEmptyTitle != null) tvEmptyTitle.setText("No orders in this tab");
             if (tvEmptyMessage != null) tvEmptyMessage.setText("No customer orders match the current status filter.");
+            if (btnEmptyAction != null) btnEmptyAction.setVisibility(View.GONE);
         } else {
             layoutEmpty.setVisibility(View.GONE);
         }

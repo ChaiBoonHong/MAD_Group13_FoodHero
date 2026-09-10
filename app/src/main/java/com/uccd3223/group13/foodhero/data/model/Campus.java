@@ -2,6 +2,8 @@ package com.uccd3223.group13.foodhero.data.model;
 
 import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
 
 public class Campus implements Serializable {
     @SerializedName("id") private String id;
@@ -10,7 +12,7 @@ public class Campus implements Serializable {
     @SerializedName("address") private String address;
     @SerializedName("latitude") private double latitude;
     @SerializedName("longitude") private double longitude;
-    @SerializedName("boundary_coordinates") private String boundaryCoordinates;
+    @SerializedName("boundary_coordinates") private List<GeoPoint> boundaryCoordinates;
     @SerializedName("is_main") private boolean main;
 
     public String getId() { return id; }
@@ -19,6 +21,8 @@ public class Campus implements Serializable {
     public String getAddress() { return address; }
     public double getLatitude() { return latitude; }
     public double getLongitude() { return longitude; }
-    public String getBoundaryCoordinates() { return boundaryCoordinates; }
+    public List<GeoPoint> getBoundaryCoordinates() {
+        return boundaryCoordinates == null ? Collections.emptyList() : boundaryCoordinates;
+    }
     public boolean isMain() { return main; }
 }
