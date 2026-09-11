@@ -183,17 +183,27 @@
                                 android:id="@+id/dropdown_onboarding_campus" android:layout_width="match_parent"
                                 android:layout_height="wrap_content" android:inputType="none" />
                         </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/til_onboarding_landmark"
+                            style="@style/Widget.FoodHero.TextInputLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:hint="Pickup landmark"
+                            app:endIconMode="dropdown_menu">
+                            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                                android:id="@+id/dropdown_onboarding_landmark"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none" />
+                        </com.google.android.material.textfield.TextInputLayout>
                         <FrameLayout android:layout_width="match_parent" android:layout_height="300dp" android:layout_marginTop="12dp">
                             <com.google.android.gms.maps.MapView android:id="@+id/map_onboarding_location"
                                 android:layout_width="match_parent" android:layout_height="match_parent" />
-                            <com.google.android.material.button.MaterialButton android:id="@+id/btn_onboarding_locate_me"
-                                style="@style/Widget.FoodHero.Button.Primary" android:layout_width="wrap_content"
-                                android:layout_height="48dp" android:layout_gravity="top|end" android:layout_margin="12dp"
-                                android:enabled="false" android:text="Locate me" />
                         </FrameLayout>
                         <TextView android:id="@+id/tv_onboarding_pin" android:layout_width="match_parent"
                             android:layout_height="wrap_content" android:layout_marginTop="12dp"
-                            android:text="Select a campus, then tap the map to place the pickup pin."
+                            android:text="Select a Supabase-defined campus pickup landmark."
                             android:textColor="@color/colorTextSecondary" android:textSize="13sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

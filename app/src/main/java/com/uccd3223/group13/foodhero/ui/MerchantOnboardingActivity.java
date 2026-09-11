@@ -1,8 +1,6 @@
 package com.uccd3223.group13.foodhero.ui;
 
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -20,10 +18,6 @@ import com.bumptech.glide.load.model.LazyHeaders;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -31,7 +25,6 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.CancellationTokenSource;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
@@ -41,6 +34,7 @@ import com.uccd3223.group13.foodhero.R;
 import com.uccd3223.group13.foodhero.data.callback.DataError;
 import com.uccd3223.group13.foodhero.data.callback.ResultCallback;
 import com.uccd3223.group13.foodhero.data.model.Campus;
+import com.uccd3223.group13.foodhero.data.model.CampusLandmark;
 import com.uccd3223.group13.foodhero.data.model.Merchant;
 import com.uccd3223.group13.foodhero.data.repository.AuthRepository;
 import com.uccd3223.group13.foodhero.data.repository.FoodHeroRepository;
@@ -65,24 +59,25 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private static final String STATE_UPLOADED_QR = "merchant_uploaded_qr";
 
     private EditText business, description, phone, duitNowName;
-    private TextInputLayout businessLayout, descriptionLayout, phoneLayout, duitNowLayout, campusLayout;
-    private MaterialAutoCompleteTextView campusDropdown;
+    private TextInputLayout businessLayout, descriptionLayout, phoneLayout, duitNowLayout, campusLayout, landmarkLayout;
+    private MaterialAutoCompleteTextView campusDropdown, landmarkDropdown;
     private ImageView qrPreview;
     private TextView qrStatus, pinLabel, review, stepLabel, title;
     private CheckBox terms;
-    private MaterialButton primary, back, chooseQr, removeQr, locateMe;
+    private MaterialButton primary, back, chooseQr, removeQr;
     private ProgressBar loading;
     private LinearProgressIndicator stepProgress;
     private View businessStep, paymentStep, locationStep, root;
     private MapView mapView;
     private GoogleMap map;
     private Marker marker;
-    private FusedLocationProviderClient locationClient;
     private final List<Campus> campuses = new ArrayList<>();
+    private final List<CampusLandmark> landmarks = new ArrayList<>();
     private Uri qrUri;
     private String uploadedQrPath;
     private double pinnedLat = Double.NaN, pinnedLng = Double.NaN;
     private int selectedCampus = -1;
+    private CampusLandmark selectedLandmark;
     private int currentStep = 1;
     private boolean submitting;
     private boolean editMode;
@@ -90,7 +85,6 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private AuthRepository auth;
     private FoodHeroRepository food;
     private ActivityResultLauncher<String> picker;
-    private ActivityResultLauncher<String> locationPermission;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -107,7 +101,6 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         restoreState(state);
         mapView.onCreate(state);
         mapView.getMapAsync(this);
-        locationClient = LocationServices.getFusedLocationProviderClient(this);
         setupLaunchers();
         setupActions();
         renderStep(false);
@@ -132,6 +125,8 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         duitNowLayout = findViewById(R.id.til_onboarding_duitnow_name);
         campusLayout = findViewById(R.id.til_onboarding_campus);
         campusDropdown = findViewById(R.id.dropdown_onboarding_campus);
+        landmarkLayout = findViewById(R.id.til_onboarding_landmark);
+        landmarkDropdown = findViewById(R.id.dropdown_onboarding_landmark);
         qrPreview = findViewById(R.id.iv_onboarding_qr);
         qrStatus = findViewById(R.id.tv_onboarding_qr_status);
         pinLabel = findViewById(R.id.tv_onboarding_pin);
@@ -144,7 +139,6 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         back = findViewById(R.id.btn_onboarding_back);
         chooseQr = findViewById(R.id.btn_choose_duitnow_qr);
         removeQr = findViewById(R.id.btn_remove_duitnow_qr);
-        locateMe = findViewById(R.id.btn_onboarding_locate_me);
         loading = findViewById(R.id.progress_onboarding);
         stepProgress = findViewById(R.id.progress_onboarding_steps);
         businessStep = findViewById(R.id.step_onboarding_business);
@@ -183,19 +177,11 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
                 showError(error.getMessage());
             }
         });
-        locationPermission = registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
-            if (granted) locateCurrentPosition();
-            else {
-                pinLabel.setText("Location permission denied. Tap the map to pin the stall manually.");
-                locateMe.setEnabled(true);
-            }
-        });
     }
 
     private void setupActions() {
         chooseQr.setOnClickListener(v -> { MotionUtils.press(v); picker.launch("image/*"); });
         removeQr.setOnClickListener(v -> { qrUri = null; uploadedQrPath = null; qrPreview.setImageDrawable(null); renderQr(); });
-        locateMe.setOnClickListener(v -> requestCurrentPosition());
         back.setOnClickListener(v -> { if (!submitting && currentStep > 1) { currentStep--; renderStep(true); } });
         primary.setOnClickListener(v -> {
             MotionUtils.press(v);
@@ -219,7 +205,13 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
                 campusLayout.setError(null);
                 campusDropdown.setOnItemClickListener((parent, view, position, id) -> {
                     selectedCampus = position;
+                    selectedLandmark = null;
+                    pinnedLat = Double.NaN;
+                    pinnedLng = Double.NaN;
+                    landmarkDropdown.setText("", false);
+                    if (marker != null) marker.remove();
                     centerCampus(position);
+                    loadLandmarks(campuses.get(position));
                     updateReview();
                 });
                 campusLayout.setEnabled(true);
@@ -230,6 +222,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
                     primary.setEnabled(!submitting);
                     campusDropdown.setText(names.get(selectedCampus), false);
                     centerCampus(selectedCampus);
+                    loadLandmarks(campuses.get(selectedCampus));
                 } else {
                     primary.setEnabled(!submitting);
                 }
@@ -242,6 +235,66 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
                 campusDropdown.setOnClickListener(v -> loadCampuses());
             }
         });
+    }
+
+    private void loadLandmarks(Campus campus) {
+        selectedLandmark = null;
+        landmarks.clear();
+        landmarkDropdown.setText("", false);
+        landmarkLayout.setError(null);
+        landmarkLayout.setEnabled(false);
+        pinLabel.setText("Loading Supabase-defined pickup landmarks…");
+        food.getCampusLandmarks(campus.getId(), new ResultCallback<List<CampusLandmark>>() {
+            @Override public void onSuccess(List<CampusLandmark> result) {
+                if (isFinishing() || selectedCampus < 0
+                    || !campuses.get(selectedCampus).getId().equals(campus.getId())) return;
+                if (result != null) landmarks.addAll(result);
+                List<String> names = new ArrayList<>();
+                for (CampusLandmark landmark : landmarks) names.add(landmark.getName());
+                landmarkDropdown.setSimpleItems(names.toArray(new String[0]));
+                landmarkDropdown.setOnItemClickListener((parent, view, position, id) ->
+                    selectLandmark(landmarks.get(position)));
+                landmarkLayout.setEnabled(true);
+                if (landmarks.isEmpty()) {
+                    landmarkLayout.setError("No active pickup landmarks are configured for this campus.");
+                    pinLabel.setText("Ask an administrator to configure a campus pickup landmark.");
+                    return;
+                }
+                restoreSelectedLandmark();
+                if (selectedLandmark == null)
+                    pinLabel.setText("Select one of the Supabase-defined pickup landmarks above.");
+            }
+            @Override public void onError(DataError error) {
+                landmarkLayout.setEnabled(true);
+                landmarkLayout.setError("Unable to load pickup landmarks. Tap to retry.");
+                landmarkDropdown.setOnClickListener(v -> loadLandmarks(campus));
+            }
+        });
+    }
+
+    private void restoreSelectedLandmark() {
+        String savedLocation = existingMerchant == null ? null : existingMerchant.getCampusLocation();
+        for (CampusLandmark landmark : landmarks) {
+            boolean sameName = savedLocation != null && savedLocation.contains(landmark.getName());
+            boolean samePoint = !Double.isNaN(pinnedLat)
+                && Math.abs(pinnedLat - landmark.getLatitude()) < 0.000001
+                && Math.abs(pinnedLng - landmark.getLongitude()) < 0.000001;
+            if (sameName || samePoint) {
+                selectLandmark(landmark);
+                return;
+            }
+        }
+    }
+
+    private void selectLandmark(CampusLandmark landmark) {
+        selectedLandmark = landmark;
+        pinnedLat = landmark.getLatitude();
+        pinnedLng = landmark.getLongitude();
+        landmarkDropdown.setText(landmark.getName(), false);
+        setMerchantPin(new LatLng(pinnedLat, pinnedLng));
+        if (map != null) map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(pinnedLat, pinnedLng), 18f));
+        landmarkLayout.setError(null);
+        updateReview();
     }
 
     private boolean validateBusiness() {
@@ -304,24 +357,15 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         if (map == null || position < 0 || position >= campuses.size()) return;
         Campus campus = campuses.get(position);
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(campus.getLatitude(), campus.getLongitude()), 16f));
-        pinnedLat = Double.NaN; pinnedLng = Double.NaN;
-        if (marker != null) marker.remove();
-        pinLabel.setText("Tap the map to pin the stall within " + campus.getName() + ".");
+        pinLabel.setText("Loading Supabase-defined pickup landmarks for " + campus.getName() + "…");
     }
 
     @Override public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
-        locateMe.setEnabled(true);
         map.getUiSettings().setZoomControlsEnabled(true);
         map.getUiSettings().setZoomGesturesEnabled(true);
         map.getUiSettings().setScrollGesturesEnabled(true);
         map.getUiSettings().setCompassEnabled(true);
-        map.setOnMapClickListener(this::setMerchantPin);
-        map.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
-            @Override public void onMarkerDragStart(Marker dragged) {}
-            @Override public void onMarkerDrag(Marker dragged) {}
-            @Override public void onMarkerDragEnd(Marker dragged) { setMerchantPin(dragged.getPosition()); }
-        });
         if (!Double.isNaN(pinnedLat)) setMerchantPin(new LatLng(pinnedLat, pinnedLng));
         else if (selectedCampus >= 0) centerCampus(selectedCampus);
     }
@@ -329,46 +373,26 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     private void setMerchantPin(LatLng point) {
         pinnedLat = point.latitude; pinnedLng = point.longitude;
         if (marker != null) marker.remove();
-        marker = map.addMarker(new MarkerOptions().position(point).title("Merchant pickup location").draggable(true));
+        marker = map.addMarker(new MarkerOptions().position(point)
+            .title(selectedLandmark == null ? "Supabase pickup landmark" : selectedLandmark.getName())
+            .draggable(false));
         if (marker != null) marker.showInfoWindow();
-        pinLabel.setText(String.format(Locale.US, "Pickup pin: %.6f, %.6f · drag to refine", pinnedLat, pinnedLng));
+        String name = selectedLandmark == null ? "Supabase pickup landmark" : selectedLandmark.getName();
+        pinLabel.setText(String.format(Locale.US, "%s · %.6f, %.6f", name, pinnedLat, pinnedLng));
         updateReview();
-    }
-
-    private void requestCurrentPosition() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-            locateCurrentPosition();
-        else locationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION);
-    }
-
-    private void locateCurrentPosition() {
-        if (map == null || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return;
-        locateMe.setEnabled(false); pinLabel.setText("Finding your current location…");
-        try { map.setMyLocationEnabled(true); } catch (SecurityException ignored) {}
-        CancellationTokenSource source = new CancellationTokenSource();
-        locationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, source.getToken())
-            .addOnSuccessListener(location -> {
-                locateMe.setEnabled(true);
-                if (location == null) { pinLabel.setText("Current location unavailable. Turn on Location or tap the map."); return; }
-                LatLng current = new LatLng(location.getLatitude(), location.getLongitude());
-                setMerchantPin(current);
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(current, 18f));
-            }).addOnFailureListener(error -> {
-                locateMe.setEnabled(true);
-                pinLabel.setText("Unable to locate you. Check Location or tap the map manually.");
-            });
     }
 
     private void updateReview() {
         String campus = selectedCampus >= 0 && selectedCampus < campuses.size() ? campuses.get(selectedCampus).getName() : "No campus selected";
-        String pin = Double.isNaN(pinnedLat) ? "No pickup pin selected" : String.format(Locale.US, "%.6f, %.6f", pinnedLat, pinnedLng);
+        String pin = selectedLandmark == null ? "No Supabase pickup landmark selected"
+            : selectedLandmark.getName() + " — " + String.format(Locale.US, "%.6f, %.6f", pinnedLat, pinnedLng);
         review.setText(text(business) + "\nDuitNow: " + text(duitNowName) + "\nCampus: " + campus + "\nPickup: " + pin);
     }
 
     private void submit() {
-        terms.setError(null); campusLayout.setError(null);
+        terms.setError(null); campusLayout.setError(null); landmarkLayout.setError(null);
         if (selectedCampus < 0 || selectedCampus >= campuses.size()) { campusLayout.setError("Select an active campus."); return; }
-        if (Double.isNaN(pinnedLat)) { showError("Place the exact pickup pin on the map."); return; }
+        if (selectedLandmark == null) { landmarkLayout.setError("Select a Supabase-defined pickup landmark."); return; }
         if (!terms.isChecked()) { terms.setError(editMode ? "Confirm the updated details." : "Confirm the details before activation."); return; }
         setLoading(true);
         if (qrUri != null) {
@@ -415,7 +439,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
     }
 
     private void finishRegistration(Campus campus, String path) {
-        String location = campus.getName() + " — " + String.format(Locale.US, "%.6f, %.6f", pinnedLat, pinnedLng);
+        String location = selectedLandmark.getName();
         auth.addMerchantRole(text(business), text(description), text(phone), text(duitNowName), path,
             campus, location, pinnedLat, pinnedLng, new ResultCallback<Merchant>() {
                 @Override public void onSuccess(Merchant merchant) {
@@ -483,7 +507,8 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
             if (campuses.get(i).getId().equals(existingMerchant.getCampusId())) {
                 selectedCampus = i;
                 campusDropdown.setText(campuses.get(i).getInstitutionCode() + " — " + campuses.get(i).getName(), false);
-                if (map != null && Double.isNaN(pinnedLat)) centerCampus(i);
+                if (map != null) centerCampus(i);
+                loadLandmarks(campuses.get(i));
                 updateReview();
                 return;
             }

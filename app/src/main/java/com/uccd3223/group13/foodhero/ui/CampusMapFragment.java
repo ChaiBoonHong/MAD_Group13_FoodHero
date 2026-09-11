@@ -225,10 +225,20 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
                 if (!isAdded() || googleMap == null) return;
                 int count = listings == null ? 0 : listings.size();
                 tvNearbyCount.setText(getResources().getQuantityString(R.plurals.campus_spots_nearby, count, count));
+                Map<String, Integer> locationTotals = new HashMap<>();
+                Map<String, Integer> locationIndexes = new HashMap<>();
                 if (listings != null) for (Listing listing : listings) {
                     if (!validCoordinate(listing.getLatitude(), listing.getLongitude())) continue;
+                    String key = coordinateKey(listing);
+                    locationTotals.put(key, locationTotals.getOrDefault(key, 0) + 1);
+                }
+                if (listings != null) for (Listing listing : listings) {
+                    if (!validCoordinate(listing.getLatitude(), listing.getLongitude())) continue;
+                    String key = coordinateKey(listing);
+                    int markerIndex = locationIndexes.getOrDefault(key, 0);
+                    locationIndexes.put(key, markerIndex + 1);
                     Marker marker = googleMap.addMarker(new MarkerOptions()
-                        .position(new LatLng(listing.getLatitude(), listing.getLongitude()))
+                        .position(getVisibleMarkerPosition(listing, markerIndex, locationTotals.get(key)))
                         .title(listing.getTitle()).snippet(CurrencyUtils.format(listing.getDiscountedPrice()))
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
                     if (marker != null) markerListingMap.put(marker, listing);
@@ -241,6 +251,27 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
                 mapLoadFinished();
             }
         });
+    }
+
+    private String coordinateKey(Listing listing) {
+        return String.format(Locale.US, "%.6f,%.6f", listing.getLatitude(), listing.getLongitude());
+    }
+
+    /**
+     * Separates markers which share one pickup landmark so every listing remains tappable.
+     * This is display-only: directions and listing details continue using the saved coordinates.
+     */
+    private LatLng getVisibleMarkerPosition(Listing listing, int index, int totalAtLocation) {
+        double latitude = listing.getLatitude();
+        double longitude = listing.getLongitude();
+        if (totalAtLocation <= 1) return new LatLng(latitude, longitude);
+
+        double angle = (2.0 * Math.PI * index / totalAtLocation) - (Math.PI / 2.0);
+        double radiusMeters = 8.0;
+        double latitudeOffset = radiusMeters * Math.sin(angle) / 111_320.0;
+        double longitudeScale = 111_320.0 * Math.max(0.2, Math.cos(Math.toRadians(latitude)));
+        double longitudeOffset = radiusMeters * Math.cos(angle) / longitudeScale;
+        return new LatLng(latitude + latitudeOffset, longitude + longitudeOffset);
     }
 
     private void mapLoadFinished() {
