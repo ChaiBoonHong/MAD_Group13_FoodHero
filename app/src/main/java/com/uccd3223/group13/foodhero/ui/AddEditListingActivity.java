@@ -3,6 +3,7 @@ package com.uccd3223.group13.foodhero.ui;
 import android.app.TimePickerDialog;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
@@ -17,8 +18,13 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -193,6 +199,31 @@ public class AddEditListingActivity extends AppCompatActivity {
 
         btnPreviewUrl.setOnClickListener(v -> validateAndPreviewExternalUrl());
 
+        etPhotoUrl.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                hasUnsavedEdits = true;
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String currentUrl = s.toString().trim();
+                if (resolvedImageSource == ImageSource.EXTERNAL_URL
+                    && resolvedImageUrl != null
+                    && !resolvedImageUrl.equals(currentUrl)) {
+                    resolvedImageUrl = null;
+                    resolvedImageSource = ImageSource.NONE;
+                    tvPhotoSourceLabel.setText("URL changed — preview and validate again");
+                    Glide.with(AddEditListingActivity.this).clear(ivPhotoPreview);
+                    ivPhotoPreview.setImageResource(R.drawable.ic_food_placeholder);
+                }
+                tilPhotoUrl.setError(null);
+            }
+        });
+
         // Strict RM10 Price Ceiling & Discount Validation
         etDiscountedPrice.addTextChangedListener(new TextWatcher() {
             @Override
@@ -337,34 +368,51 @@ public class AddEditListingActivity extends AppCompatActivity {
         }
 
         tilPhotoUrl.setError(null);
-        foodHeroRepo.validateExternalImageUrl(url, new ResultCallback<Boolean>() {
+        resolvedImageUrl = null;
+        resolvedImageSource = ImageSource.NONE;
+        progressPhotoUpload.setVisibility(View.VISIBLE);
+        btnPreviewUrl.setEnabled(false);
+        etPhotoUrl.setEnabled(false);
+        tvPhotoSourceLabel.setText("Loading and validating image…");
+
+        Glide.with(this)
+            .load(url)
+            .placeholder(R.drawable.ic_food_placeholder)
+            .error(R.drawable.ic_food_placeholder)
+            .centerCrop()
+            .listener(new RequestListener<Drawable>() {
             @Override
-            public void onSuccess(Boolean isValid) {
-                if (isValid) {
-                    resolvedImageUrl = url;
-                    resolvedImageSource = ImageSource.EXTERNAL_URL;
-                    isExternalPhoto = true;
-                    hasUnsavedEdits = true;
-
-                    Glide.with(AddEditListingActivity.this)
-                        .load(url)
-                        .placeholder(R.drawable.ic_food_placeholder)
-                        .error(R.drawable.ic_food_placeholder)
-                        .centerCrop()
-                        .into(ivPhotoPreview);
-
-                    tvPhotoSourceLabel.setText("Source: External HTTPS URL");
-                    Toast.makeText(AddEditListingActivity.this, "✓ Photo URL verified & previewed", Toast.LENGTH_SHORT).show();
-                } else {
-                    tilPhotoUrl.setError("Could not reach or verify HTTPS image link.");
-                }
+            public boolean onLoadFailed(@Nullable GlideException e, Object model,
+                                        Target<Drawable> target, boolean isFirstResource) {
+                progressPhotoUpload.setVisibility(View.GONE);
+                btnPreviewUrl.setEnabled(true);
+                etPhotoUrl.setEnabled(true);
+                resolvedImageUrl = null;
+                resolvedImageSource = ImageSource.NONE;
+                tvPhotoSourceLabel.setText("Image could not be loaded");
+                tilPhotoUrl.setError("Use a direct HTTPS image link, not a webpage or share link.");
+                return false;
             }
 
             @Override
-            public void onError(DataError error) {
-                tilPhotoUrl.setError("Validation error: " + error.getMessage());
+            public boolean onResourceReady(Drawable resource, Object model,
+                                           Target<Drawable> target, DataSource dataSource,
+                                           boolean isFirstResource) {
+                progressPhotoUpload.setVisibility(View.GONE);
+                btnPreviewUrl.setEnabled(true);
+                etPhotoUrl.setEnabled(true);
+                resolvedImageUrl = url;
+                resolvedImageSource = ImageSource.EXTERNAL_URL;
+                isExternalPhoto = true;
+                hasUnsavedEdits = true;
+                tilPhotoUrl.setError(null);
+                tvPhotoSourceLabel.setText("Source: External HTTPS URL");
+                Toast.makeText(AddEditListingActivity.this,
+                    "✓ Image loaded and validated", Toast.LENGTH_SHORT).show();
+                return false;
             }
-        });
+        })
+        .into(ivPhotoPreview);
     }
 
     private void showTimePicker(TextInputEditText target) {

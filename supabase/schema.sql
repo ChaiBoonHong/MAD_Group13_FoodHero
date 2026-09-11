@@ -1731,6 +1731,10 @@ DROP POLICY IF EXISTS "Public read campus landmarks" ON public.campus_landmarks;
 DROP POLICY IF EXISTS "Campus members read landmarks" ON public.campus_landmarks;
 CREATE POLICY "Campus members read landmarks" ON public.campus_landmarks FOR SELECT TO authenticated USING (
     campus_id=public.current_campus_id());
+GRANT SELECT ON TABLE public.campus_landmarks TO anon;
+DROP POLICY IF EXISTS "Registration reads active landmarks" ON public.campus_landmarks;
+CREATE POLICY "Registration reads active landmarks" ON public.campus_landmarks
+FOR SELECT TO anon USING (is_active);
 
 REVOKE ALL ON FUNCTION public.lookup_institution_domain(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.reserve_listing(UUID,INT,BOOLEAN) FROM PUBLIC,anon;

@@ -233,12 +233,18 @@ public class AuthActivity extends AppCompatActivity {
             public void onSuccess(List<CampusLandmark> list) {
                 campusLandmarks = (list != null && !list.isEmpty()) ? list : new ArrayList<>();
                 populateLandmarksDropdown();
+                if (campusLandmarks.isEmpty()) {
+                    tilCampusLocation.setError("No active campus landmarks are configured.");
+                } else {
+                    tilCampusLocation.setError(null);
+                }
             }
 
             @Override
             public void onError(DataError error) {
                 campusLandmarks = new ArrayList<>();
                 populateLandmarksDropdown();
+                tilCampusLocation.setError("Unable to load campus landmarks. Tap to retry.");
             }
         });
     }
@@ -251,6 +257,14 @@ public class AuthActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, names);
         if (actvCampusLocation != null) {
             actvCampusLocation.setAdapter(adapter);
+            actvCampusLocation.setThreshold(0);
+            actvCampusLocation.setOnClickListener(v -> {
+                if (campusLandmarks.isEmpty()) loadCampusLandmarks();
+                else actvCampusLocation.showDropDown();
+            });
+            actvCampusLocation.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus && !campusLandmarks.isEmpty()) actvCampusLocation.showDropDown();
+            });
             if (!names.isEmpty() && (actvCampusLocation.getText() == null || actvCampusLocation.getText().toString().isEmpty())) {
                 actvCampusLocation.setText(names.get(0), false);
             }
@@ -383,6 +397,12 @@ public class AuthActivity extends AppCompatActivity {
             String campusLocation = "";
 
             if (selectedRole == UserRole.MERCHANT) {
+                if (campusLandmarks.isEmpty()) {
+                    tilCampusLocation.setError("Load and select a campus landmark before registering.");
+                    btnAuthSubmit.setEnabled(true);
+                    btnAuthSubmit.setText(R.string.register);
+                    return;
+                }
                 String landmark = actvCampusLocation != null ? actvCampusLocation.getText().toString().trim() : "";
                 String stall = etMerchantStallNo != null ? etMerchantStallNo.getText().toString().trim() : "";
                 if (landmark.isEmpty() && !campusLandmarks.isEmpty()) {

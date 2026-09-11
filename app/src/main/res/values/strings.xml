@@ -115,7 +115,7 @@
     <!-- Merchant Portal Strings -->
     <string name="merchant_portal_title">Merchant Portal</string>
     <string name="merchant_welcome_subtitle">Student Pavilion I • Online</string>
-    <string name="create_new_listing">+ Create Listing</string>
+    <string name="create_new_listing">Create Listing</string>
     <string name="revenue_recovered">Revenue Recovered</string>
     <string name="food_diverted">Food Diverted</string>
     <string name="orders_rescued">Orders Rescued</string>

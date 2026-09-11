@@ -264,6 +264,7 @@
                             android:id="@+id/actv_campus_location"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:cursorVisible="false"
                             android:inputType="none"
                             android:textSize="14sp" />
                     </com.google.android.material.textfield.TextInputLayout>
