@@ -74,6 +74,7 @@ Use two physical Android phones where a case involves notifications, bank/e-wall
 | MER-05 | QR replace/remove | Upload, replace, remove, and retry failed upload | Preview/status matches the actual selection; no duplicate orphan upload is created on retry |
 | MER-06 | Campus dropdown | Load campuses, disconnect, retry, select another campus | Supabase values are used; error/retry works; camera moves to selected campus |
 | MER-07 | Map interaction | Pinch, native zoom buttons, compass, tap, drag marker | Camera and draggable pin respond smoothly; coordinates update; pin gives short feedback |
+| MER-07A | Pan after pinning | Place a pin, then drag on empty map and pinch with two fingers | Parent form does not steal the gesture; map pans/zooms while the pin stays at its geographic coordinate |
 | MER-08 | Locate me allowed | Grant location and tap Locate me | Map centers on current fix at a useful zoom without silently changing the merchant pin |
 | MER-09 | Location denied/unavailable | Deny permission, disable GPS, return null last location | Manual map placement remains available with clear guidance |
 | MER-10 | Boundary inside/edge/outside | Submit points clearly inside, on edge, and outside reviewed polygon | Server authoritatively accepts inside/edge per policy and rejects outside |

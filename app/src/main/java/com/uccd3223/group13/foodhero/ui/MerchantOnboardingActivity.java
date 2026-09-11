@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.view.MotionEvent;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -150,6 +151,14 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         paymentStep = findViewById(R.id.step_onboarding_payment);
         locationStep = findViewById(R.id.step_onboarding_location);
         mapView = findViewById(R.id.map_onboarding_location);
+        mapView.setOnTouchListener((view, event) -> {
+            // The map is nested in a scrolling review step. Keep pan, pinch and
+            // marker-drag gestures with Google Maps until the gesture finishes.
+            int action = event.getActionMasked();
+            boolean interacting = action != MotionEvent.ACTION_UP && action != MotionEvent.ACTION_CANCEL;
+            view.getParent().requestDisallowInterceptTouchEvent(interacting);
+            return false;
+        });
     }
 
     private void setupLaunchers() {
