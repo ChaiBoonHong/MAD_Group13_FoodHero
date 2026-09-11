@@ -272,6 +272,22 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
             showWarning("Enable location to calculate a Google route to this pickup point.");
             return;
         }
+        float[] directDistance = new float[1];
+        android.location.Location.distanceBetween(studentLat, studentLng,
+            listing.getLatitude(), listing.getLongitude(), directDistance);
+        if (directDistance[0] <= 25f) {
+            if (currentRoutePolyline != null) {
+                currentRoutePolyline.remove();
+                currentRoutePolyline = null;
+            }
+            cardRouteInfo.setVisibility(View.VISIBLE);
+            tvRouteDistanceEta.setText("You are at the pickup point");
+            tvEntranceFallbackWarning.setVisibility(View.GONE);
+            return;
+        }
+        cardRouteInfo.setVisibility(View.VISIBLE);
+        tvRouteDistanceEta.setText("Calculating Google route…");
+        tvEntranceFallbackWarning.setVisibility(View.GONE);
         foodHeroRepo.calculateRoute(studentLat, studentLng, listing.getLatitude(), listing.getLongitude(),
             selectedTravelMode, new ResultCallback<RouteResult>() {
                 @Override public void onSuccess(RouteResult route) {
@@ -288,7 +304,8 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
                     tvEntranceFallbackWarning.setVisibility(View.GONE);
                 }
                 @Override public void onError(DataError error) {
-                    showWarning(error == null ? "Google route guidance is unavailable." : error.getMessage());
+                    showWarning(error == null ? "Google route guidance is unavailable. Tap the marker to retry."
+                        : error.getMessage() + " Tap the marker to retry.");
                 }
             });
     }

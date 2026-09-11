@@ -284,7 +284,9 @@ public class MerchantProfileFragment extends Fragment {
                     tvNoReviews.setVisibility(View.GONE);
                     tvReviewCount.setText(String.format(java.util.Locale.US, "Based on %d verified student pickups", reviews.size()));
                     double sum = 0;
-                    for (Review r : reviews) sum += r.getRating();
+                    for (Review r : reviews) {
+                        sum += r.getRating();
+                    }
                     tvAvgRating.setText(String.format(java.util.Locale.US, "%.1f", sum / reviews.size()));
                 } else {
                     reviewAdapter.setItems(new java.util.ArrayList<>());

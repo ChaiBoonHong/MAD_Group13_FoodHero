@@ -224,7 +224,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/spacing_8"
                         android:layout_weight="1"
-                        android:text="350m • ~4 mins walk"
+                        android:text="Select a food marker for Google directions"
                         android:textColor="@color/colorPrimaryDark"
                         android:textSize="@dimen/text_size_action"
                         android:textStyle="bold" />
