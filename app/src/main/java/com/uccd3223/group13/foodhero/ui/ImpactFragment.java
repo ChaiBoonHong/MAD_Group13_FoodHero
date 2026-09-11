@@ -159,7 +159,14 @@ public class ImpactFragment extends Fragment {
 
     @Override public void onResume() {
         super.onResume();
-        if (authRepo != null && btnSwitchToMerchant != null) loadRoleAction();
+        if (authRepo != null && btnSwitchToMerchant != null) {
+            loadRoleAction();
+            loadImpactData();
+        }
+    }
+
+    public void refreshImpact() {
+        if (foodHeroRepo != null) loadImpactData();
     }
 
     private void loadImpactData() {

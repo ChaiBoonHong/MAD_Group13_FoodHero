@@ -512,6 +512,8 @@ CREATE TRIGGER trg_process_order_status_change
 CREATE OR REPLACE FUNCTION public.process_review_submission()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     avg_r NUMERIC(3, 2);
@@ -542,6 +544,8 @@ DROP TRIGGER IF EXISTS trg_process_review_submission ON public.reviews;
 CREATE TRIGGER trg_process_review_submission
     AFTER INSERT ON public.reviews
     FOR EACH ROW EXECUTE FUNCTION public.process_review_submission();
+
+REVOKE ALL ON FUNCTION public.process_review_submission() FROM PUBLIC, anon, authenticated;
 
 -- ============================================================================
 -- SECTION 9: ROW LEVEL SECURITY (RLS) POLICIES

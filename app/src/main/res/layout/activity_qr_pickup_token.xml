@@ -48,6 +48,7 @@
             </FrameLayout>
 
             <TextView
+                android:id="@+id/tv_qr_status_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_8"
@@ -57,6 +58,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tv_qr_status_message"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
@@ -220,8 +222,18 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_rate_completed_order"
+                style="@style/Widget.FoodHero.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_16"
+                android:text="@string/rate_order"
+                android:visibility="gone" />
+
             <!-- Bottom Warning Banner (Prototype Screen 3) -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_pickup_warning"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_16"

@@ -75,9 +75,11 @@
     <string name="tab_completed">Completed</string>
     <string name="tab_cancelled">Cancelled</string>
     <string name="tab_payment">Payment</string>
+    <string name="tab_all">All</string>
     <string name="tab_verifying">Verifying</string>
     <string name="tab_ready">Ready</string>
     <string name="tab_closed">Closed</string>
+    <string name="rate_order">Rate This Meal</string>
     <string name="tab_expired">Expired</string>
     <string name="order_code">Order #%1$s</string>
     <string name="manual_pickup_code">Manual Code: %1$s</string>

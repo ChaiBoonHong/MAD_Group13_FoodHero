@@ -36,7 +36,7 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
     private TextView tvEmptyTitle, tvEmptyMessage;
     private MaterialButton btnEmptyAction;
 
-    private int selectedTabIndex = 0; // Payment, Verifying, Ready, Completed, Closed
+    private int selectedTabIndex = 0; // All, Payment, Verifying, Ready, Completed, Closed
 
     @Nullable
     @Override
@@ -121,16 +121,21 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
         });
     }
 
+    public void refreshOrders() {
+        if (swipeRefresh != null) loadOrders();
+    }
+
     private void filterOrders() {
         List<Order> filtered = new ArrayList<>();
 
         for (Order o : allOrders) {
             OrderStatus status = o.getStatus();
-            if (selectedTabIndex == 0 && status == OrderStatus.AWAITING_PAYMENT) filtered.add(o);
-            else if (selectedTabIndex == 1 && status == OrderStatus.PENDING_VERIFICATION) filtered.add(o);
-            else if (selectedTabIndex == 2 && status == OrderStatus.READY_FOR_PICKUP) filtered.add(o);
-            else if (selectedTabIndex == 3 && status == OrderStatus.COMPLETED) filtered.add(o);
-            else if (selectedTabIndex == 4 && (status == OrderStatus.CANCELLED ||
+            if (selectedTabIndex == 0) filtered.add(o);
+            else if (selectedTabIndex == 1 && status == OrderStatus.AWAITING_PAYMENT) filtered.add(o);
+            else if (selectedTabIndex == 2 && status == OrderStatus.PENDING_VERIFICATION) filtered.add(o);
+            else if (selectedTabIndex == 3 && status == OrderStatus.READY_FOR_PICKUP) filtered.add(o);
+            else if (selectedTabIndex == 4 && status == OrderStatus.COMPLETED) filtered.add(o);
+            else if (selectedTabIndex == 5 && (status == OrderStatus.CANCELLED ||
                 status == OrderStatus.EXPIRED || status == OrderStatus.PAYMENT_REJECTED ||
                 status == OrderStatus.NO_SHOW)) filtered.add(o);
         }
@@ -139,9 +144,10 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
 
         if (filtered.isEmpty()) {
             layoutEmpty.setVisibility(View.VISIBLE);
-            String[] titles = {"No payments due", "No receipts being verified", "No pickups ready",
+            String[] titles = {"No orders yet", "No payments due", "No receipts being verified", "No pickups ready",
                 "No completed pickups", "No closed orders"};
-            String[] messages = {"Reserved bags awaiting payment will appear here.",
+            String[] messages = {"Your reservations and pickup history will appear here.",
+                "Reserved bags awaiting payment will appear here.",
                 "Orders awaiting merchant payment verification will appear here.",
                 "Verified orders ready for pickup will appear here.",
                 "Successfully collected orders will appear here.",

@@ -115,10 +115,12 @@ public class StudentHomeActivity extends AppCompatActivity {
             } else if (itemId == R.id.nav_orders) {
                 getSupportFragmentManager().beginTransaction().hide(activeFragment).show(ordersFragment).commit();
                 activeFragment = ordersFragment;
+                ((OrdersFragment) ordersFragment).refreshOrders();
                 return true;
             } else if (itemId == R.id.nav_impact) {
                 getSupportFragmentManager().beginTransaction().hide(activeFragment).show(impactFragment).commit();
                 activeFragment = impactFragment;
+                ((ImpactFragment) impactFragment).refreshImpact();
                 return true;
             }
             return false;
@@ -134,6 +136,11 @@ public class StudentHomeActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     unreadCount++;
                     updateBadgeCount();
+                    if (notification.getEventType() != null &&
+                        "order_completed".equals(notification.getEventType().getValue())) {
+                        ((OrdersFragment) ordersFragment).refreshOrders();
+                        ((ImpactFragment) impactFragment).refreshImpact();
+                    }
                 });
             }
         });

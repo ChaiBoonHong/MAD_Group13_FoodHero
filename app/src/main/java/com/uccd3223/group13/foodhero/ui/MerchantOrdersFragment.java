@@ -13,6 +13,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -52,6 +54,16 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
     private MerchantOrderAdapter adapter;
     private List<Order> allOrders = new ArrayList<>();
     private int selectedTabIndex = 0; // 0: All, 1: Reserved, 2: Completed, 3: Cancelled/Expired
+    private final ActivityResultLauncher<Intent> pickupScanner = registerForActivityResult(
+        new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == android.app.Activity.RESULT_OK) {
+                selectedTabIndex = 2;
+                if (tabLayout != null && tabLayout.getTabAt(2) != null) {
+                    tabLayout.getTabAt(2).select();
+                }
+                loadOrders();
+            }
+        });
 
     @Nullable
     @Override
@@ -106,7 +118,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
 
         btnScanQr.setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), MerchantQrScannerActivity.class);
-            startActivity(intent);
+            pickupScanner.launch(intent);
         });
 
         btnEnterCode.setOnClickListener(v -> showManualVerificationDialog(null));
@@ -319,7 +331,7 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
             .setPositiveButton("Verify via Code", (d, w) -> showManualVerificationDialog(order.getOrderCode()))
             .setNegativeButton("Scan QR Camera", (d, w) -> {
                 Intent intent = new Intent(requireContext(), MerchantQrScannerActivity.class);
-                startActivity(intent);
+                pickupScanner.launch(intent);
             })
             .setNeutralButton("Cancel", null)
             .show();
@@ -368,12 +380,10 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
     private void showVerificationSuccessDialog(OrderVerificationResult result) {
         String msg = result.getMessage() != null ? result.getMessage() :
             "Pickup verified successfully! Eco-Points awarded at RM1 = 5 points.";
-        new MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.pickup_verified_success)
-            .setMessage(msg)
-            .setIcon(R.drawable.ic_check_circle)
-            .setPositiveButton("Great!", null)
-            .show();
+        Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show();
+        selectedTabIndex = 2;
+        if (tabLayout.getTabAt(2) != null) tabLayout.getTabAt(2).select();
+        loadOrders();
     }
 
     private void showVerificationErrorDialog(String errorMsg) {

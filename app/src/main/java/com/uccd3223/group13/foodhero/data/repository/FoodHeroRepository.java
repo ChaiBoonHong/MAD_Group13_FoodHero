@@ -373,7 +373,8 @@ public class FoodHeroRepository {
 
                 Response<List<Review>> resp = restClient.submitReview(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), review).execute();
                 if (!resp.isSuccessful() || resp.body() == null || resp.body().isEmpty()) {
-                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not accept the review."));
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR,
+                        readApiError(resp, "Review could not be submitted.")));
                     return;
                 }
                 postSuccess(callback, resp.body().get(0));

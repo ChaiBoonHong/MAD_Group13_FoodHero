@@ -160,18 +160,9 @@ public class MerchantQrScannerActivity extends AppCompatActivity {
     private void showSuccessDialog(OrderVerificationResult result) {
         String msg = result.getMessage() != null ? result.getMessage() :
             "Pickup verified successfully! Eco-Points awarded at RM1 = 5 points.";
-
-        new MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.pickup_verified_success)
-            .setMessage(msg)
-            .setIcon(R.drawable.ic_check_circle)
-            .setCancelable(false)
-            .setPositiveButton("Done", (d, w) -> finish())
-            .setNegativeButton("Scan Another", (d, w) -> {
-                isProcessingScan = false;
-                barcodeView.resume();
-            })
-            .show();
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+        setResult(RESULT_OK);
+        finish();
     }
 
     private void showFailureDialog(String errorMsg) {
