@@ -267,9 +267,10 @@ public class AddEditListingActivity extends AppCompatActivity {
     private void handleDeviceImagePicked(Uri uri) {
         progressPhotoUpload.setVisibility(View.VISIBLE);
         try {
-            InputStream is = getContentResolver().openInputStream(uri);
-            Bitmap bitmap = BitmapFactory.decodeStream(is);
-            if (is != null) is.close();
+            Bitmap bitmap;
+            try (InputStream is = getContentResolver().openInputStream(uri)) {
+                bitmap = BitmapFactory.decodeStream(is);
+            }
 
             if (bitmap == null) {
                 progressPhotoUpload.setVisibility(View.GONE);
@@ -603,6 +604,10 @@ public class AddEditListingActivity extends AppCompatActivity {
         listing.setCo2KgPerItem(co2);
         listing.setPickupStart(start);
         listing.setPickupEnd(end);
+        if (selectedLandmark == null) {
+            Toast.makeText(this, "Please select a pickup location before publishing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         listing.setPickupLocation(selectedLandmark.getName());
         listing.setLatitude(selectedLandmark.getLatitude());
         listing.setLongitude(selectedLandmark.getLongitude());

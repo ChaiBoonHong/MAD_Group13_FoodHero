@@ -1126,11 +1126,15 @@ public class FoodHeroRepository {
                 }
                 URL url = new URL(urlString);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("HEAD");
-                conn.setConnectTimeout(3000);
-                conn.setReadTimeout(3000);
-                int code = conn.getResponseCode();
-                postSuccess(callback, (code >= 200 && code < 400));
+                try {
+                    conn.setRequestMethod("HEAD");
+                    conn.setConnectTimeout(3000);
+                    conn.setReadTimeout(3000);
+                    int code = conn.getResponseCode();
+                    postSuccess(callback, (code >= 200 && code < 400));
+                } finally {
+                    conn.disconnect();
+                }
             } catch (Exception e) {
                 postSuccess(callback, false);
             }

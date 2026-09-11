@@ -96,7 +96,7 @@ public class FeedFragment extends Fragment implements ListingAdapter.OnListingCl
         if (tvEcoBanner == null || !isAdded()) return;
         com.uccd3223.group13.foodhero.data.model.Profile p = com.uccd3223.group13.foodhero.data.session.SessionManager.getInstance(requireContext()).getProfile();
         if (p != null && p.getCo2Prevented() > 0) {
-            tvEcoBanner.setText(String.format(java.util.Locale.US, "You have diverted %.1f kg of food waste this month!", p.getCo2Prevented()));
+            tvEcoBanner.setText(String.format(java.util.Locale.US, "You have prevented %.1f kg of CO\u2082 emissions this month!", p.getCo2Prevented()));
         } else {
             tvEcoBanner.setText("Rescue surplus meals today and cut food waste on campus!");
         }

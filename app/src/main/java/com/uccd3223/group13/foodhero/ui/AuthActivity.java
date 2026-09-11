@@ -161,7 +161,7 @@ public class AuthActivity extends AppCompatActivity {
             if (fragment != null && !fragment.isEmpty()) {
                 String[] params = fragment.split("&");
                 for (String param : params) {
-                    String[] kv = param.split("=");
+                    String[] kv = param.split("=", 2);
                     if (kv.length == 2) {
                         if ("access_token".equals(kv[0])) accessToken = Uri.decode(kv[1]);
                         else if ("refresh_token".equals(kv[0])) refreshToken = Uri.decode(kv[1]);

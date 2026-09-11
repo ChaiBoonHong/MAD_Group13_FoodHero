@@ -77,8 +77,6 @@ public class MerchantProfileFragment extends Fragment {
         initViews(view);
         setupRecyclerView();
         setupListeners();
-        loadMerchantProfile();
-        loadReviews();
     }
 
     @Override

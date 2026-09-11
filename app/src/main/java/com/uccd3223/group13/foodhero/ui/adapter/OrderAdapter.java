@@ -54,9 +54,17 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
         holder.tvOrderCode.setText(String.format("Order #%s", order.getOrderCode()));
         holder.tvStatus.setText(order.getStatus() != null ? order.getStatus().getValue().toUpperCase(Locale.US) : "UNKNOWN");
 
-        // Tint status badge
-        int statusBg = (order.getStatus() == OrderStatus.READY_FOR_PICKUP) ? R.color.colorAccent :
-            (order.getStatus() == OrderStatus.COMPLETED) ? R.color.colorPrimary : R.color.colorError;
+        // Tint status badge per status
+        int statusBg;
+        if (order.getStatus() == OrderStatus.READY_FOR_PICKUP) {
+            statusBg = R.color.colorAccent;
+        } else if (order.getStatus() == OrderStatus.COMPLETED) {
+            statusBg = R.color.colorPrimary;
+        } else if (order.getStatus() == OrderStatus.AWAITING_PAYMENT || order.getStatus() == OrderStatus.PENDING_VERIFICATION) {
+            statusBg = R.color.colorWarning;
+        } else {
+            statusBg = R.color.colorError;
+        }
         holder.tvStatus.setBackgroundResource(R.drawable.bg_badge_pill);
         holder.tvStatus.setBackgroundTintList(androidx.core.content.ContextCompat.getColorStateList(context, statusBg));
 

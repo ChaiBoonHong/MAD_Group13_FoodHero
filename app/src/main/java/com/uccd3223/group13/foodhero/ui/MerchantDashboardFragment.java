@@ -54,7 +54,6 @@ public class MerchantDashboardFragment extends Fragment {
 
         initViews(view);
         setupListeners();
-        loadDashboardData();
     }
 
     @Override
@@ -129,6 +128,7 @@ public class MerchantDashboardFragment extends Fragment {
 
         tvMetricRevenue.setText(CurrencyUtils.format(data.getRevenueRecovered()));
         tvMetricFoodDiverted.setText(String.format(Locale.US, "%.1f kg", data.getFoodDivertedKg()));
+        tvMetricOrdersCompleted.setText(String.valueOf(data.getOrdersCompleted()));
         if (data.getAverageRating() <= 0.0) {
             tvMetricRating.setText("-");
         } else {

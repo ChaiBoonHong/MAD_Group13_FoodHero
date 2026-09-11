@@ -197,6 +197,10 @@ public class PaymentDuitNowActivity extends AppCompatActivity {
     }
 
     private void startPaymentCountdown() {
+        if (countDownTimer != null) {
+            countDownTimer.cancel();
+            countDownTimer = null;
+        }
         long expiresAt = order.getPaymentExpiresAt();
         if (expiresAt <= 0) {
             btnSubmitReceipt.setEnabled(false);

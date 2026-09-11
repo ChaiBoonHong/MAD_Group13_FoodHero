@@ -71,7 +71,7 @@ public class QrPickupTokenActivity extends AppCompatActivity {
             ivQrCode.setImageResource(R.drawable.ic_clock); // or any placeholder
             ivQrCode.setAlpha(0.5f);
         } else if (order.getPickupToken() != null && !order.getPickupToken().isEmpty()) {
-            tvManualCode.setText(String.format("Manual Pickup Code: %s", order.getPickupToken()));
+            tvManualCode.setText(String.format("Order Code: %s", order.getOrderCode()));
             // Generate high-contrast QR Bitmap
             String qrPayload = order.getOrderCode() + ":" + order.getPickupToken();
             Bitmap qrBitmap = QrCodeGenerator.generateQrBitmap(qrPayload, 512, 512);

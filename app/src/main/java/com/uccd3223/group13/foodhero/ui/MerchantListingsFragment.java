@@ -61,7 +61,6 @@ public class MerchantListingsFragment extends Fragment implements MerchantListin
         initViews(view);
         setupRecyclerView();
         setupListeners();
-        loadListings();
     }
 
     @Override
@@ -111,8 +110,10 @@ public class MerchantListingsFragment extends Fragment implements MerchantListin
         chipGroupStatus.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (!checkedIds.isEmpty()) {
                 selectedFilterId = checkedIds.get(0);
-                filterListings();
+            } else {
+                selectedFilterId = R.id.chip_status_all;
             }
+            filterListings();
         });
     }
 

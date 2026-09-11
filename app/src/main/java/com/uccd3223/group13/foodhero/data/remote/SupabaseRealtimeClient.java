@@ -40,6 +40,8 @@ public class SupabaseRealtimeClient {
     private NotificationListener listener;
     private String currentUserId;
     private long heartbeatRef = 1;
+    private int reconnectAttempts = 0;
+    private static final int MAX_RECONNECT_ATTEMPTS = 8;
 
     private final Runnable heartbeatRunnable = new Runnable() {
         @Override
@@ -98,6 +100,7 @@ public class SupabaseRealtimeClient {
                 public void onOpen(WebSocket ws, Response response) {
                     Log.d(TAG, "Supabase Realtime connected successfully");
                     isSubscribed = true;
+                    reconnectAttempts = 0;
 
                     // Send Phoenix join message to subscribe to PostgreSQL changes on notifications
                     JsonObject joinMsg = new JsonObject();
@@ -158,13 +161,19 @@ public class SupabaseRealtimeClient {
                     isSubscribed = false;
                     mainHandler.removeCallbacks(heartbeatRunnable);
 
-                    // Reconnect attempt after 5s if still active
-                    mainHandler.postDelayed(() -> {
-                        if (listener != null && !isSubscribed) {
-                            Log.d(TAG, "Attempting Supabase Realtime reconnect...");
-                            connectWebSocket();
-                        }
-                    }, 5000);
+                    // Exponential backoff reconnect (max 8 attempts)
+                    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        long delayMs = Math.min(30000L, 2000L * (1L << reconnectAttempts));
+                        reconnectAttempts++;
+                        Log.d(TAG, "Supabase Realtime reconnect attempt " + reconnectAttempts + " in " + delayMs + "ms");
+                        mainHandler.postDelayed(() -> {
+                            if (listener != null && !isSubscribed) {
+                                connectWebSocket();
+                            }
+                        }, delayMs);
+                    } else {
+                        Log.w(TAG, "Supabase Realtime: max reconnect attempts reached, giving up.");
+                    }
                 }
             });
         } catch (Exception e) {
@@ -260,6 +269,7 @@ public class SupabaseRealtimeClient {
             webSocket = null;
         }
         isSubscribed = false;
+        reconnectAttempts = 0;
         listener = null;
     }
 }

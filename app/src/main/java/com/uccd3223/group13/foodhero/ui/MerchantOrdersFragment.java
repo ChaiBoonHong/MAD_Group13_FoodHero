@@ -69,7 +69,6 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
         initViews(view);
         setupRecyclerView();
         setupListeners();
-        loadOrders();
     }
 
     @Override
