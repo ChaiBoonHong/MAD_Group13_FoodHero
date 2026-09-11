@@ -299,7 +299,7 @@ public class MerchantProfileFragment extends Fragment {
                 if (!isAdded()) return;
                 reviewAdapter.setItems(new java.util.ArrayList<>());
                 tvNoReviews.setVisibility(View.VISIBLE);
-                tvReviewCount.setText("No reviews yet from student pickups");
+                tvReviewCount.setText("Reviews unavailable — pull to retry");
                 tvAvgRating.setText("-");
             }
         });

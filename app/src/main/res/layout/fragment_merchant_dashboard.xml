@@ -379,10 +379,11 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/tv_metric_review_count"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="28 student reviews"
+                            android:text="No student reviews yet"
                             android:textColor="@color/colorTextSecondary"
                             android:textSize="11sp" />
                     </LinearLayout>

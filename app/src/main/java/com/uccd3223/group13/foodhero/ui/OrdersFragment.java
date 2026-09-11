@@ -36,7 +36,7 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
     private TextView tvEmptyTitle, tvEmptyMessage;
     private MaterialButton btnEmptyAction;
 
-    private int selectedTabIndex = 0; // 0: Reserved, 1: Completed, 2: Cancelled
+    private int selectedTabIndex = 0; // Payment, Verifying, Ready, Completed, Closed
 
     @Nullable
     @Override
@@ -125,31 +125,30 @@ public class OrdersFragment extends Fragment implements OrderAdapter.OnOrderClic
         List<Order> filtered = new ArrayList<>();
 
         for (Order o : allOrders) {
-            if (selectedTabIndex == 0) {
-                if (o.getStatus() == OrderStatus.READY_FOR_PICKUP ||
-                    o.getStatus() == OrderStatus.PENDING_VERIFICATION ||
-                    o.getStatus() == OrderStatus.AWAITING_PAYMENT) {
-                    filtered.add(o);
-                }
-            } else if (selectedTabIndex == 1) {
-                if (o.getStatus() == OrderStatus.COMPLETED) {
-                    filtered.add(o);
-                }
-            } else {
-                if (o.getStatus() == OrderStatus.CANCELLED ||
-                    o.getStatus() == OrderStatus.EXPIRED ||
-                    o.getStatus() == OrderStatus.PAYMENT_REJECTED || o.getStatus() == OrderStatus.NO_SHOW) {
-                    filtered.add(o);
-                }
-            }
+            OrderStatus status = o.getStatus();
+            if (selectedTabIndex == 0 && status == OrderStatus.AWAITING_PAYMENT) filtered.add(o);
+            else if (selectedTabIndex == 1 && status == OrderStatus.PENDING_VERIFICATION) filtered.add(o);
+            else if (selectedTabIndex == 2 && status == OrderStatus.READY_FOR_PICKUP) filtered.add(o);
+            else if (selectedTabIndex == 3 && status == OrderStatus.COMPLETED) filtered.add(o);
+            else if (selectedTabIndex == 4 && (status == OrderStatus.CANCELLED ||
+                status == OrderStatus.EXPIRED || status == OrderStatus.PAYMENT_REJECTED ||
+                status == OrderStatus.NO_SHOW)) filtered.add(o);
         }
 
         adapter.setItems(filtered);
 
         if (filtered.isEmpty()) {
             layoutEmpty.setVisibility(View.VISIBLE);
-            if (tvEmptyTitle != null) tvEmptyTitle.setText("No orders in this tab");
-            if (tvEmptyMessage != null) tvEmptyMessage.setText("You have no orders currently in this tab.");
+            String[] titles = {"No payments due", "No receipts being verified", "No pickups ready",
+                "No completed pickups", "No closed orders"};
+            String[] messages = {"Reserved bags awaiting payment will appear here.",
+                "Orders awaiting merchant payment verification will appear here.",
+                "Verified orders ready for pickup will appear here.",
+                "Successfully collected orders will appear here.",
+                "Cancelled, expired, rejected, and no-show orders will appear here."};
+            int index = Math.min(selectedTabIndex, titles.length - 1);
+            if (tvEmptyTitle != null) tvEmptyTitle.setText(titles[index]);
+            if (tvEmptyMessage != null) tvEmptyMessage.setText(messages[index]);
             if (btnEmptyAction != null) btnEmptyAction.setVisibility(View.GONE);
         } else {
             layoutEmpty.setVisibility(View.GONE);

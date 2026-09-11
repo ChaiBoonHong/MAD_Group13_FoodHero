@@ -436,7 +436,7 @@ BEGIN
     -- Completed order -> Award Eco-points, update student stats
     IF OLD.status != 'completed' AND NEW.status = 'completed' THEN
         SELECT * INTO listing_rec FROM public.listings WHERE id = NEW.listing_id;
-        earned_pts := NEW.quantity * 10;
+        earned_pts := FLOOR(GREATEST(NEW.final_paid_price, 0) * 5)::INT;
         saved_amt := (NEW.total_original_price - NEW.final_paid_price);
         co2_amt := (COALESCE(listing_rec.co2_kg_per_item, 1.20) * NEW.quantity);
 
@@ -452,8 +452,8 @@ BEGIN
         VALUES (
             NEW.student_id,
             'student',
-            'Pickup Completed! +10 Points Earned',
-            'Thank you for rescuing surplus food! You prevented ' || co2_amt || 'kg CO2.',
+            'Pickup completed! ' || earned_pts || ' points earned',
+            'You earned Eco-Points at RM1 = 5 points and prevented ' || co2_amt || 'kg CO2.',
             'order_completed',
             NEW.id
         );
@@ -871,7 +871,7 @@ DECLARE
     result public.orders%ROWTYPE;
     points_used INT := 0;
     reward_discount NUMERIC(10,2) := 0;
-    token TEXT := encode(gen_random_bytes(24), 'hex');
+    token TEXT := encode(extensions.gen_random_bytes(24), 'hex');
 BEGIN
     IF auth.uid() IS NULL OR p_quantity IS NULL OR p_quantity <= 0 THEN RAISE EXCEPTION 'Invalid reservation'; END IF;
     SELECT * INTO p FROM public.profiles WHERE id = auth.uid() FOR UPDATE;
@@ -1164,7 +1164,7 @@ DROP POLICY IF EXISTS "Users read own affiliation" ON public.student_affiliation
 CREATE POLICY "Users read own affiliation" ON public.student_affiliations FOR SELECT TO authenticated USING(user_id=auth.uid());
 
 CREATE OR REPLACE FUNCTION public.issue_institution_verification(p_user_id UUID,p_email TEXT,p_code TEXT)
-RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,extensions AS $$
 DECLARE domain_row public.institution_email_domains%ROWTYPE;
 BEGIN
     SELECT * INTO domain_row FROM public.institution_email_domains
@@ -1210,7 +1210,7 @@ GRANT EXECUTE ON FUNCTION public.issue_institution_verification(UUID,TEXT,TEXT) 
 
 DROP FUNCTION IF EXISTS public.confirm_institution_verification(TEXT,TEXT);
 CREATE OR REPLACE FUNCTION public.confirm_institution_verification(p_email TEXT,p_code TEXT,p_student_id TEXT,p_faculty TEXT)
-RETURNS public.profiles LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+RETURNS public.profiles LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,extensions AS $$
 DECLARE challenge public.institution_verification_challenges%ROWTYPE; domain_row public.institution_email_domains%ROWTYPE;
         campus UUID; result public.profiles%ROWTYPE;
 BEGIN
@@ -1456,7 +1456,7 @@ DECLARE listing_rec public.listings%ROWTYPE; earned_pts INT; saved_amt NUMERIC(1
 BEGIN
     IF OLD.status<>'completed' AND NEW.status='completed' THEN
         SELECT * INTO listing_rec FROM public.listings WHERE id=NEW.listing_id;
-        earned_pts:=NEW.quantity*10; saved_amt:=NEW.total_original_price-NEW.final_paid_price;
+        earned_pts:=FLOOR(GREATEST(NEW.final_paid_price,0)*5)::INT; saved_amt:=NEW.total_original_price-NEW.final_paid_price;
         co2_amt:=COALESCE(listing_rec.co2_kg_per_item,1.20)*NEW.quantity;
         UPDATE public.profiles SET eco_points=eco_points+earned_pts,meals_rescued=meals_rescued+NEW.quantity,
             money_saved=money_saved+saved_amt,co2_prevented=co2_prevented+co2_amt,updated_at=NOW() WHERE id=NEW.student_id;
@@ -1574,7 +1574,7 @@ ON public.listings FOR EACH ROW EXECUTE FUNCTION public.enforce_listing_merchant
 CREATE OR REPLACE FUNCTION public.reserve_listing(p_listing_id UUID,p_quantity INT,p_use_reward_points BOOLEAN DEFAULT FALSE)
 RETURNS public.orders LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE l public.listings%ROWTYPE; p public.profiles%ROWTYPE; result public.orders%ROWTYPE;
-        points_used INT:=0; reward_discount NUMERIC(10,2):=0; token TEXT:=encode(gen_random_bytes(24),'hex');
+        points_used INT:=0; reward_discount NUMERIC(10,2):=0; token TEXT:=encode(extensions.gen_random_bytes(24),'hex');
 BEGIN
     IF auth.uid() IS NULL OR p_quantity IS NULL OR p_quantity<=0 THEN RAISE EXCEPTION 'Invalid reservation'; END IF;
     SELECT * INTO p FROM public.profiles WHERE id=auth.uid() FOR UPDATE;

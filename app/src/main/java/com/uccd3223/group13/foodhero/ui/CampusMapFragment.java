@@ -65,6 +65,7 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
     private Double studentLat;
     private Double studentLng;
     private FusedLocationProviderClient locationClient;
+    private String campusId;
     private final ActivityResultLauncher<String> locationPermission = registerForActivityResult(
         new ActivityResultContracts.RequestPermission(), granted -> {
             if (granted) loadStudentLocation();
@@ -136,6 +137,9 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady(@NonNull GoogleMap map) {
         this.googleMap = map;
 
+        AuthRepository auth = AuthRepository.getInstance(requireContext());
+        campusId = auth.getCurrentProfile() == null ? null : auth.getCurrentProfile().getCampusId();
+
         googleMap.setMinZoomPreference(14.0f);
         googleMap.setMaxZoomPreference(19.0f);
         centerVerifiedCampus();
@@ -162,7 +166,6 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
 
     private void centerVerifiedCampus() {
         AuthRepository auth = AuthRepository.getInstance(requireContext());
-        String campusId = auth.getCurrentProfile() == null ? null : auth.getCurrentProfile().getCampusId();
         auth.getInstitutionsAndCampuses(new ResultCallback<List<Campus>>() {
             @Override public void onSuccess(List<Campus> campuses) {
                 if (googleMap == null || campuses == null) return;
@@ -204,8 +207,14 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void loadMapData() {
+        if (campusId == null || campusId.trim().isEmpty()) {
+            tvEntranceFallbackWarning.setVisibility(View.VISIBLE);
+            tvEntranceFallbackWarning.setText("Select and verify your campus before loading campus map data.");
+            return;
+        }
+        markerListingMap.clear();
         // Add Campus Landmarks
-        foodHeroRepo.getCampusLandmarks(new ResultCallback<List<CampusLandmark>>() {
+        foodHeroRepo.getCampusLandmarks(campusId, new ResultCallback<List<CampusLandmark>>() {
             @Override
             public void onSuccess(List<CampusLandmark> landmarks) {
                 if (googleMap == null || landmarks == null) return;
@@ -220,11 +229,16 @@ public class CampusMapFragment extends Fragment implements OnMapReadyCallback {
             }
 
             @Override
-            public void onError(DataError error) {}
+            public void onError(DataError error) {
+                if (isAdded()) {
+                    tvEntranceFallbackWarning.setVisibility(View.VISIBLE);
+                    tvEntranceFallbackWarning.setText(error.getMessage());
+                }
+            }
         });
 
         // Add Surplus Food Listings
-        foodHeroRepo.getActiveFeed(new ResultCallback<List<Listing>>() {
+        foodHeroRepo.getActiveFeedForCampus(campusId, new ResultCallback<List<Listing>>() {
             @Override
             public void onSuccess(List<Listing> listings) {
                 if (googleMap == null || listings == null) return;

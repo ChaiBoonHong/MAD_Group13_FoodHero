@@ -366,7 +366,8 @@ public class MerchantOrdersFragment extends Fragment implements MerchantOrderAda
     }
 
     private void showVerificationSuccessDialog(OrderVerificationResult result) {
-        String msg = result.getMessage() != null ? result.getMessage() : "Pickup verified successfully! 10 Eco-Points awarded.";
+        String msg = result.getMessage() != null ? result.getMessage() :
+            "Pickup verified successfully! Eco-Points awarded at RM1 = 5 points.";
         new MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.pickup_verified_success)
             .setMessage(msg)

@@ -32,7 +32,8 @@ public class MerchantDashboardFragment extends Fragment {
     private TextView tvMerchantName, tvMerchantLocation;
     private MaterialButton btnCreateListing, btnViewAllOrders;
     private TextView tvActiveListingsBadge, tvLowStockBadge;
-    private TextView tvMetricRevenue, tvMetricFoodDiverted, tvMetricOrdersCompleted, tvMetricRating;
+    private TextView tvMetricRevenue, tvMetricFoodDiverted, tvMetricOrdersCompleted, tvMetricRating,
+        tvMetricReviewCount;
     private LinearLayout llRecentOrdersContainer;
     private TextView tvEmptyRecentOrders;
 
@@ -74,6 +75,7 @@ public class MerchantDashboardFragment extends Fragment {
         tvMetricFoodDiverted = view.findViewById(R.id.tv_metric_food_diverted);
         tvMetricOrdersCompleted = view.findViewById(R.id.tv_metric_orders_completed);
         tvMetricRating = view.findViewById(R.id.tv_metric_rating);
+        tvMetricReviewCount = view.findViewById(R.id.tv_metric_review_count);
         llRecentOrdersContainer = view.findViewById(R.id.ll_recent_orders_container);
         tvEmptyRecentOrders = view.findViewById(R.id.tv_empty_recent_orders);
 
@@ -131,8 +133,11 @@ public class MerchantDashboardFragment extends Fragment {
         tvMetricOrdersCompleted.setText(String.valueOf(data.getOrdersCompleted()));
         if (data.getAverageRating() <= 0.0) {
             tvMetricRating.setText("-");
+            tvMetricReviewCount.setText("No student reviews yet");
         } else {
             tvMetricRating.setText(String.format(Locale.US, "%.1f", data.getAverageRating()));
+            tvMetricReviewCount.setText(getResources().getQuantityString(
+                R.plurals.student_review_count, data.getReviewCount(), data.getReviewCount()));
         }
 
         tvActiveListingsBadge.setText(String.format(Locale.US, "%d Active Bags", data.getActiveListingsCount()));

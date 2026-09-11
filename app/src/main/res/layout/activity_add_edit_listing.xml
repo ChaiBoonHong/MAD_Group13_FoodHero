@@ -254,6 +254,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true"
+                        android:checkable="true"
                         android:text="Meals" />
 
                     <com.google.android.material.chip.Chip
@@ -261,6 +262,7 @@
                         style="@style/Widget.FoodHero.Chip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:checkable="true"
                         android:text="Bakery" />
 
                     <com.google.android.material.chip.Chip
@@ -268,6 +270,7 @@
                         style="@style/Widget.FoodHero.Chip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:checkable="true"
                         android:text="Vegetarian" />
 
                     <com.google.android.material.chip.Chip
@@ -275,6 +278,7 @@
                         style="@style/Widget.FoodHero.Chip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:checkable="true"
                         android:text="Halal" />
 
                     <com.google.android.material.chip.Chip
@@ -282,6 +286,7 @@
                         style="@style/Widget.FoodHero.Chip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:checkable="true"
                         android:text="Beverages" />
 
                     <com.google.android.material.chip.Chip
@@ -289,6 +294,7 @@
                         style="@style/Widget.FoodHero.Chip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:checkable="true"
                         android:text="Groceries" />
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>

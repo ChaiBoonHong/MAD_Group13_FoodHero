@@ -40,7 +40,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_8"
-        android:text="Verification ensures single-use redemption and awards 10 Eco-Points to the student."
+        android:text="Verification ensures single-use redemption and awards points at RM1 = 5 Eco-Points."
         android:textColor="@color/colorPrimary"
         android:textSize="12sp" />
 </LinearLayout>

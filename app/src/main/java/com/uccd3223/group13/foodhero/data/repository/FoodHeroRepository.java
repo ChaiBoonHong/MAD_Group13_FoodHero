@@ -226,7 +226,7 @@ public class FoodHeroRepository {
                     SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), request).execute();
                 if (!response.isSuccessful() || response.body() == null) {
                     postError(callback, new DataError(DataError.CODE_SERVER_ERROR,
-                        "Reservation was not created: " + response.message()));
+                        readApiError(response, "Reservation could not be created.")));
                     return;
                 }
                 Order order = response.body();
@@ -384,9 +384,20 @@ public class FoodHeroRepository {
     }
 
     public void getCampusLandmarks(ResultCallback<List<CampusLandmark>> callback) {
+        loadCampusLandmarks(null, callback);
+    }
+
+    public void getCampusLandmarks(String campusId, ResultCallback<List<CampusLandmark>> callback) {
+        loadCampusLandmarks(campusId, callback);
+    }
+
+    private void loadCampusLandmarks(String campusId, ResultCallback<List<CampusLandmark>> callback) {
         executor.execute(() -> {
             try {
-                Response<List<CampusLandmark>> resp = restClient.getCampusLandmarks(SupabaseConfig.SUPABASE_ANON_KEY, getBearer()).execute();
+                Response<List<CampusLandmark>> resp = campusId == null
+                    ? restClient.getCampusLandmarks(SupabaseConfig.SUPABASE_ANON_KEY, getBearer()).execute()
+                    : restClient.getCampusLandmarksForCampus(
+                        SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + campusId).execute();
                 if (resp.isSuccessful() && resp.body() != null && !resp.body().isEmpty()) {
                     postSuccess(callback, resp.body());
                 } else {
@@ -394,6 +405,25 @@ public class FoodHeroRepository {
                 }
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Failed to load campus landmarks from Supabase: " + e.getMessage(), e));
+            }
+        });
+    }
+
+    public void getActiveFeedForCampus(String campusId, ResultCallback<List<Listing>> callback) {
+        executor.execute(() -> {
+            try {
+                Response<List<Listing>> resp = restClient.getActiveListingsForCampus(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq.active", "eq." + campusId,
+                    "created_at.desc").execute();
+                if (resp.isSuccessful() && resp.body() != null) {
+                    postSuccess(callback, resp.body());
+                } else {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR,
+                        readApiError(resp, "Campus listings could not be loaded.")));
+                }
+            } catch (Exception e) {
+                postError(callback, new DataError(DataError.CODE_NETWORK_ERROR,
+                    "Campus listings could not be loaded: " + e.getMessage(), e));
             }
         });
     }
@@ -698,8 +728,12 @@ public class FoodHeroRepository {
                         ).execute();
                         if (rResp.isSuccessful() && rResp.body() != null) {
                             merchantReviews.addAll(rResp.body());
+                        } else {
+                            throw new IllegalStateException("Supabase did not return merchant reviews.");
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception error) {
+                        throw new IllegalStateException("Unable to load the real merchant rating.", error);
+                    }
                 }
 
                 // If remote returned nothing, check cached orders for this merchant
@@ -748,6 +782,7 @@ public class FoodHeroRepository {
                 data.setFoodDivertedKg(foodDiverted);
                 data.setOrdersCompleted(completedCount);
                 data.setAverageRating(avgRating);
+                data.setReviewCount(merchantReviews.size());
                 data.setActiveListingsCount(activeBags);
                 data.setLowStockAlertsCount(lowStock);
                 data.setUnreadNotificationsCount(0);
@@ -879,11 +914,13 @@ public class FoodHeroRepository {
     public void deactivateListing(String listingId, ResultCallback<Void> callback) {
         executor.execute(() -> {
             try {
-                Listing patch = new Listing();
-                patch.setStatus(ListingStatus.EXPIRED);
-                Response<List<Listing>> response = restClient.updateListing(SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + listingId, patch).execute();
-                if (!response.isSuccessful()) {
-                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Supabase did not deactivate the listing."));
+                JsonObject patch = new JsonObject();
+                patch.addProperty("status", ListingStatus.EXPIRED.getValue());
+                Response<List<Listing>> response = restClient.updateListingFields(
+                    SupabaseConfig.SUPABASE_ANON_KEY, getBearer(), "eq." + listingId, patch).execute();
+                if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR,
+                        readApiError(response, "Listing could not be deactivated. Check that you own it and your merchant account is approved.")));
                     return;
                 }
                 postSuccess(callback, null);
@@ -891,6 +928,28 @@ public class FoodHeroRepository {
                 postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to deactivate listing: " + e.getMessage(), e));
             }
         });
+    }
+
+    private String readApiError(Response<?> response, String fallback) {
+        if (response == null) return fallback;
+        try {
+            if (response.errorBody() != null) {
+                String body = response.errorBody().string();
+                if (body != null && !body.trim().isEmpty()) {
+                    JsonObject error = new Gson().fromJson(body, JsonObject.class);
+                    for (String key : new String[]{"message", "error", "details", "hint"}) {
+                        if (error != null && error.has(key) && !error.get(key).isJsonNull()) {
+                            String value = error.get(key).getAsString();
+                            if (value != null && !value.trim().isEmpty()) return value.trim();
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Fall through to a useful user-facing message.
+        }
+        String message = response.message();
+        return message == null || message.trim().isEmpty() ? fallback : fallback + " " + message.trim();
     }
 
     public void restockListing(String listingId, int additionalStock, ResultCallback<Listing> callback) {
@@ -993,7 +1052,10 @@ public class FoodHeroRepository {
                     return;
                 }
                 replaceCachedOrder(completion.body());
-                postSuccess(callback, new OrderVerificationResult(true, "Pickup verified successfully! Eco-Points awarded once.", completion.body()));
+                int earnedPoints = (int) Math.floor(Math.max(0.0, completion.body().getFinalPaidPrice()) * 5.0);
+                postSuccess(callback, new OrderVerificationResult(true,
+                    "Pickup verified successfully! " + earnedPoints + " Eco-Points awarded (RM1 = 5 points).",
+                    completion.body()));
             } catch (Exception e) {
                 postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Verification failed: " + e.getMessage(), e));
             }

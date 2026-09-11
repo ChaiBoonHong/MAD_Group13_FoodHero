@@ -7,6 +7,9 @@ public class CampusLandmark implements Serializable {
     @SerializedName("id")
     private String id;
 
+    @SerializedName("campus_id")
+    private String campusId;
+
     @SerializedName("name")
     private String name;
 
@@ -41,6 +44,9 @@ public class CampusLandmark implements Serializable {
     public String getName() {
         return name;
     }
+
+    public String getCampusId() { return campusId; }
+    public void setCampusId(String campusId) { this.campusId = campusId; }
 
     public void setName(String name) {
         this.name = name;

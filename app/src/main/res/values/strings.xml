@@ -74,6 +74,10 @@
     <string name="tab_reserved">Reserved</string>
     <string name="tab_completed">Completed</string>
     <string name="tab_cancelled">Cancelled</string>
+    <string name="tab_payment">Payment</string>
+    <string name="tab_verifying">Verifying</string>
+    <string name="tab_ready">Ready</string>
+    <string name="tab_closed">Closed</string>
     <string name="tab_expired">Expired</string>
     <string name="order_code">Order #%1$s</string>
     <string name="manual_pickup_code">Manual Code: %1$s</string>
@@ -178,7 +182,7 @@
     <string name="qr_scanner_hint">Align student QR code within the frame</string>
     <string name="qr_torch_toggle">Toggle Torch</string>
     <string name="pickup_verified_success">Pickup Verified Successfully!</string>
-    <string name="pickup_verified_points">+10 Eco-Points awarded to student.</string>
+    <string name="pickup_verified_points">Eco-Points awarded at RM1 = 5 points.</string>
 
     <!-- Merchant Profile -->
     <string name="merchant_profile_title">Merchant Profile</string>

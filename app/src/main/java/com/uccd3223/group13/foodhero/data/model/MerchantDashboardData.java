@@ -18,6 +18,9 @@ public class MerchantDashboardData implements Serializable {
     @SerializedName("average_rating")
     private double averageRating;
 
+    @SerializedName("review_count")
+    private int reviewCount;
+
     @SerializedName("active_listings_count")
     private int activeListingsCount;
 
@@ -64,6 +67,14 @@ public class MerchantDashboardData implements Serializable {
 
     public void setAverageRating(double averageRating) {
         this.averageRating = averageRating;
+    }
+
+    public int getReviewCount() {
+        return reviewCount;
+    }
+
+    public void setReviewCount(int reviewCount) {
+        this.reviewCount = reviewCount;
     }
 
     public int getActiveListingsCount() {

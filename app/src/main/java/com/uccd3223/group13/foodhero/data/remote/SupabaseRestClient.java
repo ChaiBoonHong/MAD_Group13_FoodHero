@@ -161,6 +161,15 @@ public interface SupabaseRestClient {
         @Query("order") String orderQuery
     );
 
+    @GET("/rest/v1/listings?select=*,merchants(*)")
+    Call<List<Listing>> getActiveListingsForCampus(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Query("status") String statusQuery,
+        @Query("campus_id") String campusQuery,
+        @Query("order") String orderQuery
+    );
+
     @GET("/rest/v1/listings")
     Call<List<Listing>> getMerchantListings(
         @Header("apikey") String apiKey,
@@ -191,6 +200,15 @@ public interface SupabaseRestClient {
         @Header("Authorization") String bearer,
         @Query("id") String idQuery,
         @Body Listing listing
+    );
+
+    @Headers({"Content-Type: application/json", "Prefer: return=representation"})
+    @PATCH("/rest/v1/listings")
+    Call<List<Listing>> updateListingFields(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Query("id") String idQuery,
+        @Body JsonObject fields
     );
 
     // --- ORDERS ---
@@ -302,5 +320,12 @@ public interface SupabaseRestClient {
     Call<List<CampusLandmark>> getCampusLandmarks(
         @Header("apikey") String apiKey,
         @Header("Authorization") String bearer
+    );
+
+    @GET("/rest/v1/campus_landmarks?is_active=eq.true")
+    Call<List<CampusLandmark>> getCampusLandmarksForCampus(
+        @Header("apikey") String apiKey,
+        @Header("Authorization") String bearer,
+        @Query("campus_id") String campusQuery
     );
 }

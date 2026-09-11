@@ -199,6 +199,12 @@ public class AddEditListingActivity extends AppCompatActivity {
 
         btnPreviewUrl.setOnClickListener(v -> validateAndPreviewExternalUrl());
 
+        chipGroupCategory.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (!checkedIds.isEmpty()) {
+                hasUnsavedEdits = true;
+            }
+        });
+
         etPhotoUrl.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}

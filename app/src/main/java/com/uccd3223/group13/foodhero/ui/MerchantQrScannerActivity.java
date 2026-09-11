@@ -158,7 +158,8 @@ public class MerchantQrScannerActivity extends AppCompatActivity {
     }
 
     private void showSuccessDialog(OrderVerificationResult result) {
-        String msg = result.getMessage() != null ? result.getMessage() : "Pickup verified successfully! 10 Eco-Points awarded.";
+        String msg = result.getMessage() != null ? result.getMessage() :
+            "Pickup verified successfully! Eco-Points awarded at RM1 = 5 points.";
 
         new MaterialAlertDialogBuilder(this)
             .setTitle(R.string.pickup_verified_success)
