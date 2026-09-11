@@ -237,7 +237,8 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
             }
             @Override public void onError(DataError error) {
                 campusLayout.setEnabled(true);
-                campusLayout.setError("Campuses could not be loaded. Tap to retry.");
+                String detail = error != null && error.getMessage() != null ? error.getMessage() : "Unable to load campuses.";
+                campusLayout.setError(detail + " Tap to retry.");
                 campusDropdown.setOnClickListener(v -> loadCampuses());
             }
         });
@@ -272,7 +273,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         stepProgress.setProgressCompat(currentStep, animate && MotionUtils.enabled());
         stepLabel.setText(currentStep == 1 ? "Step 1 of 3 · Business details"
             : currentStep == 2 ? "Step 2 of 3 · DuitNow payment" : "Step 3 of 3 · Pickup and review");
-        primary.setText(currentStep == 3 ? (editMode ? "Save Merchant Profile" : "Activate Merchant Account") : "Continue");
+        primary.setText(currentStep == 3 ? (editMode ? "Save Profile" : "Activate") : "Continue");
         back.setVisibility(currentStep == 1 ? View.INVISIBLE : View.VISIBLE);
         if (currentStep == 3) updateReview();
     }
@@ -440,7 +441,7 @@ public class MerchantOnboardingActivity extends AppCompatActivity implements OnM
         primary.setEnabled(!active);
         back.setEnabled(!active);
         primary.setText(active ? (editMode ? "Saving…" : "Activating…")
-            : currentStep == 3 ? (editMode ? "Save Merchant Profile" : "Activate Merchant Account") : "Continue");
+            : currentStep == 3 ? (editMode ? "Save Profile" : "Activate") : "Continue");
     }
 
     private void loadExistingMerchant() {

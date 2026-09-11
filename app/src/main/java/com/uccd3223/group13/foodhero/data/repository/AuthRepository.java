@@ -440,10 +440,28 @@ public class AuthRepository {
     public void getInstitutionsAndCampuses(ResultCallback<List<Campus>> callback) {
         executor.execute(() -> {
             try {
+                String accessToken = sessionManager.getAccessToken();
+                if (accessToken == null || accessToken.trim().isEmpty()) {
+                    postError(callback, new DataError(DataError.CODE_UNAUTHORIZED,
+                        "Your session is missing. Sign in again to load campuses."));
+                    return;
+                }
                 Response<List<Campus>> response = restClient.getCampuses(SupabaseConfig.SUPABASE_ANON_KEY,
-                    "Bearer " + sessionManager.getAccessToken(), "eq.true", "institution_code.asc,name.asc").execute();
+                    "Bearer " + accessToken, "eq.true", "institution_code.asc,name.asc").execute();
+                if (response.code() == 401 && refreshSessionTokens()) {
+                    response = restClient.getCampuses(SupabaseConfig.SUPABASE_ANON_KEY,
+                        "Bearer " + sessionManager.getAccessToken(), "eq.true", "institution_code.asc,name.asc").execute();
+                }
                 if (!response.isSuccessful() || response.body() == null) {
-                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, "Unable to load campuses."));
+                    String message;
+                    if (response.code() == 401) {
+                        message = "Your session expired. Sign in again to load campuses.";
+                    } else if (response.code() == 403) {
+                        message = "Campus access is not enabled in Supabase.";
+                    } else {
+                        message = "Unable to load campuses (HTTP " + response.code() + ").";
+                    }
+                    postError(callback, new DataError(DataError.CODE_SERVER_ERROR, message));
                     return;
                 }
                 postSuccess(callback, response.body());
@@ -451,6 +469,24 @@ public class AuthRepository {
                 postError(callback, new DataError(DataError.CODE_NETWORK_ERROR, "Unable to load campuses: " + e.getMessage(), e));
             }
         });
+    }
+
+    private boolean refreshSessionTokens() {
+        String refreshToken = sessionManager.getRefreshToken();
+        Profile cached = sessionManager.getProfile();
+        if (refreshToken == null || refreshToken.trim().isEmpty() || cached == null) return false;
+        try {
+            Response<AuthResponse> response = authService.refreshToken(
+                SupabaseConfig.SUPABASE_ANON_KEY, AuthRequest.forRefreshToken(refreshToken)).execute();
+            if (!response.isSuccessful() || response.body() == null
+                    || response.body().getAccessToken() == null) return false;
+            String nextRefresh = response.body().getRefreshToken() != null
+                ? response.body().getRefreshToken() : refreshToken;
+            sessionManager.saveSession(response.body().getAccessToken(), nextRefresh, cached);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     public void requestInstitutionalEmailVerification(String email, ResultCallback<Void> callback) {

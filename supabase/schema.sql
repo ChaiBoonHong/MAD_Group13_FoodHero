@@ -1417,6 +1417,8 @@ DROP POLICY IF EXISTS "Active institutions are readable" ON public.institutions;
 CREATE POLICY "Active institutions are readable" ON public.institutions FOR SELECT TO authenticated USING (is_active);
 DROP POLICY IF EXISTS "Active campuses are readable" ON public.campuses;
 CREATE POLICY "Active campuses are readable" ON public.campuses FOR SELECT TO authenticated USING (is_active);
+GRANT SELECT ON TABLE public.institutions TO authenticated;
+GRANT SELECT ON TABLE public.campuses TO authenticated;
 DROP POLICY IF EXISTS "Users read own roles" ON public.user_roles;
 CREATE POLICY "Users read own roles" ON public.user_roles FOR SELECT TO authenticated USING (user_id=auth.uid());
 DROP POLICY IF EXISTS "Users read own affiliation" ON public.student_affiliations;

@@ -219,13 +219,14 @@
         android:background="@color/colorSurface" android:gravity="center_vertical" android:orientation="horizontal"
         android:paddingStart="20dp" android:paddingTop="12dp" android:paddingEnd="20dp" android:paddingBottom="16dp">
         <com.google.android.material.button.MaterialButton android:id="@+id/btn_onboarding_back"
-            style="@style/Widget.FoodHero.Button.Secondary" android:layout_width="wrap_content"
+            style="@style/Widget.FoodHero.Button.Secondary" android:layout_width="104dp"
             android:layout_height="48dp" android:text="Back" android:visibility="invisible" />
-        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+        <Space android:layout_width="12dp" android:layout_height="1dp" />
         <ProgressBar android:id="@+id/progress_onboarding" android:layout_width="32dp" android:layout_height="32dp"
             android:layout_marginEnd="12dp" android:visibility="gone" />
         <com.google.android.material.button.MaterialButton android:id="@+id/btn_complete_onboarding"
-            style="@style/Widget.FoodHero.Button.Primary" android:layout_width="wrap_content"
-            android:layout_height="48dp" android:minWidth="132dp" android:text="Continue" />
+            style="@style/Widget.FoodHero.Button.Primary" android:layout_width="0dp"
+            android:layout_weight="1" android:layout_height="48dp" android:minWidth="0dp"
+            android:maxLines="1" android:text="Continue" />
     </LinearLayout>
 </LinearLayout>
