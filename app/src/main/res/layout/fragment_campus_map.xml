@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/colorBackground">
 
-    <!-- Fullscreen Google Map View -->
+    <!-- Google Maps surface. Campus content comes from Supabase. -->
     <com.google.android.gms.maps.MapView
         android:id="@+id/map_view"
         android:layout_width="match_parent"
@@ -45,6 +45,7 @@
                     android:contentDescription="Search" />
 
                 <TextView
+                    android:id="@+id/tv_nearby_count"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/spacing_10"
@@ -82,7 +83,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="3 spots nearby"
+                    android:text="Loading campus spots…"
                     android:textColor="@color/white"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -252,7 +253,7 @@
         android:layout_gravity="bottom"
         android:layout_marginHorizontal="@dimen/spacing_16"
         android:layout_marginBottom="@dimen/spacing_16"
-        android:visibility="visible"
+        android:visibility="gone"
         app:cardBackgroundColor="@color/colorSurface"
         app:cardCornerRadius="24dp"
         app:cardElevation="0dp"

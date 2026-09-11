@@ -4,4 +4,8 @@
         <item quantity="one">%d student review</item>
         <item quantity="other">%d student reviews</item>
     </plurals>
+    <plurals name="campus_spots_nearby">
+        <item quantity="one">%d spot nearby</item>
+        <item quantity="other">%d spots nearby</item>
+    </plurals>
 </resources>

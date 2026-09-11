@@ -158,7 +158,7 @@ The Android client never directly assigns trusted roles, affiliations, merchant 
 | Local data | Room and encrypted preferences when supported |
 | Media | Glide, Android MediaStore, Sharesheet |
 | QR | ZXing and JourneyApps ZXing Embedded |
-| Location | Google Maps SDK and Play Services Location |
+| Location | Google Maps SDK, Google Routes API, and Play Services Location |
 | Background | WorkManager |
 | Verification | JUnit, Mockito, AndroidX Test, Espresso, Android lint |
 
@@ -196,7 +196,7 @@ MAD_Group13_FoodHero/
 - JDK 17 or Android Studio's bundled runtime for Gradle.
 - Android API 28+ emulator or physical device.
 - A dedicated **development** Supabase project.
-- Google Maps SDK and the required OAuth configuration.
+- Google Maps SDK, Google Routes API, billing, and the required OAuth configuration.
 - Two physical phones for final Student ↔ Merchant acceptance testing.
 
 ### 1. Clone and configure

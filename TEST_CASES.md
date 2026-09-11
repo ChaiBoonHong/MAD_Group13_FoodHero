@@ -142,13 +142,13 @@ Use two physical Android phones where a case involves notifications, bank/e-wall
 | REV-01 | Valid review | Student reviews own completed order once | Review is saved and merchant aggregate updates |
 | REV-02 | Review authorization | Review another user’s/uncompleted/cross-campus order; submit twice | All invalid cases are denied; duplicate review is prevented |
 
-## Notifications, Google Routes, lifecycle, and accessibility
+## Notifications, Google Maps, Google Routes, lifecycle, and accessibility
 
 | ID | Test | Steps | Expected result |
 |---|---|---|---|
 | NTF-01 | Transition notifications | Reserve, submit, approve/reject, ready, complete/no-show | Correct participant receives accurate status/reason without duplicates |
 | NTF-02 | Read mutation failure | Tap unread notification offline, then retry | Optimistic read state rolls back on failure; Snackbar offers Retry |
-| ROUTE-01 | Providers | Search runtime traffic/code and exercise map route | Only Google Maps and Google Routes are used; no OSM/OSRM requests |
+| ROUTE-01 | Providers | Open the student campus map and exercise a listing route | Only Google Maps and Google Routes are used; no OSM/OSRM requests; campus/listing markers use Supabase data |
 | ROUTE-02 | Mode mapping | Request walking, cycling, shuttle | Edge payload uses `WALK`, `BICYCLE`, `DRIVE`; route polyline/distance/duration render |
 | ROUTE-03 | Route auth/failure | Call without JWT, invalid coordinates, quota/network failure | Unauthorized/invalid calls fail; UI shows route error and never invents geometry/ETA |
 | LIFE-01 | Process recreation | Kill/recreate during forms, reservation, upload, review, pickup | Confirmed state reloads; draft-safe state persists; no duplicate mutation |

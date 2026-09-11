@@ -111,6 +111,7 @@ public class StudentHomeActivity extends AppCompatActivity {
             } else if (itemId == R.id.nav_map) {
                 getSupportFragmentManager().beginTransaction().hide(activeFragment).show(mapFragment).commit();
                 activeFragment = mapFragment;
+                ((CampusMapFragment) mapFragment).refreshMapData();
                 return true;
             } else if (itemId == R.id.nav_orders) {
                 getSupportFragmentManager().beginTransaction().hide(activeFragment).show(ordersFragment).commit();
