@@ -13,9 +13,10 @@ FoodHero connects verified university communities with campus merchants offering
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 [![Material Design](https://img.shields.io/badge/UI-Material%20Design-6750A4?logo=materialdesign&logoColor=white)](https://m3.material.io/)
 [![Build](https://img.shields.io/badge/local%20build-passing-brightgreen)](#-quality-gates)
+[![Release](https://img.shields.io/badge/Release-v1.0-blue?logo=github)](https://github.com/ChaiBoonHong/MAD_Group13_FoodHero/releases/tag/v1.0)
 [![Course](https://img.shields.io/badge/UCCD3223-Group%2013-FF6B35)](#-academic-declaration)
 
-[Explore the journey](#-how-foodhero-works) · [Run the app](#-quick-start) · [Configure Supabase](#-supabase-setup) · [Test safely](#-quality-gates)
+[Download APK (v1.0)](https://github.com/ChaiBoonHong/MAD_Group13_FoodHero/releases/tag/v1.0) · [Demo Accounts](#-demo-accounts-for-evaluation) · [Explore the journey](#-how-foodhero-works) · [Run the app](#-quick-start) · [Configure Supabase](#-supabase-setup) · [Test safely](#-quality-gates)
 
 </div>
 
@@ -187,6 +188,48 @@ MAD_Group13_FoodHero/
 ├── secrets.properties.example
 └── README.md
 ```
+
+## 📦 Release & Demo Accounts
+
+### 📲 Latest Release (v1.0)
+
+Pre-built and signed APK is available on GitHub Releases:
+- **GitHub Release Page:** [FoodHero v1.0](https://github.com/ChaiBoonHong/MAD_Group13_FoodHero/releases/tag/v1.0)
+- **Direct APK Download:** [FoodHero-v1.0.apk](https://github.com/ChaiBoonHong/MAD_Group13_FoodHero/releases/download/v1.0/FoodHero-v1.0.apk)
+- **Target OS:** Android 9.0+ (API 28+)
+
+### 🔑 Demo Accounts for Evaluation
+
+You can use the following pre-configured, tested accounts to evaluate both student and merchant roles:
+
+#### 1. UTAR Student
+
+```text
+Email: demo.student@1utar.my
+Password: FoodHeroStudent2026!
+```
+
+- **Role:** Student only
+- **Institution:** UTAR
+- **Campus:** UTAR Kampar
+- **Student ID:** `DEMO-STUDENT-001`
+- **Faculty:** FICT
+- **Email confirmed:** Yes
+- **Password login tested:** Successful
+
+#### 2. UTAR Merchant
+
+```text
+Email: demo.merchant@utar.edu.my
+Password: FoodHeroMerchant2026!
+```
+
+- **Role:** Merchant only
+- **Institution:** UTAR
+- **Campus:** UTAR Kampar Main Campus
+- **Business:** UTAR Demo Food Stall
+- **Email confirmed:** Yes
+- **Password login tested:** Successful
 
 ## 🚀 Quick start
 
