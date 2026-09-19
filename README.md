@@ -1,5 +1,3 @@
-# 🍱 FoodHero
-
 <div align="center">
 
 <img src="foodhero-logo.png" alt="FoodHero mascot carrying rescued food" width="360">
